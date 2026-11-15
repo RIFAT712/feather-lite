@@ -163,6 +163,40 @@ All agents modifying code in this repository must uphold the following rules:
 * Use Server Components where possible; use `"use client"` only for interactive components (hooks, state, event handlers).
 * Table rows for contests with many submissions must use `@tanstack/react-virtual` to avoid rendering large numbers of DOM nodes.
 
+### G. Modern Web Guidance (Google Chrome Web Platform Standards)
+* **Search Before Implementation:** For all HTML/CSS and client-side JS tasks, consult the modern web catalog (`modern-web-guidance search "<query>"`).
+* **Native Web Primitives Over Heavy Polyfills:**
+  * Modals and popovers: native `<dialog>` and HTML `popover` / `popovertarget`.
+  * Responsive positioning: CSS Anchor Positioning and Container Queries (`@container`).
+  * Transitions: native View Transitions API (`document.startViewTransition`).
+  * Smooth responsiveness: CSS Subgrid instead of JS layout calculations.
+* **Core Web Vitals:** Prevent layout shifts (CLS), optimize INP using `scheduler.yield()`, and employ `content-visibility: auto` on lengthy DOM fragments.
+
+### H. Ponytail Engineering Discipline (Lazy Senior Dev Mode)
+* **The Principle:** Lazy means efficient and disciplined, not careless. The best code is code you never had to write.
+* **Climb the Ladder Before Writing Code:**
+  1. YAGNI: Does this feature or abstraction actually need to exist?
+  2. Internal reuse: Does a helper, util, or component already exist in this repo?
+  3. Standard library: Does Go stdlib or JS/Web standard library already do this?
+  4. Native platform: Does SQLite, HTML5, or modern CSS solve it directly?
+  5. Installed dependencies: Does an existing package (`chi`, `shadcn`, `@tanstack/react-query`) solve it?
+  6. Concise code: Can it be a clean one-liner?
+  7. Minimum working code: Write the shortest working diff once root cause is proven.
+* **Anti-Bloat Invariants:** No unrequested abstractions, no speculative generic layers, no new dependencies without explicit necessity.
+* **Shortcut Accountability:** Mark any intentional shortcut with a `// ponytail:` comment detailing the boundary and upgrade path.
+
+### I. Model Context Protocol (MCP) & Plugin Ecosystem
+* **Declared Plugins (`.agents/plugins.json`):**
+  * `modern-web-guidance` — Web platform guides and standards.
+  * `ponytail` — Engineering restraint and minimal-code review tools.
+  * `context-mode` — High-efficiency context window reduction and file indexing.
+* **Configured MCP Servers:**
+  * `shadcn` — Fast UI component scaffolding.
+  * `sqlite` — Direct SQLite querying and schema verification on `backend/feather.db`.
+  * `puppeteer` — Headless browser UI testing and screenshot verification.
+  * `ponytail` — On-demand ruleset and guidance prompts via MCP stdio.
+  * `context-mode` — Knowledge base and large output processor.
+
 ---
 
 ## 6. Database Schema Summary

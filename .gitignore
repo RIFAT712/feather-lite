@@ -24,3 +24,9 @@ frontend/.env.local
 # OS files
 .DS_Store
 Thumbs.db
+
+# Graphify intermediate files & cache
+.graphify*
+graphify-out/cache/
+
+

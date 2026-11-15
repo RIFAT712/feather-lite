@@ -1,0 +1,488 @@
+{
+  "D:\\WikiTools\\Feather New\\.agents\\plugins.json": {
+    "mtime": 1794761634.3936567,
+    "seen": 1794762166.5729809,
+    "ast_hash": "6ab2cfcaa54f2bae6b6062bbe8c20721",
+    "semantic_hash": "6ab2cfcaa54f2bae6b6062bbe8c20721"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\cmd\\benchmark\\main.go": {
+    "mtime": 1794668667.1812043,
+    "seen": 1794762166.5729852,
+    "ast_hash": "e71104517bf4d559ca362a96b28780fd",
+    "semantic_hash": "e71104517bf4d559ca362a96b28780fd"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\cmd\\server\\main.go": {
+    "mtime": 1794570353.4845958,
+    "seen": 1794762166.572987,
+    "ast_hash": "b34a92ad2cba8aab2bf88b7490bc6173",
+    "semantic_hash": "b34a92ad2cba8aab2bf88b7490bc6173"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\go.mod": {
+    "mtime": 1794560266.6804297,
+    "seen": 1794762166.5729883,
+    "ast_hash": "8dfc10c9ee97b0d7760c281780201723",
+    "semantic_hash": "8dfc10c9ee97b0d7760c281780201723"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\auth\\auth.go": {
+    "mtime": 1794558914.8140862,
+    "seen": 1794762166.572989,
+    "ast_hash": "49ba90333dc86830121eacb6925e2099",
+    "semantic_hash": "49ba90333dc86830121eacb6925e2099"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\balancer\\balancer.go": {
+    "mtime": 1794560584.3687198,
+    "seen": 1794762166.5729897,
+    "ast_hash": "4f79d9920d47229151e2777a96bc1086",
+    "semantic_hash": "4f79d9920d47229151e2777a96bc1086"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\balancer\\balancer_test.go": {
+    "mtime": 1794560594.597661,
+    "seen": 1794762166.5729907,
+    "ast_hash": "4fe913b67fc4c26956e2c4ccbb1b2def",
+    "semantic_hash": "4fe913b67fc4c26956e2c4ccbb1b2def"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\config\\config.go": {
+    "mtime": 1794558897.8482203,
+    "seen": 1794762166.5729914,
+    "ast_hash": "e52687b7dfb7774da1f96d47a1a1842e",
+    "semantic_hash": "e52687b7dfb7774da1f96d47a1a1842e"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\database\\db.go": {
+    "mtime": 1794570453.600461,
+    "seen": 1794762166.5729926,
+    "ast_hash": "d4e759fdd5df9233fced527239af71c0",
+    "semantic_hash": "d4e759fdd5df9233fced527239af71c0"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\database\\schema.sql": {
+    "mtime": 1794556401.7416801,
+    "seen": 1794762166.5729933,
+    "ast_hash": "a0dd63cbd17a49579ea6a85a6964a6bb",
+    "semantic_hash": "a0dd63cbd17a49579ea6a85a6964a6bb"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\handlers\\handlers.go": {
+    "mtime": 1794582893.8136783,
+    "seen": 1794762166.5729938,
+    "ast_hash": "3ffca8b6cdfbaa88e5fda098866f0072",
+    "semantic_hash": "3ffca8b6cdfbaa88e5fda098866f0072"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\models\\models.go": {
+    "mtime": 1794576756.4327686,
+    "seen": 1794762166.5729952,
+    "ast_hash": "2e7a3929981314e1acfe0149827635f3",
+    "semantic_hash": "2e7a3929981314e1acfe0149827635f3"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\mwclient\\mwclient.go": {
+    "mtime": 1794570319.3123841,
+    "seen": 1794762166.572996,
+    "ast_hash": "0f9e3a30a4a980b59b94bdb3d6bda976",
+    "semantic_hash": "0f9e3a30a4a980b59b94bdb3d6bda976"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\wikitext\\wikitext.go": {
+    "mtime": 1794560550.3787782,
+    "seen": 1794762166.5729966,
+    "ast_hash": "1d55331cdb74a2fb6af8545df12d2aff",
+    "semantic_hash": "1d55331cdb74a2fb6af8545df12d2aff"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\wikitext\\wikitext_test.go": {
+    "mtime": 1794560501.4095538,
+    "seen": 1794762166.5729973,
+    "ast_hash": "d40d192e1d82beeeebb333fc192dca11",
+    "semantic_hash": "d40d192e1d82beeeebb333fc192dca11"
+  },
+  "D:\\WikiTools\\Feather New\\backend\\internal\\worker\\worker.go": {
+    "mtime": 1794556442.4945138,
+    "seen": 1794762166.572998,
+    "ast_hash": "aa115b815255a52dd360f46ea7f0828e",
+    "semantic_hash": "aa115b815255a52dd360f46ea7f0828e"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\components.json": {
+    "mtime": 1794569190.3793416,
+    "seen": 1794762166.572999,
+    "ast_hash": "c80bdf71d1c8628befc101a17fceda98",
+    "semantic_hash": "c80bdf71d1c8628befc101a17fceda98"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\eslint.config.mjs": {
+    "mtime": 1794554671.5874717,
+    "seen": 1794762166.5729997,
+    "ast_hash": "dfa1f5f6a7037bf39dc510f30b180002",
+    "semantic_hash": "dfa1f5f6a7037bf39dc510f30b180002"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\next.config.ts": {
+    "mtime": 1794562068.4401968,
+    "seen": 1794762166.5730004,
+    "ast_hash": "f46f078e60640689ab46fd9a31012910",
+    "semantic_hash": "f46f078e60640689ab46fd9a31012910"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\package.json": {
+    "mtime": 1794556742.8687737,
+    "seen": 1794762166.5730011,
+    "ast_hash": "f7b06e35f6065247576773b60949cd04",
+    "semantic_hash": "f7b06e35f6065247576773b60949cd04"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\app\\api\\wikis\\route.ts": {
+    "mtime": 1794585922.7958558,
+    "seen": 1794762166.573002,
+    "ast_hash": "446194bc441320ae4bf127b636bc9506",
+    "semantic_hash": "446194bc441320ae4bf127b636bc9506"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\app\\api\\wikis\\siteinfo\\route.ts": {
+    "mtime": 1794584585.3593967,
+    "seen": 1794762166.573003,
+    "ast_hash": "2848537ed6f18a252ed23f7ef28abf50",
+    "semantic_hash": "2848537ed6f18a252ed23f7ef28abf50"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\app\\contests\\[code]\\page.tsx": {
+    "mtime": 1794577120.702676,
+    "seen": 1794762166.573004,
+    "ast_hash": "e64139943cabc2127b363cd6a98efc71",
+    "semantic_hash": "e64139943cabc2127b363cd6a98efc71"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\app\\contests\\[code]\\review\\page.tsx": {
+    "mtime": 1794571399.5254521,
+    "seen": 1794762166.5730047,
+    "ast_hash": "692934f1f5a8c07b3006d04d0e5e8232",
+    "semantic_hash": "692934f1f5a8c07b3006d04d0e5e8232"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\app\\contests\\[code]\\submit\\page.tsx": {
+    "mtime": 1794571386.8373096,
+    "seen": 1794762166.573006,
+    "ast_hash": "a67e42c656b46e3d7725328393bc2730",
+    "semantic_hash": "a67e42c656b46e3d7725328393bc2730"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\app\\contests\\new\\page.tsx": {
+    "mtime": 1794584696.836504,
+    "seen": 1794762166.5730066,
+    "ast_hash": "c7d2da63217c43757da97eec1a5fb414",
+    "semantic_hash": "c7d2da63217c43757da97eec1a5fb414"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\app\\layout.tsx": {
+    "mtime": 1794571896.2600439,
+    "seen": 1794762166.5730073,
+    "ast_hash": "6f89211444317a74012410db018138c6",
+    "semantic_hash": "6f89211444317a74012410db018138c6"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\app\\page.tsx": {
+    "mtime": 1794571246.6948035,
+    "seen": 1794762166.573008,
+    "ast_hash": "7e1f744f821ae4a7baa078a1d54e34fd",
+    "semantic_hash": "7e1f744f821ae4a7baa078a1d54e34fd"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\app\\providers.tsx": {
+    "mtime": 1794563309.9563026,
+    "seen": 1794762166.573009,
+    "ast_hash": "2c103f8a4b39cb616547f779ca6ecfc0",
+    "semantic_hash": "2c103f8a4b39cb616547f779ca6ecfc0"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\app\\sandbox\\page.tsx": {
+    "mtime": 1794580133.8599465,
+    "seen": 1794762166.5730097,
+    "ast_hash": "adc8d5c540db21a091884aac21f8eefc",
+    "semantic_hash": "adc8d5c540db21a091884aac21f8eefc"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\contests\\TimezoneSelector.tsx": {
+    "mtime": 1794583302.4021816,
+    "seen": 1794762166.5730102,
+    "ast_hash": "71097053fe285ddb5e6e0dc83bb3e493",
+    "semantic_hash": "71097053fe285ddb5e6e0dc83bb3e493"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\contests\\WikiSelector.tsx": {
+    "mtime": 1794584665.0280406,
+    "seen": 1794762166.5730112,
+    "ast_hash": "82efcd61b5d1f3eea615444be02642f1",
+    "semantic_hash": "82efcd61b5d1f3eea615444be02642f1"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\icons\\CodexIcons.tsx": {
+    "mtime": 1794567265.0210383,
+    "seen": 1794762166.5730116,
+    "ast_hash": "362a895e56c3df6771991d40a1cfea15",
+    "semantic_hash": "362a895e56c3df6771991d40a1cfea15"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\layout\\Footer.tsx": {
+    "mtime": 1794572576.0448985,
+    "seen": 1794762166.5730126,
+    "ast_hash": "e71f4442cd5dd87404bc55196b9badc0",
+    "semantic_hash": "e71f4442cd5dd87404bc55196b9badc0"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\layout\\LanguageSwitcher.tsx": {
+    "mtime": 1794571198.9672067,
+    "seen": 1794762166.5730135,
+    "ast_hash": "6bde7e48fce719e2f54dcaa8f246dec2",
+    "semantic_hash": "6bde7e48fce719e2f54dcaa8f246dec2"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\layout\\Navbar.tsx": {
+    "mtime": 1794571215.4002323,
+    "seen": 1794762166.5730143,
+    "ast_hash": "55914b2306be571d9a971f9bc318f7f9",
+    "semantic_hash": "55914b2306be571d9a971f9bc318f7f9"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\badge.tsx": {
+    "mtime": 1794571159.637862,
+    "seen": 1794762166.5730152,
+    "ast_hash": "fd26ffc47067425abc01c80750dc7553",
+    "semantic_hash": "fd26ffc47067425abc01c80750dc7553"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\button.tsx": {
+    "mtime": 1794571175.2199156,
+    "seen": 1794762166.5730157,
+    "ast_hash": "0baedb59c39415754ddbef3d526d1900",
+    "semantic_hash": "0baedb59c39415754ddbef3d526d1900"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\card.tsx": {
+    "mtime": 1794571150.729641,
+    "seen": 1794762166.5730166,
+    "ast_hash": "4305356bc6cba7bcf834772ea701b555",
+    "semantic_hash": "4305356bc6cba7bcf834772ea701b555"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\date-time-picker.tsx": {
+    "mtime": 1794583364.751968,
+    "seen": 1794762166.5730176,
+    "ast_hash": "4bf4c469f4adee15762b6963f2b18e5d",
+    "semantic_hash": "4bf4c469f4adee15762b6963f2b18e5d"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\dialog.tsx": {
+    "mtime": 1794556743.1247456,
+    "seen": 1794762166.5730183,
+    "ast_hash": "140a6a27b4baf69a6ce2cb1f626ab43e",
+    "semantic_hash": "140a6a27b4baf69a6ce2cb1f626ab43e"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\dropdown-menu.tsx": {
+    "mtime": 1794568507.477782,
+    "seen": 1794762166.5730188,
+    "ast_hash": "3ba52f720b6b7bf96ca13fa2651bfc3e",
+    "semantic_hash": "3ba52f720b6b7bf96ca13fa2651bfc3e"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\floating-input.tsx": {
+    "mtime": 1794579861.0505288,
+    "seen": 1794762166.57302,
+    "ast_hash": "68207c2909fb53fa4eaa8ed5ac05e9c1",
+    "semantic_hash": "68207c2909fb53fa4eaa8ed5ac05e9c1"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\input.tsx": {
+    "mtime": 1794571180.6815853,
+    "seen": 1794762166.573021,
+    "ast_hash": "a11ab495cc311e8423919ebe1ff0999e",
+    "semantic_hash": "a11ab495cc311e8423919ebe1ff0999e"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\sheet.tsx": {
+    "mtime": 1794556743.1355913,
+    "seen": 1794762166.5730217,
+    "ast_hash": "dd25a3868e278ad427f632f35b9dbccf",
+    "semantic_hash": "dd25a3868e278ad427f632f35b9dbccf"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\sonner.tsx": {
+    "mtime": 1794556743.1052332,
+    "seen": 1794762166.5730224,
+    "ast_hash": "f46214bc2a6a5153a6e04fad523d5587",
+    "semantic_hash": "f46214bc2a6a5153a6e04fad523d5587"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\table.tsx": {
+    "mtime": 1794556743.092677,
+    "seen": 1794762166.5730233,
+    "ast_hash": "c8c2da1704112a7f341c8cf6452d46d8",
+    "semantic_hash": "c8c2da1704112a7f341c8cf6452d46d8"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\tabs.tsx": {
+    "mtime": 1794556743.0951731,
+    "seen": 1794762166.573024,
+    "ast_hash": "a916071b9d68c5ab3393b9573ed8cad1",
+    "semantic_hash": "a916071b9d68c5ab3393b9573ed8cad1"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\components\\ui\\textarea.tsx": {
+    "mtime": 1794571185.9322257,
+    "seen": 1794762166.573025,
+    "ast_hash": "49c897f1f454ed525e94374187eafbf4",
+    "semantic_hash": "49c897f1f454ed525e94374187eafbf4"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\i18n\\I18nContext.tsx": {
+    "mtime": 1794563202.1646469,
+    "seen": 1794762166.5730257,
+    "ast_hash": "721ac93d020838f42964fab0de386502",
+    "semantic_hash": "721ac93d020838f42964fab0de386502"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\i18n\\bn.json": {
+    "mtime": 1794577042.8208163,
+    "seen": 1794762166.5730267,
+    "ast_hash": "12277fecbe1129112bece3248efc54b4",
+    "semantic_hash": "12277fecbe1129112bece3248efc54b4"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\i18n\\en.json": {
+    "mtime": 1794577010.918784,
+    "seen": 1794762166.5730274,
+    "ast_hash": "6cdcd3bff98a8b35f1c244f0155d487e",
+    "semantic_hash": "6cdcd3bff98a8b35f1c244f0155d487e"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\i18n\\qqq.json": {
+    "mtime": 1794577056.0863822,
+    "seen": 1794762166.573028,
+    "ast_hash": "15075aa9ec7dfa63f3df77b55052dc6b",
+    "semantic_hash": "15075aa9ec7dfa63f3df77b55052dc6b"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\lib\\api.ts": {
+    "mtime": 1794576766.5008326,
+    "seen": 1794762166.5730288,
+    "ast_hash": "8849e81f4d2449bd51129e56c159814e",
+    "semantic_hash": "8849e81f4d2449bd51129e56c159814e"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\lib\\time.ts": {
+    "mtime": 1794584632.0718236,
+    "seen": 1794762166.5730295,
+    "ast_hash": "b6a6f9c476fd98d281db4703fa9f6b88",
+    "semantic_hash": "b6a6f9c476fd98d281db4703fa9f6b88"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\lib\\utils.ts": {
+    "mtime": 1794556719.1143005,
+    "seen": 1794762166.5730305,
+    "ast_hash": "0482d21cfeab8cfcfe44f94927e45afb",
+    "semantic_hash": "0482d21cfeab8cfcfe44f94927e45afb"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\lib\\wikimedia-wikis.json": {
+    "mtime": 1794585906.5410054,
+    "seen": 1794762166.5730312,
+    "ast_hash": "ea6073f48593c8b2f73cd8087b293a62",
+    "semantic_hash": "ea6073f48593c8b2f73cd8087b293a62"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\src\\lib\\wikis.ts": {
+    "mtime": 1794584648.4152775,
+    "seen": 1794762166.573032,
+    "ast_hash": "370e60b80dfa9c8395082fa50f596679",
+    "semantic_hash": "370e60b80dfa9c8395082fa50f596679"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\tsconfig.json": {
+    "mtime": 1794556635.989698,
+    "seen": 1794762166.5730326,
+    "ast_hash": "ee17fd1c97c735e9f3564e3f5251f125",
+    "semantic_hash": "ee17fd1c97c735e9f3564e3f5251f125"
+  },
+  "D:\\WikiTools\\Feather New\\AGENTS.md": {
+    "mtime": 1794761666.8888502,
+    "seen": 1794762166.5730336,
+    "ast_hash": "71e4a0e68df7c67d1928898ca2f49da7",
+    "semantic_hash": "71e4a0e68df7c67d1928898ca2f49da7"
+  },
+  "D:\\WikiTools\\Feather New\\README.md": {
+    "mtime": 1794560370.967648,
+    "seen": 1794762166.5730343,
+    "ast_hash": "b6035edc42b34566dfd506c8ef029ce5",
+    "semantic_hash": "b6035edc42b34566dfd506c8ef029ce5"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\AGENTS.md": {
+    "mtime": 1794761651.7879813,
+    "seen": 1794762166.573035,
+    "ast_hash": "b4ee0b6609901fb95bae598f353cab8e",
+    "semantic_hash": "b4ee0b6609901fb95bae598f353cab8e"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\README.md": {
+    "mtime": 1794554671.5691993,
+    "seen": 1794762166.5730357,
+    "ast_hash": "f15aaa42d5d299d091b1171097ea56ad",
+    "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\pnpm-workspace.yaml": {
+    "mtime": 1794556635.9901993,
+    "seen": 1794762166.573037,
+    "ast_hash": "b6e0a9c1a7b488c11a1c5812b4ed319b",
+    "semantic_hash": "b6e0a9c1a7b488c11a1c5812b4ed319b"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\file.svg": {
+    "mtime": 1794554671.5953975,
+    "seen": 1794762166.5730376,
+    "ast_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71",
+    "semantic_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\globe.svg": {
+    "mtime": 1794554671.5964031,
+    "seen": 1794762166.573038,
+    "ast_hash": "2aaafa6a49b6563925fe440891e32717",
+    "semantic_hash": "2aaafa6a49b6563925fe440891e32717"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\commons.svg": {
+    "mtime": 1794579387.464077,
+    "seen": 1794762166.573039,
+    "ast_hash": "2e14a58621e052606c196c3cae26de36",
+    "semantic_hash": "2e14a58621e052606c196c3cae26de36"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\mediawiki.svg": {
+    "mtime": 1794579389.5219548,
+    "seen": 1794762166.5730398,
+    "ast_hash": "449d03e98d826f0ff90a973ad67a2288",
+    "semantic_hash": "449d03e98d826f0ff90a973ad67a2288"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\wikibooks.svg": {
+    "mtime": 1794579384.379428,
+    "seen": 1794762166.5730405,
+    "ast_hash": "d821d847ba003fbf1186e40a0a9e4e09",
+    "semantic_hash": "d821d847ba003fbf1186e40a0a9e4e09"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\wikidata.svg": {
+    "mtime": 1794579388.1469078,
+    "seen": 1794762166.5730414,
+    "ast_hash": "3a52e6d160662297eadedb747e68f0bb",
+    "semantic_hash": "3a52e6d160662297eadedb747e68f0bb"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\wikimedia.svg": {
+    "mtime": 1794579388.8349905,
+    "seen": 1794762166.5730422,
+    "ast_hash": "72b25f56efd78cd8bff04ff5b9831ad2",
+    "semantic_hash": "72b25f56efd78cd8bff04ff5b9831ad2"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\wikinews.svg": {
+    "mtime": 1794579386.094675,
+    "seen": 1794762166.5730426,
+    "ast_hash": "91e99c352e2bcb3f9fca9df54801e2ab",
+    "semantic_hash": "91e99c352e2bcb3f9fca9df54801e2ab"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\wikipedia.svg": {
+    "mtime": 1794579359.946325,
+    "seen": 1794762166.5730438,
+    "ast_hash": "0df5066882793e7b1893e3adc393abbc",
+    "semantic_hash": "0df5066882793e7b1893e3adc393abbc"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\wikiquote.svg": {
+    "mtime": 1794579385.102264,
+    "seen": 1794762166.5730445,
+    "ast_hash": "3e1ae93686d0ede44b320718a61aa21e",
+    "semantic_hash": "3e1ae93686d0ede44b320718a61aa21e"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\wikisource.svg": {
+    "mtime": 1794579362.155454,
+    "seen": 1794762166.573045,
+    "ast_hash": "9531cc097b22b038c464b790e054fda7",
+    "semantic_hash": "9531cc097b22b038c464b790e054fda7"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\wikiversity.svg": {
+    "mtime": 1794579386.7812483,
+    "seen": 1794762166.573046,
+    "ast_hash": "e39cf6eaf681bf2b37a9b49035a0547c",
+    "semantic_hash": "e39cf6eaf681bf2b37a9b49035a0547c"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\wikivoyage.svg": {
+    "mtime": 1794579361.3671992,
+    "seen": 1794762166.5730464,
+    "ast_hash": "44df26c1300444888342152eb26dc298",
+    "semantic_hash": "44df26c1300444888342152eb26dc298"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\icons\\projects\\wiktionary.svg": {
+    "mtime": 1794579360.6723394,
+    "seen": 1794762166.5730474,
+    "ast_hash": "424ee46edcf44f38c5c58f9716ed6200",
+    "semantic_hash": "424ee46edcf44f38c5c58f9716ed6200"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\next.svg": {
+    "mtime": 1794554671.5987494,
+    "seen": 1794762166.5730484,
+    "ast_hash": "8e061864f388b47f33a1c3780831193e",
+    "semantic_hash": "8e061864f388b47f33a1c3780831193e"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\vercel.svg": {
+    "mtime": 1794554671.6002545,
+    "seen": 1794762166.573049,
+    "ast_hash": "c0af2f507b369b085b35ef4bbe3bcf1e",
+    "semantic_hash": "c0af2f507b369b085b35ef4bbe3bcf1e"
+  },
+  "D:\\WikiTools\\Feather New\\frontend\\public\\window.svg": {
+    "mtime": 1794554671.6022615,
+    "seen": 1794762166.57305,
+    "ast_hash": "a2760511c65806022ad20adf74370ff3",
+    "semantic_hash": "a2760511c65806022ad20adf74370ff3"
+  }
+}

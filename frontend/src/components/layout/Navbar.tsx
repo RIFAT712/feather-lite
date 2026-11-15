@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Feather, Trophy, UserCheck, LogOut, Loader2, PlusCircle } from "lucide-react";
+import { Feather, Trophy, UserCheck, LogOut, Loader2, PlusCircle, Menu, X } from "lucide-react";
 import { WikimediaLogoIcon } from "@/components/icons/CodexIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 export default function Navbar() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const { data: me, isLoading } = useQuery({
     queryKey: ["me"],
@@ -33,10 +35,10 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-8">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/90 backdrop-blur-md">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
+        <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 shrink-0">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-2xs">
             <Feather className="h-4 w-4" />
           </div>
@@ -47,15 +49,15 @@ export default function Navbar() {
                 2.0
               </Badge>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-none">{t("feather-subtitle")}</p>
+            <p className="hidden sm:block text-[11px] text-muted-foreground leading-none">{t("feather-subtitle")}</p>
           </div>
         </Link>
 
-        {/* Navigation Actions */}
-        <nav className="flex items-center gap-3 sm:gap-4">
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-3 lg:gap-4">
           <Link
             href="/"
-            className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <Trophy className="h-4 w-4" />
             {t("feather-nav-contests")}
@@ -71,8 +73,7 @@ export default function Navbar() {
             })}
           >
             <PlusCircle className="h-3.5 w-3.5 text-primary" />
-            <span className="hidden sm:inline">{t("feather-nav-create-contest")}</span>
-            <span className="sm:hidden">New</span>
+            <span>{t("feather-nav-create-contest")}</span>
           </Link>
 
           {/* Language Switcher */}
@@ -84,7 +85,7 @@ export default function Navbar() {
           {isLoading ? (
             <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
-              <span className="hidden sm:inline">{t("feather-nav-session-checking")}</span>
+              <span>{t("feather-nav-session-checking")}</span>
             </div>
           ) : me?.is_authenticated ? (
             <div className="flex items-center gap-2">
@@ -119,12 +120,102 @@ export default function Navbar() {
               })}
             >
               <WikimediaLogoIcon className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t("feather-nav-login")}</span>
-              <span className="sm:hidden">Login</span>
+              <span>{t("feather-nav-login")}</span>
             </a>
           )}
         </nav>
+
+        {/* Mobile Navigation Header Controls */}
+        <div className="flex md:hidden items-center gap-2">
+          <LanguageSwitcher />
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-label="Toggle navigation menu"
+            className="h-9 w-9 p-0 text-foreground cursor-pointer rounded-md border border-border/60 hover:bg-muted"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
+
+      {/* Mobile Slide-down Panel */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-border bg-background/98 backdrop-blur-lg px-4 py-3 space-y-3 shadow-md animate-in slide-in-from-top-2 duration-150">
+          <div className="space-y-1">
+            <Link
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted/70 transition-colors"
+            >
+              <Trophy className="h-4 w-4 text-primary" />
+              <span>{t("feather-nav-contests")}</span>
+            </Link>
+
+            <Link
+              href="/contests/new"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted/70 transition-colors"
+            >
+              <PlusCircle className="h-4 w-4 text-primary" />
+              <span>{t("feather-nav-create-contest")}</span>
+            </Link>
+          </div>
+
+          <div className="border-t border-border/70 pt-2.5">
+            {isLoading ? (
+              <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>{t("feather-nav-session-checking")}</span>
+              </div>
+            ) : me?.is_authenticated ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-3 py-2 rounded-md bg-muted/40 border border-border/60">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+                    <UserCheck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-sm text-foreground truncate">{me.wiki_username}</span>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] uppercase font-bold py-0 h-4 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shrink-0"
+                  >
+                    {me.role}
+                  </Badge>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full justify-center gap-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 cursor-pointer h-9"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span>{t("feather-nav-logout")}</span>
+                </Button>
+              </div>
+            ) : (
+              <a
+                href={`${AUTH_BASE}/login`}
+                onClick={() => setMobileMenuOpen(false)}
+                className={buttonVariants({
+                  variant: "default",
+                  size: "sm",
+                  className: "w-full justify-center gap-2 text-xs font-medium shadow-xs cursor-pointer h-9",
+                })}
+              >
+                <WikimediaLogoIcon className="h-4 w-4" />
+                <span>{t("feather-nav-login")}</span>
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

@@ -11,7 +11,7 @@ export default function Footer() {
     <footer className="w-full border-t border-border/60 bg-muted/20 dark:bg-card/20 text-muted-foreground mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Top Header: Brand + Modern Cloud Services Credit */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-border/50">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 sm:pb-6 border-b border-border/50">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-2xs shrink-0">
               <Feather className="h-4 w-4" />
@@ -25,19 +25,19 @@ export default function Footer() {
                   2.0
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground hidden sm:block">
                 {t("feather-footer-tagline")}
               </p>
             </div>
           </div>
 
-          {/* Wikimedia Cloud Services Credit Card */}
+          {/* Wikimedia Cloud Services Credit Card (Hidden on Mobile like Wikipedia) */}
           <a
             href="https://wikitech.wikimedia.org/wiki/Portal:Cloud_Services"
             target="_blank"
             rel="noopener noreferrer"
             title="Wikimedia Cloud Services"
-            className="inline-flex items-center gap-3 px-3.5 py-2 rounded-lg border border-border/70 bg-card hover:bg-accent/60 transition-colors shadow-2xs group cursor-pointer shrink-0"
+            className="hidden sm:inline-flex items-center gap-3 px-3.5 py-2 rounded-lg border border-border/70 bg-card hover:bg-accent/60 transition-colors shadow-2xs group cursor-pointer shrink-0"
           >
             <div className="flex h-8 w-8 items-center justify-center shrink-0">
               <img
@@ -134,7 +134,7 @@ export default function Footer() {
           </a>
         </div>
 
-        {/* Bottom Legal & Licensing Notice */}
+        {/* Bottom Legal & Licensing Notice (Wikipedia style: clean on mobile, full on desktop) */}
         <div className="space-y-1.5 text-[11px] leading-relaxed text-muted-foreground/85">
           {locale === "bn" ? (
             <p>
@@ -147,25 +147,28 @@ export default function Footer() {
               >
                 {t("feather-footer-license-name")}
               </a>
-              {t("feather-footer-license-suffix")}{" "}
-              <a
-                href="https://wikitech.wikimedia.org/wiki/Portal:Cloud_Services"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground transition-colors cursor-pointer"
-              >
-                {t("feather-footer-wmcs-name")}
-              </a>{" "}
-              (
-              <a
-                href="https://wikitech.wikimedia.org/wiki/Portal:Toolforge"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground transition-colors cursor-pointer"
-              >
-                {t("feather-footer-toolforge-name")}
-              </a>
-              ) {t("feather-footer-wmcs-credit")}।
+              {t("feather-footer-license-suffix")}
+              <span className="hidden sm:inline">
+                {" "}
+                <a
+                  href="https://wikitech.wikimedia.org/wiki/Portal:Cloud_Services"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground transition-colors cursor-pointer"
+                >
+                  {t("feather-footer-wmcs-name")}
+                </a>{" "}
+                (
+                <a
+                  href="https://wikitech.wikimedia.org/wiki/Portal:Toolforge"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground transition-colors cursor-pointer"
+                >
+                  {t("feather-footer-toolforge-name")}
+                </a>
+                ) {t("feather-footer-wmcs-credit")}।
+              </span>
             </p>
           ) : (
             <p>
@@ -178,29 +181,32 @@ export default function Footer() {
               >
                 {t("feather-footer-license-name")}
               </a>
-              {t("feather-footer-license-suffix")}{" "}
-              {t("feather-footer-wmcs-credit")}{" "}
-              <a
-                href="https://wikitech.wikimedia.org/wiki/Portal:Cloud_Services"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground transition-colors cursor-pointer"
-              >
-                {t("feather-footer-wmcs-name")}
-              </a>{" "}
-              (
-              <a
-                href="https://wikitech.wikimedia.org/wiki/Portal:Toolforge"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground transition-colors cursor-pointer"
-              >
-                {t("feather-footer-toolforge-name")}
-              </a>
-              ).
+              {t("feather-footer-license-suffix")}
+              <span className="hidden sm:inline">
+                {" "}
+                {t("feather-footer-wmcs-credit")}{" "}
+                <a
+                  href="https://wikitech.wikimedia.org/wiki/Portal:Cloud_Services"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground transition-colors cursor-pointer"
+                >
+                  {t("feather-footer-wmcs-name")}
+                </a>{" "}
+                (
+                <a
+                  href="https://wikitech.wikimedia.org/wiki/Portal:Toolforge"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground transition-colors cursor-pointer"
+                >
+                  {t("feather-footer-toolforge-name")}
+                </a>
+                ).
+              </span>
             </p>
           )}
-          <p className="text-[10.5px] text-muted-foreground/60">
+          <p className="text-[10.5px] text-muted-foreground/60 hidden sm:block">
             {t("feather-footer-trademark")}
           </p>
         </div>

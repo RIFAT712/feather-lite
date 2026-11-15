@@ -1,0 +1,5538 @@
+{
+  "nodes": [
+    {
+      "id": "g0",
+      "type": "group",
+      "label": "Frontend Contest & Review UI",
+      "x": 0,
+      "y": 0,
+      "width": 2420,
+      "height": 1120,
+      "color": "1"
+    },
+    {
+      "id": "n_ref_base_ui_react",
+      "type": "file",
+      "file": "@base-uireact_1.md",
+      "x": 20,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_tanstack_react_query",
+      "type": "file",
+      "file": "@tanstackreact-query_1.md",
+      "x": 220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_auth_base",
+      "type": "file",
+      "file": "AUTH_BASE.md",
+      "x": 420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_article",
+      "type": "file",
+      "file": "Article_1.md",
+      "x": 620,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_articlepreview",
+      "type": "file",
+      "file": "ArticlePreview.md",
+      "x": 820,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_badge_badge",
+      "type": "file",
+      "file": "Badge().md",
+      "x": 1020,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_button_button",
+      "type": "file",
+      "file": "Button().md",
+      "x": 1220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_card_card",
+      "type": "file",
+      "file": "Card().md",
+      "x": 1420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_card_cardaction",
+      "type": "file",
+      "file": "CardAction().md",
+      "x": 1620,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_card_cardcontent",
+      "type": "file",
+      "file": "CardContent().md",
+      "x": 1820,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_card_carddescription",
+      "type": "file",
+      "file": "CardDescription().md",
+      "x": 2020,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_card_cardfooter",
+      "type": "file",
+      "file": "CardFooter().md",
+      "x": 20,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_card_cardheader",
+      "type": "file",
+      "file": "CardHeader().md",
+      "x": 220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_card_cardtitle",
+      "type": "file",
+      "file": "CardTitle().md",
+      "x": 420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_icons_codexicons",
+      "type": "file",
+      "file": "CodexIcons.tsx.md",
+      "x": 620,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_contest",
+      "type": "file",
+      "file": "Contest_1.md",
+      "x": 820,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_contests_code_page_contestdashboardpage",
+      "type": "file",
+      "file": "ContestDashboardPage().md",
+      "x": 1020,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_createcontestpayload",
+      "type": "file",
+      "file": "CreateContestPayload.md",
+      "x": 1220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_date_time_picker_day_names",
+      "type": "file",
+      "file": "DAY_NAMES.md",
+      "x": 1420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_date_time_picker_datetimepicker",
+      "type": "file",
+      "file": "DateTimePicker().md",
+      "x": 1620,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_date_time_picker_datetimepickerprops",
+      "type": "file",
+      "file": "DateTimePickerProps.md",
+      "x": 1820,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog_dialog",
+      "type": "file",
+      "file": "Dialog().md",
+      "x": 2020,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog_dialogclose",
+      "type": "file",
+      "file": "DialogClose().md",
+      "x": 20,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog_dialogcontent",
+      "type": "file",
+      "file": "DialogContent().md",
+      "x": 220,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog_dialogdescription",
+      "type": "file",
+      "file": "DialogDescription().md",
+      "x": 420,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog_dialogfooter",
+      "type": "file",
+      "file": "DialogFooter().md",
+      "x": 620,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog_dialogheader",
+      "type": "file",
+      "file": "DialogHeader().md",
+      "x": 820,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog_dialogoverlay",
+      "type": "file",
+      "file": "DialogOverlay().md",
+      "x": 1020,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog_dialogportal",
+      "type": "file",
+      "file": "DialogPortal().md",
+      "x": 1220,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog_dialogtitle",
+      "type": "file",
+      "file": "DialogTitle().md",
+      "x": 1420,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog_dialogtrigger",
+      "type": "file",
+      "file": "DialogTrigger().md",
+      "x": 1620,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_layout_footer_footer",
+      "type": "file",
+      "file": "Footer().md",
+      "x": 1820,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_layout_footer",
+      "type": "file",
+      "file": "Footer.tsx.md",
+      "x": 2020,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_page_homepage",
+      "type": "file",
+      "file": "HomePage().md",
+      "x": 20,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_input_input",
+      "type": "file",
+      "file": "Input().md",
+      "x": 220,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_keysetresponse",
+      "type": "file",
+      "file": "KeysetResponse.md",
+      "x": 420,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_layout_languageswitcher_languageswitcher",
+      "type": "file",
+      "file": "LanguageSwitcher().md",
+      "x": 620,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_date_time_picker_month_names",
+      "type": "file",
+      "file": "MONTH_NAMES.md",
+      "x": 820,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_layout_navbar_navbar",
+      "type": "file",
+      "file": "Navbar().md",
+      "x": 1020,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_layout_navbar",
+      "type": "file",
+      "file": "Navbar.tsx.md",
+      "x": 1220,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_contests_code_review_page_reviewqueuepage",
+      "type": "file",
+      "file": "ReviewQueuePage().md",
+      "x": 1420,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_page_sortoption",
+      "type": "file",
+      "file": "SortOption.md",
+      "x": 1620,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_standingentry",
+      "type": "file",
+      "file": "StandingEntry_1.md",
+      "x": 1820,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_submissionresponse",
+      "type": "file",
+      "file": "SubmissionResponse.md",
+      "x": 2020,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_submissionresultitem",
+      "type": "file",
+      "file": "SubmissionResultItem.md",
+      "x": 20,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_contests_code_submit_page_submitarticlespage",
+      "type": "file",
+      "file": "SubmitArticlesPage().md",
+      "x": 220,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_table_table",
+      "type": "file",
+      "file": "Table().md",
+      "x": 420,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_table_tablebody",
+      "type": "file",
+      "file": "TableBody().md",
+      "x": 620,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_table_tablecaption",
+      "type": "file",
+      "file": "TableCaption().md",
+      "x": 820,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_table_tablecell",
+      "type": "file",
+      "file": "TableCell().md",
+      "x": 1020,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_table_tablefooter",
+      "type": "file",
+      "file": "TableFooter().md",
+      "x": 1220,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_table_tablehead",
+      "type": "file",
+      "file": "TableHead().md",
+      "x": 1420,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_table_tableheader",
+      "type": "file",
+      "file": "TableHeader().md",
+      "x": 1620,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_table_tablerow",
+      "type": "file",
+      "file": "TableRow().md",
+      "x": 1820,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_tabs_tabs",
+      "type": "file",
+      "file": "Tabs().md",
+      "x": 2020,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_tabs_tabscontent",
+      "type": "file",
+      "file": "TabsContent().md",
+      "x": 20,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_tabs_tabslist",
+      "type": "file",
+      "file": "TabsList().md",
+      "x": 220,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_tabs_tabstrigger",
+      "type": "file",
+      "file": "TabsTrigger().md",
+      "x": 420,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_textarea_textarea",
+      "type": "file",
+      "file": "Textarea().md",
+      "x": 620,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_userarticleitem",
+      "type": "file",
+      "file": "UserArticleItem.md",
+      "x": 820,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_usercreatedarticlesresponse",
+      "type": "file",
+      "file": "UserCreatedArticlesResponse.md",
+      "x": 1020,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_usersession",
+      "type": "file",
+      "file": "UserSession.md",
+      "x": 1220,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_icons_codexicons_wikimedialogoicon",
+      "type": "file",
+      "file": "WikimediaLogoIcon().md",
+      "x": 1420,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_icons_codexicons_wikipedialogoicon",
+      "type": "file",
+      "file": "WikipediaLogoIcon().md",
+      "x": 1620,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_contests_code_page",
+      "type": "file",
+      "file": "codepage.tsx.md",
+      "x": 1820,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api",
+      "type": "file",
+      "file": "api.ts.md",
+      "x": 2020,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_page",
+      "type": "file",
+      "file": "apppage.tsx.md",
+      "x": 20,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_badge",
+      "type": "file",
+      "file": "badge.tsx.md",
+      "x": 220,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_badge_badgevariants",
+      "type": "file",
+      "file": "badgeVariants.md",
+      "x": 420,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_button",
+      "type": "file",
+      "file": "button.tsx.md",
+      "x": 620,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_button_buttonvariants",
+      "type": "file",
+      "file": "buttonVariants.md",
+      "x": 820,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_card",
+      "type": "file",
+      "file": "card.tsx.md",
+      "x": 1020,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_class_variance_authority",
+      "type": "file",
+      "file": "class-variance-authority_1.md",
+      "x": 1220,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_cn",
+      "type": "file",
+      "file": "cn_1.md",
+      "x": 1420,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_date_time_picker",
+      "type": "file",
+      "file": "date-time-picker.tsx.md",
+      "x": 1620,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dialog",
+      "type": "file",
+      "file": "dialog.tsx.md",
+      "x": 1820,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_fetcharticlepreview",
+      "type": "file",
+      "file": "fetchArticlePreview().md",
+      "x": 2020,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_fetcharticles",
+      "type": "file",
+      "file": "fetchArticles().md",
+      "x": 20,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_fetchcontest",
+      "type": "file",
+      "file": "fetchContest().md",
+      "x": 220,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_fetchcontests",
+      "type": "file",
+      "file": "fetchContests().md",
+      "x": 420,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_fetchme",
+      "type": "file",
+      "file": "fetchMe().md",
+      "x": 620,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_fetchstandings",
+      "type": "file",
+      "file": "fetchStandings().md",
+      "x": 820,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_fetchusercreatedarticles",
+      "type": "file",
+      "file": "fetchUserCreatedArticles()_1.md",
+      "x": 1020,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_input",
+      "type": "file",
+      "file": "input.tsx.md",
+      "x": 1220,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_logout",
+      "type": "file",
+      "file": "logout().md",
+      "x": 1420,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_lucide_react",
+      "type": "file",
+      "file": "lucide-react_1.md",
+      "x": 1620,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_contests_new_page",
+      "type": "file",
+      "file": "newpage.tsx.md",
+      "x": 1820,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_next",
+      "type": "file",
+      "file": "next_1.md",
+      "x": 2020,
+      "y": 640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_react",
+      "type": "file",
+      "file": "react_1.md",
+      "x": 20,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_contests_code_review_page",
+      "type": "file",
+      "file": "reviewpage.tsx.md",
+      "x": 220,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_reviewarticle",
+      "type": "file",
+      "file": "reviewArticle().md",
+      "x": 420,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_sandbox_page",
+      "type": "file",
+      "file": "sandboxpage.tsx.md",
+      "x": 620,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_sonner",
+      "type": "file",
+      "file": "sonner_1.md",
+      "x": 820,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_contests_code_submit_page",
+      "type": "file",
+      "file": "submitpage.tsx.md",
+      "x": 1020,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_submitarticles",
+      "type": "file",
+      "file": "submitArticles().md",
+      "x": 1220,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_table",
+      "type": "file",
+      "file": "table.tsx.md",
+      "x": 1420,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_tabs",
+      "type": "file",
+      "file": "tabs.tsx.md",
+      "x": 1620,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_tabs_tabslistvariants",
+      "type": "file",
+      "file": "tabsListVariants.md",
+      "x": 1820,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_textarea",
+      "type": "file",
+      "file": "textarea.tsx.md",
+      "x": 2020,
+      "y": 720,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_i18n_i18ncontext_usei18n",
+      "type": "file",
+      "file": "useI18n().md",
+      "x": 20,
+      "y": 800,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_utils",
+      "type": "file",
+      "file": "utils.ts.md",
+      "x": 220,
+      "y": 800,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": "Backend Auth & JWT Session",
+      "x": 2500,
+      "y": 0,
+      "width": 1760,
+      "height": 820,
+      "color": "2"
+    },
+    {
+      "id": "n_handlers_handler_callback",
+      "type": "file",
+      "file": "dot-Callback().md",
+      "x": 2520,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_createcontest",
+      "type": "file",
+      "file": "dot-CreateContest().md",
+      "x": 2720,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_devlogin",
+      "type": "file",
+      "file": "dot-DevLogin().md",
+      "x": 2920,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_getarticlepreview",
+      "type": "file",
+      "file": "dot-GetArticlePreview().md",
+      "x": 3120,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_getcontest",
+      "type": "file",
+      "file": "dot-GetContest().md",
+      "x": 3320,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_getcontestarticles",
+      "type": "file",
+      "file": "dot-GetContestArticles().md",
+      "x": 3520,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_getme",
+      "type": "file",
+      "file": "dot-GetMe().md",
+      "x": 3720,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_getstandings",
+      "type": "file",
+      "file": "dot-GetStandings().md",
+      "x": 3920,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_getusercreatedarticles",
+      "type": "file",
+      "file": "dot-GetUserCreatedArticles().md",
+      "x": 2520,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_health",
+      "type": "file",
+      "file": "dot-Health().md",
+      "x": 2720,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_listcontests",
+      "type": "file",
+      "file": "dot-ListContests().md",
+      "x": 2920,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_login",
+      "type": "file",
+      "file": "dot-Login().md",
+      "x": 3120,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_logout",
+      "type": "file",
+      "file": "dot-Logout().md",
+      "x": 3320,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_reviewarticle",
+      "type": "file",
+      "file": "dot-ReviewArticle().md",
+      "x": 3520,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_submitarticles",
+      "type": "file",
+      "file": "dot-SubmitArticles().md",
+      "x": 3720,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_auth_claims",
+      "type": "file",
+      "file": "Claims.md",
+      "x": 3920,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_auth_auth_clearauthcookie",
+      "type": "file",
+      "file": "ClearAuthCookie().md",
+      "x": 2520,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_config_config_go_config_config",
+      "type": "file",
+      "file": "Config.md",
+      "x": 2720,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_mwclient_mwclient_exchangecodefortoken",
+      "type": "file",
+      "file": "ExchangeCodeForToken().md",
+      "x": 2920,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_mwclient_mwclient_fetchpageinfo",
+      "type": "file",
+      "file": "FetchPageInfo().md",
+      "x": 3120,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_mwclient_mwclient_fetchpagesbatch",
+      "type": "file",
+      "file": "FetchPagesBatch().md",
+      "x": 3320,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_mwclient_mwclient_fetchrenderedhtml",
+      "type": "file",
+      "file": "FetchRenderedHTML().md",
+      "x": 3520,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_mwclient_mwclient_fetchusercreatedarticles",
+      "type": "file",
+      "file": "FetchUserCreatedArticles().md",
+      "x": 3720,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_mwclient_mwclient_fetchuserprofile",
+      "type": "file",
+      "file": "FetchUserProfile().md",
+      "x": 3920,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_auth_auth_generatetoken",
+      "type": "file",
+      "file": "GenerateToken().md",
+      "x": 2520,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_mwclient_mwclient_getauthorizeurl",
+      "type": "file",
+      "file": "GetAuthorizeURL().md",
+      "x": 2720,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_auth_auth_getuser",
+      "type": "file",
+      "file": "GetUser().md",
+      "x": 2920,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_auth_auth_getuserfromrequest",
+      "type": "file",
+      "file": "GetUserFromRequest().md",
+      "x": 3120,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler",
+      "type": "file",
+      "file": "Handler.md",
+      "x": 3320,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_auth_auth_middleware",
+      "type": "file",
+      "file": "Middleware().md",
+      "x": 3520,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mwclient_pageinfo",
+      "type": "file",
+      "file": "PageInfo.md",
+      "x": 3720,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_auth_auth_parsetoken",
+      "type": "file",
+      "file": "ParseToken().md",
+      "x": 3920,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_auth_auth_setauthcookie",
+      "type": "file",
+      "file": "SetAuthCookie().md",
+      "x": 2520,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mwclient_usercreation",
+      "type": "file",
+      "file": "UserCreation.md",
+      "x": 2720,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mwclient_userprofile",
+      "type": "file",
+      "file": "UserProfile.md",
+      "x": 2920,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_auth_auth",
+      "type": "file",
+      "file": "auth.go.md",
+      "x": 3120,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_auth_contextkey",
+      "type": "file",
+      "file": "contextKey.md",
+      "x": 3320,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_errors",
+      "type": "file",
+      "file": "go_pkg_errors.md",
+      "x": 3520,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_feather_backend_internal_wikitext",
+      "type": "file",
+      "file": "go_pkg_feather_backend_internal_wikitext.md",
+      "x": 3720,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_github_com_golang_jwt_jwt_v5",
+      "type": "file",
+      "file": "go_pkg_github_com_golang_jwt_jwt_v5.md",
+      "x": 3920,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_io",
+      "type": "file",
+      "file": "go_pkg_io.md",
+      "x": 2520,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_net_url",
+      "type": "file",
+      "file": "go_pkg_net_url.md",
+      "x": 2720,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_handlers_handlers_jsonerror",
+      "type": "file",
+      "file": "jsonError().md",
+      "x": 2920,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_handlers_handlers_jsonresponse",
+      "type": "file",
+      "file": "jsonResponse().md",
+      "x": 3120,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_jwt_registeredclaims",
+      "type": "file",
+      "file": "jwt.RegisteredClaims.md",
+      "x": 3320,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mwclient_mwqueryresponse",
+      "type": "file",
+      "file": "mwQueryResponse.md",
+      "x": 3520,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_mwclient_mwclient",
+      "type": "file",
+      "file": "mwclient.go.md",
+      "x": 3720,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_type_net_http_handler",
+      "type": "file",
+      "file": "nethttp.Handler.md",
+      "x": 3920,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_type_net_http_request",
+      "type": "file",
+      "file": "nethttp.Request.md",
+      "x": 2520,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_type_net_http_responsewriter",
+      "type": "file",
+      "file": "nethttp.ResponseWriter.md",
+      "x": 2720,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": "Wikimedia Sister Wikis & API",
+      "x": 4340,
+      "y": 0,
+      "width": 1540,
+      "height": 720,
+      "color": "3"
+    },
+    {
+      "id": "n_frontend_src_lib_wikis_all_wikis",
+      "type": "file",
+      "file": "ALL_WIKIS.md",
+      "x": 4360,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_floating_input_floatinginput",
+      "type": "file",
+      "file": "FloatingInput.md",
+      "x": 4560,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_floating_input_floatinginputprops",
+      "type": "file",
+      "file": "FloatingInputProps.md",
+      "x": 4760,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_floating_input_floatingtextarea",
+      "type": "file",
+      "file": "FloatingTextarea.md",
+      "x": 4960,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_floating_input_floatingtextareaprops",
+      "type": "file",
+      "file": "FloatingTextareaProps.md",
+      "x": 5160,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_api_wikis_route_get",
+      "type": "file",
+      "file": "GET().md",
+      "x": 5360,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_api_wikis_siteinfo_route_get",
+      "type": "file",
+      "file": "GET()_1.md",
+      "x": 5560,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_doc_keyset_pagination",
+      "type": "file",
+      "file": "Keyset Cursor Pagination (O(1) at 50k+ Rows).md",
+      "x": 4360,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_sandbox_page_material3wikifield",
+      "type": "file",
+      "file": "Material3WikiField().md",
+      "x": 4560,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_contests_timezoneselector_popular_timezones",
+      "type": "file",
+      "file": "POPULAR_TIMEZONES.md",
+      "x": 4760,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_wikis_priority_dbnames",
+      "type": "file",
+      "file": "PRIORITY_DBNAMES.md",
+      "x": 4960,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_sandbox_page_sandboxpage",
+      "type": "file",
+      "file": "SandboxPage().md",
+      "x": 5160,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_sandbox_page_standardwikicombobox",
+      "type": "file",
+      "file": "StandardWikiCombobox().md",
+      "x": 5360,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_contests_timezoneselector_timezoneitem",
+      "type": "file",
+      "file": "TimezoneItem.md",
+      "x": 5560,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_contests_timezoneselector_timezoneselector",
+      "type": "file",
+      "file": "TimezoneSelector().md",
+      "x": 4360,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_contests_timezoneselector",
+      "type": "file",
+      "file": "TimezoneSelector.tsx.md",
+      "x": 4560,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_sandbox_page_unifiedwikicombobox",
+      "type": "file",
+      "file": "UnifiedWikiCombobox().md",
+      "x": 4760,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_wikis_wikiinfo",
+      "type": "file",
+      "file": "WikiInfo.md",
+      "x": 4960,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_sandbox_page_wikisearchdropdown",
+      "type": "file",
+      "file": "WikiSearchDropdown().md",
+      "x": 5160,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_contests_wikiselector_wikiselector",
+      "type": "file",
+      "file": "WikiSelector().md",
+      "x": 5360,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_contests_wikiselector",
+      "type": "file",
+      "file": "WikiSelector.tsx.md",
+      "x": 5560,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_contests_wikiselector_wikiselectorprops",
+      "type": "file",
+      "file": "WikiSelectorProps.md",
+      "x": 4360,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_asset_wikimedia_sister_wikis",
+      "type": "file",
+      "file": "Wikimedia Sister Wiki Brand Assets.md",
+      "x": 4560,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_wikis_fetchlivewikimediawikis",
+      "type": "file",
+      "file": "fetchLiveWikimediaWikis().md",
+      "x": 4760,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_api_wikis_route_fetchwikimediadbtimezones",
+      "type": "file",
+      "file": "fetchWikimediaDbTimezones().md",
+      "x": 4960,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_floating_input",
+      "type": "file",
+      "file": "floating-input.tsx.md",
+      "x": 5160,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_wikimedia_wikis",
+      "type": "file",
+      "file": "frontend_src_lib_wikimedia_wikis.md",
+      "x": 5360,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_api_wikis_route_getprojecticonname",
+      "type": "file",
+      "file": "getProjectIconName().md",
+      "x": 5560,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_time_gettimezoneoffsetlabel",
+      "type": "file",
+      "file": "getTimezoneOffsetLabel().md",
+      "x": 4360,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_wikis_getwikiicon",
+      "type": "file",
+      "file": "getWikiIcon().md",
+      "x": 4560,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_wikis_getwikiinfo",
+      "type": "file",
+      "file": "getWikiInfo().md",
+      "x": 4760,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_wikis_parsesyntheticwiki",
+      "type": "file",
+      "file": "parseSyntheticWiki().md",
+      "x": 4960,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_api_wikis_route_revalidate",
+      "type": "file",
+      "file": "revalidate.md",
+      "x": 5160,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_api_wikis_siteinfo_route_revalidate",
+      "type": "file",
+      "file": "revalidate_1.md",
+      "x": 5360,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_api_wikis_siteinfo_route_runtime",
+      "type": "file",
+      "file": "runtime.md",
+      "x": 5560,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_wikis_searchwikis",
+      "type": "file",
+      "file": "searchWikis().md",
+      "x": 4360,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_api_wikis_siteinfo_route",
+      "type": "file",
+      "file": "siteinforoute.ts.md",
+      "x": 4560,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_wikis",
+      "type": "file",
+      "file": "wikis.ts.md",
+      "x": 4760,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_api_wikis_route",
+      "type": "file",
+      "file": "wikisroute.ts.md",
+      "x": 4960,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "label": "Frontend Linting & Tooling",
+      "x": 5960,
+      "y": 0,
+      "width": 1320,
+      "height": 720,
+      "color": "4"
+    },
+    {
+      "id": "n_frontend_package_devdependencies_tailwindcss_turbopack",
+      "type": "file",
+      "file": "@tailwindcssturbopack.md",
+      "x": 5980,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_tailwindcss_turbopack",
+      "type": "file",
+      "file": "@tailwindcssturbopack_1.md",
+      "x": 6180,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_tanstack_react_virtual",
+      "type": "file",
+      "file": "@tanstackreact-virtual_1.md",
+      "x": 6380,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_devdependencies_types_node",
+      "type": "file",
+      "file": "@typesnode.md",
+      "x": 6580,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_types_node",
+      "type": "file",
+      "file": "@typesnode_1.md",
+      "x": 6780,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_devdependencies_types_react",
+      "type": "file",
+      "file": "@typesreact.md",
+      "x": 6980,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_types_react",
+      "type": "file",
+      "file": "@typesreact_1.md",
+      "x": 5980,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_devdependencies_types_react_dom",
+      "type": "file",
+      "file": "@typesreact-dom.md",
+      "x": 6180,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_types_react_dom",
+      "type": "file",
+      "file": "@typesreact-dom_1.md",
+      "x": 6380,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_scripts_build",
+      "type": "file",
+      "file": "build.md",
+      "x": 6580,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_clsx",
+      "type": "file",
+      "file": "clsx_1.md",
+      "x": 6780,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_scripts_dev",
+      "type": "file",
+      "file": "dev.md",
+      "x": 6980,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_devdependencies",
+      "type": "file",
+      "file": "devDependencies.md",
+      "x": 5980,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_devdependencies_eslint",
+      "type": "file",
+      "file": "eslint.md",
+      "x": 6180,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_eslint",
+      "type": "file",
+      "file": "eslint_1.md",
+      "x": 6380,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_devdependencies_eslint_config_next",
+      "type": "file",
+      "file": "eslint-config-next.md",
+      "x": 6580,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_eslint_config_next",
+      "type": "file",
+      "file": "eslint-config-next_1.md",
+      "x": 6780,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_eslint_config",
+      "type": "file",
+      "file": "eslint.config.mjs.md",
+      "x": 6980,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_eslint_config_eslintconfig",
+      "type": "file",
+      "file": "eslintConfig.md",
+      "x": 5980,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_scripts_lint",
+      "type": "file",
+      "file": "lint.md",
+      "x": 6180,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_name",
+      "type": "file",
+      "file": "name.md",
+      "x": 6380,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package",
+      "type": "file",
+      "file": "package.json.md",
+      "x": 6580,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_packagemanager",
+      "type": "file",
+      "file": "packageManager.md",
+      "x": 6780,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_private",
+      "type": "file",
+      "file": "private.md",
+      "x": 6980,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_react_dom",
+      "type": "file",
+      "file": "react-dom_1.md",
+      "x": 5980,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_scripts",
+      "type": "file",
+      "file": "scripts.md",
+      "x": 6180,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_shadcn",
+      "type": "file",
+      "file": "shadcn_1.md",
+      "x": 6380,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_scripts_start",
+      "type": "file",
+      "file": "start.md",
+      "x": 6580,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_tailwind_merge",
+      "type": "file",
+      "file": "tailwind-merge_1.md",
+      "x": 6780,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_devdependencies_tailwindcss",
+      "type": "file",
+      "file": "tailwindcss.md",
+      "x": 6980,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_tailwindcss",
+      "type": "file",
+      "file": "tailwindcss_1.md",
+      "x": 5980,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_tw_animate_css",
+      "type": "file",
+      "file": "tw-animate-css_1.md",
+      "x": 6180,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_devdependencies_typescript",
+      "type": "file",
+      "file": "typescript.md",
+      "x": 6380,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_typescript",
+      "type": "file",
+      "file": "typescript_1.md",
+      "x": 6580,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_version",
+      "type": "file",
+      "file": "version.md",
+      "x": 6780,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g4",
+      "type": "group",
+      "label": "Scarcity-First Jury Balancer",
+      "x": 7360,
+      "y": 0,
+      "width": 1100,
+      "height": 620,
+      "color": "5"
+    },
+    {
+      "id": "n_balancer_minheap_len",
+      "type": "file",
+      "file": "dot-Len().md",
+      "x": 7380,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_balancer_minheap_less",
+      "type": "file",
+      "file": "dot-Less().md",
+      "x": 7580,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_balancer_minheap_pop",
+      "type": "file",
+      "file": "dot-Pop().md",
+      "x": 7780,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_balancer_minheap_push",
+      "type": "file",
+      "file": "dot-Push().md",
+      "x": 7980,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_balancer_minheap_swap",
+      "type": "file",
+      "file": "dot-Swap().md",
+      "x": 8180,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_handler_balancearticles",
+      "type": "file",
+      "file": "dot-balanceArticles().md",
+      "x": 7380,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_balancer_balancer_go_balancer_articleitem",
+      "type": "file",
+      "file": "ArticleItem.md",
+      "x": 7580,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_doc_feather_architecture",
+      "type": "file",
+      "file": "Feather 2.0 Architecture & Guardrails.md",
+      "x": 7780,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_doc_frontend_standards",
+      "type": "file",
+      "file": "Frontend React 19 & Next.js 16 Standards.md",
+      "x": 7980,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_doc_modern_web_guidance",
+      "type": "file",
+      "file": "Google Chrome Modern Web Guidance.md",
+      "x": 8180,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_balancer_balancer_planscarcityfirst",
+      "type": "file",
+      "file": "PlanScarcityFirst().md",
+      "x": 7380,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_doc_ponytail_discipline",
+      "type": "file",
+      "file": "Ponytail Lazy Senior Dev Discipline.md",
+      "x": 7580,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_doc_scarcity_first_jury",
+      "type": "file",
+      "file": "Scarcity-First Jury Load Balancer.md",
+      "x": 7780,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_balancer_balancer_test_testplanscarcityfirstequaldistribution",
+      "type": "file",
+      "file": "TestPlanScarcityFirstEqualDistribution().md",
+      "x": 7980,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_balancer_balancer_test_testplanscarcityfirstpreventsjurystarvation",
+      "type": "file",
+      "file": "TestPlanScarcityFirstPreventsJuryStarvation().md",
+      "x": 8180,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_doc_zero_cgo",
+      "type": "file",
+      "file": "Zero CGO Invariant (modernc.orgsqlite).md",
+      "x": 7380,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_balancer_balancer",
+      "type": "file",
+      "file": "balancer.go.md",
+      "x": 7580,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_balancer_balancer_test",
+      "type": "file",
+      "file": "balancer_test.go.md",
+      "x": 7780,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_container_heap",
+      "type": "file",
+      "file": "go_pkg_container_heap.md",
+      "x": 7980,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_sort",
+      "type": "file",
+      "file": "go_pkg_sort.md",
+      "x": 8180,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_balancer_group",
+      "type": "file",
+      "file": "group.md",
+      "x": 7380,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_balancer_juryload",
+      "type": "file",
+      "file": "juryLoad.md",
+      "x": 7580,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_balancer_minheap",
+      "type": "file",
+      "file": "minHeap.md",
+      "x": 7780,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_type_testing_t",
+      "type": "file",
+      "file": "testing.T.md",
+      "x": 7980,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g5",
+      "type": "group",
+      "label": "shadcn Component Registry",
+      "x": 0,
+      "y": 1200,
+      "width": 1100,
+      "height": 620,
+      "color": "6"
+    },
+    {
+      "id": "n_frontend_components_schema",
+      "type": "file",
+      "file": "$schema.md",
+      "x": 20,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_registries_shadcn",
+      "type": "file",
+      "file": "@shadcn.md",
+      "x": 220,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_aliases",
+      "type": "file",
+      "file": "aliases.md",
+      "x": 420,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_tailwind_basecolor",
+      "type": "file",
+      "file": "baseColor.md",
+      "x": 620,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_aliases_components",
+      "type": "file",
+      "file": "components.md",
+      "x": 820,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components",
+      "type": "file",
+      "file": "components.json.md",
+      "x": 20,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_tailwind_config",
+      "type": "file",
+      "file": "config_1.md",
+      "x": 220,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_tailwind_css",
+      "type": "file",
+      "file": "css.md",
+      "x": 420,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_tailwind_cssvariables",
+      "type": "file",
+      "file": "cssVariables.md",
+      "x": 620,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_aliases_hooks",
+      "type": "file",
+      "file": "hooks.md",
+      "x": 820,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_iconlibrary",
+      "type": "file",
+      "file": "iconLibrary.md",
+      "x": 20,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_aliases_lib",
+      "type": "file",
+      "file": "lib.md",
+      "x": 220,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_menuaccent",
+      "type": "file",
+      "file": "menuAccent.md",
+      "x": 420,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_menucolor",
+      "type": "file",
+      "file": "menuColor.md",
+      "x": 620,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_tailwind_prefix",
+      "type": "file",
+      "file": "prefix.md",
+      "x": 820,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_registries",
+      "type": "file",
+      "file": "registries.md",
+      "x": 20,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_rsc",
+      "type": "file",
+      "file": "rsc.md",
+      "x": 220,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_rtl",
+      "type": "file",
+      "file": "rtl.md",
+      "x": 420,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_style",
+      "type": "file",
+      "file": "style.md",
+      "x": 620,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_tailwind",
+      "type": "file",
+      "file": "tailwind.md",
+      "x": 820,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_tsx",
+      "type": "file",
+      "file": "tsx.md",
+      "x": 20,
+      "y": 1600,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_aliases_ui",
+      "type": "file",
+      "file": "ui.md",
+      "x": 220,
+      "y": 1600,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_components_aliases_utils",
+      "type": "file",
+      "file": "utils.md",
+      "x": 420,
+      "y": 1600,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g6",
+      "type": "group",
+      "label": "Backend HTTP Endpoints & Chi",
+      "x": 2500,
+      "y": 1200,
+      "width": 1100,
+      "height": 620,
+      "color": "1"
+    },
+    {
+      "id": "n_handlers_bulksubmitrequest",
+      "type": "file",
+      "file": "BulkSubmitRequest.md",
+      "x": 2520,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlers_reviewdecisionrequest",
+      "type": "file",
+      "file": "ReviewDecisionRequest.md",
+      "x": 2720,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_handlers_handlers_generatecontestcode",
+      "type": "file",
+      "file": "generateContestCode().md",
+      "x": 2920,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_crypto_rand",
+      "type": "file",
+      "file": "go_pkg_crypto_rand.md",
+      "x": 3120,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_encoding_hex",
+      "type": "file",
+      "file": "go_pkg_encoding_hex.md",
+      "x": 3320,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_encoding_json",
+      "type": "file",
+      "file": "go_pkg_encoding_json.md",
+      "x": 2520,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_feather_backend_internal_auth",
+      "type": "file",
+      "file": "go_pkg_feather_backend_internal_auth.md",
+      "x": 2720,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_feather_backend_internal_balancer",
+      "type": "file",
+      "file": "go_pkg_feather_backend_internal_balancer.md",
+      "x": 2920,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_feather_backend_internal_database",
+      "type": "file",
+      "file": "go_pkg_feather_backend_internal_database.md",
+      "x": 3120,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_feather_backend_internal_handlers",
+      "type": "file",
+      "file": "go_pkg_feather_backend_internal_handlers.md",
+      "x": 3320,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_feather_backend_internal_mwclient",
+      "type": "file",
+      "file": "go_pkg_feather_backend_internal_mwclient.md",
+      "x": 2520,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_feather_backend_internal_worker",
+      "type": "file",
+      "file": "go_pkg_feather_backend_internal_worker.md",
+      "x": 2720,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_github_com_go_chi_chi_v5",
+      "type": "file",
+      "file": "go_pkg_github_com_go_chi_chi_v5.md",
+      "x": 2920,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_github_com_go_chi_chi_v5_middleware",
+      "type": "file",
+      "file": "go_pkg_github_com_go_chi_chi_v5_middleware.md",
+      "x": 3120,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_github_com_go_chi_cors",
+      "type": "file",
+      "file": "go_pkg_github_com_go_chi_cors.md",
+      "x": 3320,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_net_http",
+      "type": "file",
+      "file": "go_pkg_net_http.md",
+      "x": 2520,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_os_signal",
+      "type": "file",
+      "file": "go_pkg_os_signal.md",
+      "x": 2720,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_strconv",
+      "type": "file",
+      "file": "go_pkg_strconv.md",
+      "x": 2920,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_syscall",
+      "type": "file",
+      "file": "go_pkg_syscall.md",
+      "x": 3120,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_handlers_handlers",
+      "type": "file",
+      "file": "handlers.go.md",
+      "x": 3320,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_server_main",
+      "type": "file",
+      "file": "servermain.go.md",
+      "x": 2520,
+      "y": 1600,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g7",
+      "type": "group",
+      "label": "Codex Icons & Translatewiki i18n",
+      "x": 4340,
+      "y": 1200,
+      "width": 1100,
+      "height": 620,
+      "color": "2"
+    },
+    {
+      "id": "n_frontend_src_components_icons_codexicons_codexlanguageicon",
+      "type": "file",
+      "file": "CodexLanguageIcon().md",
+      "x": 4360,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenu",
+      "type": "file",
+      "file": "DropdownMenu().md",
+      "x": 4560,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenucheckboxitem",
+      "type": "file",
+      "file": "DropdownMenuCheckboxItem().md",
+      "x": 4760,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenucontent",
+      "type": "file",
+      "file": "DropdownMenuContent().md",
+      "x": 4960,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenugroup",
+      "type": "file",
+      "file": "DropdownMenuGroup().md",
+      "x": 5160,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenuitem",
+      "type": "file",
+      "file": "DropdownMenuItem().md",
+      "x": 4360,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenulabel",
+      "type": "file",
+      "file": "DropdownMenuLabel().md",
+      "x": 4560,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenuportal",
+      "type": "file",
+      "file": "DropdownMenuPortal().md",
+      "x": 4760,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenuradiogroup",
+      "type": "file",
+      "file": "DropdownMenuRadioGroup().md",
+      "x": 4960,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenuradioitem",
+      "type": "file",
+      "file": "DropdownMenuRadioItem().md",
+      "x": 5160,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenuseparator",
+      "type": "file",
+      "file": "DropdownMenuSeparator().md",
+      "x": 4360,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenushortcut",
+      "type": "file",
+      "file": "DropdownMenuShortcut().md",
+      "x": 4560,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenusub",
+      "type": "file",
+      "file": "DropdownMenuSub().md",
+      "x": 4760,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenusubcontent",
+      "type": "file",
+      "file": "DropdownMenuSubContent().md",
+      "x": 4960,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenusubtrigger",
+      "type": "file",
+      "file": "DropdownMenuSubTrigger().md",
+      "x": 5160,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu_dropdownmenutrigger",
+      "type": "file",
+      "file": "DropdownMenuTrigger().md",
+      "x": 4360,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_layout_languageswitcher_languages",
+      "type": "file",
+      "file": "LANGUAGES.md",
+      "x": 4560,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_layout_languageswitcher_languageoption",
+      "type": "file",
+      "file": "LanguageOption.md",
+      "x": 4760,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_layout_languageswitcher",
+      "type": "file",
+      "file": "LanguageSwitcher.tsx.md",
+      "x": 4960,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_i18n_i18ncontext_locale",
+      "type": "file",
+      "file": "Locale.md",
+      "x": 5160,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_dropdown_menu",
+      "type": "file",
+      "file": "dropdown-menu.tsx.md",
+      "x": 4360,
+      "y": 1600,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g8",
+      "type": "group",
+      "label": "TypeScript Compiler Options",
+      "x": 5960,
+      "y": 1200,
+      "width": 1100,
+      "height": 520,
+      "color": "3"
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_allowjs",
+      "type": "file",
+      "file": "allowJs.md",
+      "x": 5980,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions",
+      "type": "file",
+      "file": "compilerOptions.md",
+      "x": 6180,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_esmoduleinterop",
+      "type": "file",
+      "file": "esModuleInterop.md",
+      "x": 6380,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_exclude",
+      "type": "file",
+      "file": "exclude.md",
+      "x": 6580,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_include",
+      "type": "file",
+      "file": "include.md",
+      "x": 6780,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_incremental",
+      "type": "file",
+      "file": "incremental.md",
+      "x": 5980,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_isolatedmodules",
+      "type": "file",
+      "file": "isolatedModules.md",
+      "x": 6180,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_jsx",
+      "type": "file",
+      "file": "jsx.md",
+      "x": 6380,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_lib",
+      "type": "file",
+      "file": "lib_1.md",
+      "x": 6580,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_module",
+      "type": "file",
+      "file": "module.md",
+      "x": 6780,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_moduleresolution",
+      "type": "file",
+      "file": "moduleResolution.md",
+      "x": 5980,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_noemit",
+      "type": "file",
+      "file": "noEmit.md",
+      "x": 6180,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_paths",
+      "type": "file",
+      "file": "paths.md",
+      "x": 6380,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_plugins",
+      "type": "file",
+      "file": "plugins.md",
+      "x": 6580,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_resolvejsonmodule",
+      "type": "file",
+      "file": "resolveJsonModule.md",
+      "x": 6780,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_skiplibcheck",
+      "type": "file",
+      "file": "skipLibCheck.md",
+      "x": 5980,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_strict",
+      "type": "file",
+      "file": "strict.md",
+      "x": 6180,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig_compileroptions_target",
+      "type": "file",
+      "file": "target.md",
+      "x": 6380,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_tsconfig",
+      "type": "file",
+      "file": "tsconfig.json.md",
+      "x": 6580,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g9",
+      "type": "group",
+      "label": "Next.js Root Layout & Fonts",
+      "x": 7360,
+      "y": 1200,
+      "width": 1100,
+      "height": 520,
+      "color": "4"
+    },
+    {
+      "id": "n_frontend_src_i18n_i18ncontext_i18ncontext",
+      "type": "file",
+      "file": "I18nContext.md",
+      "x": 7380,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_i18n_i18ncontext",
+      "type": "file",
+      "file": "I18nContext.tsx.md",
+      "x": 7580,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_i18n_i18ncontext_i18ncontexttype",
+      "type": "file",
+      "file": "I18nContextType.md",
+      "x": 7780,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_i18n_i18ncontext_i18nprovider",
+      "type": "file",
+      "file": "I18nProvider().md",
+      "x": 7980,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_providers_providers",
+      "type": "file",
+      "file": "Providers().md",
+      "x": 8180,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_layout_rootlayout",
+      "type": "file",
+      "file": "RootLayout().md",
+      "x": 7380,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sonner_toaster",
+      "type": "file",
+      "file": "Toaster().md",
+      "x": 7580,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_globals",
+      "type": "file",
+      "file": "frontend_src_app_globals.md",
+      "x": 7780,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_i18n_bn",
+      "type": "file",
+      "file": "frontend_src_i18n_bn.md",
+      "x": 7980,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_i18n_en",
+      "type": "file",
+      "file": "frontend_src_i18n_en.md",
+      "x": 8180,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_layout_geistmono",
+      "type": "file",
+      "file": "geistMono.md",
+      "x": 7380,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_layout_geistsans",
+      "type": "file",
+      "file": "geistSans.md",
+      "x": 7580,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_layout",
+      "type": "file",
+      "file": "layout.tsx.md",
+      "x": 7780,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_i18n_i18ncontext_messages",
+      "type": "file",
+      "file": "messages.md",
+      "x": 7980,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_layout_metadata",
+      "type": "file",
+      "file": "metadata.md",
+      "x": 8180,
+      "y": 1440,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_ref_next_themes",
+      "type": "file",
+      "file": "next-themes_1.md",
+      "x": 7380,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_app_providers",
+      "type": "file",
+      "file": "providers.tsx.md",
+      "x": 7580,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sonner",
+      "type": "file",
+      "file": "sonner.tsx.md",
+      "x": 7780,
+      "y": 1520,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g10",
+      "type": "group",
+      "label": "Frontend Runtime Dependencies",
+      "x": 0,
+      "y": 1900,
+      "width": 880,
+      "height": 520,
+      "color": "5"
+    },
+    {
+      "id": "n_frontend_package_dependencies_base_ui_react",
+      "type": "file",
+      "file": "@base-uireact.md",
+      "x": 20,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_tanstack_react_query",
+      "type": "file",
+      "file": "@tanstackreact-query.md",
+      "x": 220,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_tanstack_react_virtual",
+      "type": "file",
+      "file": "@tanstackreact-virtual.md",
+      "x": 420,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_class_variance_authority",
+      "type": "file",
+      "file": "class-variance-authority.md",
+      "x": 620,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_clsx",
+      "type": "file",
+      "file": "clsx.md",
+      "x": 20,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_cn",
+      "type": "file",
+      "file": "cn.md",
+      "x": 220,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies",
+      "type": "file",
+      "file": "dependencies.md",
+      "x": 420,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_lucide_react",
+      "type": "file",
+      "file": "lucide-react.md",
+      "x": 620,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_next",
+      "type": "file",
+      "file": "next.md",
+      "x": 20,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_next_themes",
+      "type": "file",
+      "file": "next-themes.md",
+      "x": 220,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_react",
+      "type": "file",
+      "file": "react.md",
+      "x": 420,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_react_dom",
+      "type": "file",
+      "file": "react-dom.md",
+      "x": 620,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_shadcn",
+      "type": "file",
+      "file": "shadcn.md",
+      "x": 20,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_sonner",
+      "type": "file",
+      "file": "sonner.md",
+      "x": 220,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_tailwind_merge",
+      "type": "file",
+      "file": "tailwind-merge.md",
+      "x": 420,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_package_dependencies_tw_animate_css",
+      "type": "file",
+      "file": "tw-animate-css.md",
+      "x": 620,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g11",
+      "type": "group",
+      "label": "Benchmark & Performance Suite",
+      "x": 2500,
+      "y": 1900,
+      "width": 880,
+      "height": 520,
+      "color": "6"
+    },
+    {
+      "id": "n_backend_internal_database_db_connect",
+      "type": "file",
+      "file": "Connect().md",
+      "x": 2520,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_database_db_go_database_db",
+      "type": "file",
+      "file": "DB.md",
+      "x": 2720,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main",
+      "type": "file",
+      "file": "benchmarkmain.go.md",
+      "x": 2920,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main_benchmarkfilteredqueries",
+      "type": "file",
+      "file": "benchmarkFilteredQueries().md",
+      "x": 3120,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main_benchmarkjurybalancer",
+      "type": "file",
+      "file": "benchmarkJuryBalancer().md",
+      "x": 2520,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main_benchmarkkeysetpagination",
+      "type": "file",
+      "file": "benchmarkKeysetPagination().md",
+      "x": 2720,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main_benchmarkkeysetvsoffset",
+      "type": "file",
+      "file": "benchmarkKeysetVsOffset().md",
+      "x": 2920,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main_benchmarkstandingsaggregation",
+      "type": "file",
+      "file": "benchmarkStandingsAggregation().md",
+      "x": 3120,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_type_database_sql_db",
+      "type": "file",
+      "file": "databasesql.DB.md",
+      "x": 2520,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main_ensuretestusers",
+      "type": "file",
+      "file": "ensureTestUsers().md",
+      "x": 2720,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main_explainqueryplans",
+      "type": "file",
+      "file": "explainQueryPlans().md",
+      "x": 2920,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main_getorcreatebenchmarkcontest",
+      "type": "file",
+      "file": "getOrCreateBenchmarkContest().md",
+      "x": 3120,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_math_rand",
+      "type": "file",
+      "file": "go_pkg_math_rand.md",
+      "x": 2520,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main_insertbenchmarkarticles",
+      "type": "file",
+      "file": "insertBenchmarkArticles().md",
+      "x": 2720,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_benchmark_main_main",
+      "type": "file",
+      "file": "main().md",
+      "x": 2920,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g12",
+      "type": "group",
+      "label": "Throttled Talk Queue Worker",
+      "x": 4340,
+      "y": 1900,
+      "width": 880,
+      "height": 520,
+      "color": "1"
+    },
+    {
+      "id": "n_worker_talkqueueworker_enqueue",
+      "type": "file",
+      "file": "dot-Enqueue().md",
+      "x": 4360,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_worker_talkqueueworker_start",
+      "type": "file",
+      "file": "dot-Start().md",
+      "x": 4560,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_worker_talkqueueworker_processjob",
+      "type": "file",
+      "file": "dot-processJob().md",
+      "x": 4760,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_worker_worker_newtalkqueueworker",
+      "type": "file",
+      "file": "NewTalkQueueWorker().md",
+      "x": 4960,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_models_models_go_models_talkpagejob",
+      "type": "file",
+      "file": "TalkPageJob.md",
+      "x": 4360,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_worker_worker_go_worker_talkqueueworker",
+      "type": "file",
+      "file": "TalkQueueWorker.md",
+      "x": 4560,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_doc_wikimedia_compliance",
+      "type": "file",
+      "file": "Wikimedia Compliance & Throttled Bot Queue.md",
+      "x": 4760,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_type_context_context",
+      "type": "file",
+      "file": "context.Context.md",
+      "x": 4960,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_context",
+      "type": "file",
+      "file": "go_pkg_context.md",
+      "x": 4360,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_feather_backend_internal_models",
+      "type": "file",
+      "file": "go_pkg_feather_backend_internal_models.md",
+      "x": 4560,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_log",
+      "type": "file",
+      "file": "go_pkg_log.md",
+      "x": 4760,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_sync",
+      "type": "file",
+      "file": "go_pkg_sync.md",
+      "x": 4960,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_type_sync_mutex",
+      "type": "file",
+      "file": "sync.Mutex.md",
+      "x": 4360,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_worker_worker",
+      "type": "file",
+      "file": "worker.go.md",
+      "x": 4560,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g13",
+      "type": "group",
+      "label": "Wikitext & Unicode Word Count",
+      "x": 5960,
+      "y": 1900,
+      "width": 880,
+      "height": 520,
+      "color": "2"
+    },
+    {
+      "id": "n_backend_internal_wikitext_wikitext_cleanwikitext",
+      "type": "file",
+      "file": "CleanWikitext().md",
+      "x": 5980,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_wikitext_wikitext_countplaintextwords",
+      "type": "file",
+      "file": "CountPlaintextWords().md",
+      "x": 6180,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_wikitext_wikitext_countrefs",
+      "type": "file",
+      "file": "CountRefs().md",
+      "x": 6380,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_wikitext_wikitext_countwords",
+      "type": "file",
+      "file": "CountWords().md",
+      "x": 6580,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_wikitext_wikitext_haswordtoken",
+      "type": "file",
+      "file": "HasWordToken().md",
+      "x": 5980,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_wikitext_wikitext_isscriptiocontinua",
+      "type": "file",
+      "file": "IsScriptioContinua().md",
+      "x": 6180,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_wikitext_wikitext_striptemplates",
+      "type": "file",
+      "file": "StripTemplates().md",
+      "x": 6380,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_wikitext_wikitext_test_testwikitextcleaningandcounting",
+      "type": "file",
+      "file": "TestWikitextCleaningAndCounting().md",
+      "x": 6580,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_regexp",
+      "type": "file",
+      "file": "go_pkg_regexp.md",
+      "x": 5980,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_strings",
+      "type": "file",
+      "file": "go_pkg_strings.md",
+      "x": 6180,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_testing",
+      "type": "file",
+      "file": "go_pkg_testing.md",
+      "x": 6380,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_unicode",
+      "type": "file",
+      "file": "go_pkg_unicode.md",
+      "x": 6580,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_wikitext_wikitext",
+      "type": "file",
+      "file": "wikitext.go.md",
+      "x": 5980,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_wikitext_wikitext_test",
+      "type": "file",
+      "file": "wikitext_test.go.md",
+      "x": 6180,
+      "y": 2220,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g14",
+      "type": "group",
+      "label": "Keyset Models & DTOs",
+      "x": 7360,
+      "y": 1900,
+      "width": 880,
+      "height": 420,
+      "color": "3"
+    },
+    {
+      "id": "n_database_db_getarticleskeyset",
+      "type": "file",
+      "file": "dot-GetArticlesKeyset().md",
+      "x": 7380,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_models_article",
+      "type": "file",
+      "file": "Article.md",
+      "x": 7580,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_models_contest",
+      "type": "file",
+      "file": "Contest.md",
+      "x": 7780,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_models_createcontestrequest",
+      "type": "file",
+      "file": "CreateContestRequest.md",
+      "x": 7980,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_models_models_go_models_keysetpaginationresult",
+      "type": "file",
+      "file": "KeysetPaginationResult.md",
+      "x": 7380,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_models_review",
+      "type": "file",
+      "file": "Review.md",
+      "x": 7580,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_models_standingentry",
+      "type": "file",
+      "file": "StandingEntry.md",
+      "x": 7780,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_models_models_go_models_user",
+      "type": "file",
+      "file": "User.md",
+      "x": 7980,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_time",
+      "type": "file",
+      "file": "go_pkg_time.md",
+      "x": 7380,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_models_models",
+      "type": "file",
+      "file": "models.go.md",
+      "x": 7580,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_handlers_handlers_parseflexibledate",
+      "type": "file",
+      "file": "parseFlexibleDate().md",
+      "x": 7780,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_type_time_time",
+      "type": "file",
+      "file": "time.Time.md",
+      "x": 7980,
+      "y": 2140,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g15",
+      "type": "group",
+      "label": "Sheet & Drawer Navigation",
+      "x": 0,
+      "y": 2500,
+      "width": 880,
+      "height": 420,
+      "color": "4"
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet_sheet",
+      "type": "file",
+      "file": "Sheet().md",
+      "x": 20,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet_sheetclose",
+      "type": "file",
+      "file": "SheetClose().md",
+      "x": 220,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet_sheetcontent",
+      "type": "file",
+      "file": "SheetContent().md",
+      "x": 420,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet_sheetdescription",
+      "type": "file",
+      "file": "SheetDescription().md",
+      "x": 620,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet_sheetfooter",
+      "type": "file",
+      "file": "SheetFooter().md",
+      "x": 20,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet_sheetheader",
+      "type": "file",
+      "file": "SheetHeader().md",
+      "x": 220,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet_sheetoverlay",
+      "type": "file",
+      "file": "SheetOverlay().md",
+      "x": 420,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet_sheetportal",
+      "type": "file",
+      "file": "SheetPortal().md",
+      "x": 620,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet_sheettitle",
+      "type": "file",
+      "file": "SheetTitle().md",
+      "x": 20,
+      "y": 2740,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet_sheettrigger",
+      "type": "file",
+      "file": "SheetTrigger().md",
+      "x": 220,
+      "y": 2740,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_components_ui_sheet",
+      "type": "file",
+      "file": "sheet.tsx.md",
+      "x": 420,
+      "y": 2740,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g16",
+      "type": "group",
+      "label": "Zero-CGO SQLite WAL Database",
+      "x": 2500,
+      "y": 2500,
+      "width": 660,
+      "height": 420,
+      "color": "5"
+    },
+    {
+      "id": "n_backend_internal_database_db",
+      "type": "file",
+      "file": "db.go.md",
+      "x": 2520,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_database_sql",
+      "type": "file",
+      "file": "go_pkg_database_sql.md",
+      "x": 2720,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_embed",
+      "type": "file",
+      "file": "go_pkg_embed.md",
+      "x": 2920,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_feather_backend_internal_config",
+      "type": "file",
+      "file": "go_pkg_feather_backend_internal_config.md",
+      "x": 2520,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_fmt",
+      "type": "file",
+      "file": "go_pkg_fmt.md",
+      "x": 2720,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_github_com_go_sql_driver_mysql",
+      "type": "file",
+      "file": "go_pkg_github_com_go_sql_driver_mysql.md",
+      "x": 2920,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_modernc_org_sqlite",
+      "type": "file",
+      "file": "go_pkg_modernc_org_sqlite.md",
+      "x": 2520,
+      "y": 2740,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_path_filepath",
+      "type": "file",
+      "file": "go_pkg_path_filepath.md",
+      "x": 2720,
+      "y": 2740,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g17",
+      "type": "group",
+      "label": "Server Entrypoint & Seeder",
+      "x": 4340,
+      "y": 2500,
+      "width": 660,
+      "height": 420,
+      "color": "6"
+    },
+    {
+      "id": "n_backend_internal_config_config_load",
+      "type": "file",
+      "file": "Load().md",
+      "x": 4360,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_handlers_handlers_new",
+      "type": "file",
+      "file": "New().md",
+      "x": 4560,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_internal_config_config",
+      "type": "file",
+      "file": "config.go.md",
+      "x": 4760,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_github_com_joho_godotenv",
+      "type": "file",
+      "file": "go_pkg_github_com_joho_godotenv.md",
+      "x": 4360,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_go_pkg_os",
+      "type": "file",
+      "file": "go_pkg_os.md",
+      "x": 4560,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_server_main_main",
+      "type": "file",
+      "file": "main()_1.md",
+      "x": 4760,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_backend_cmd_server_main_seedcontest",
+      "type": "file",
+      "file": "seedContest().md",
+      "x": 4360,
+      "y": 2740,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g18",
+      "type": "group",
+      "label": "Contest Creation Wizard & Time",
+      "x": 5960,
+      "y": 2500,
+      "width": 660,
+      "height": 420,
+      "color": "1"
+    },
+    {
+      "id": "n_frontend_src_app_contests_new_page_newcontestpage",
+      "type": "file",
+      "file": "NewContestPage().md",
+      "x": 5980,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_time_calculateendofday",
+      "type": "file",
+      "file": "calculateEndOfDay().md",
+      "x": 6180,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_api_createcontest",
+      "type": "file",
+      "file": "createContest().md",
+      "x": 6380,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_time_fetchwikisiteinfo",
+      "type": "file",
+      "file": "fetchWikiSiteinfo().md",
+      "x": 5980,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_time_getbeginningofday",
+      "type": "file",
+      "file": "getBeginningOfDay().md",
+      "x": 6180,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_time_gettodaydatestring",
+      "type": "file",
+      "file": "getTodayDateString().md",
+      "x": 6380,
+      "y": 2660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_src_lib_time",
+      "type": "file",
+      "file": "time.ts.md",
+      "x": 5980,
+      "y": 2740,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g19",
+      "type": "group",
+      "label": "Next.js Configuration",
+      "x": 7360,
+      "y": 2500,
+      "width": 600,
+      "height": 400,
+      "color": "2"
+    },
+    {
+      "id": "n_frontend_next_config",
+      "type": "file",
+      "file": "next.config.ts.md",
+      "x": 7380,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frontend_next_config_nextconfig",
+      "type": "file",
+      "file": "nextConfig.md",
+      "x": 7580,
+      "y": 2580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g20",
+      "type": "group",
+      "label": "Backend Module Definition",
+      "x": 0,
+      "y": 3000,
+      "width": 600,
+      "height": 400,
+      "color": "3"
+    },
+    {
+      "id": "n_pkg_feather_backend",
+      "type": "file",
+      "file": "feather-backend.md",
+      "x": 20,
+      "y": 3080,
+      "width": 180,
+      "height": 60
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_backend_cmd_benchmark_main_backend_cmd_benchmark_main_benchmarkfilteredqueries",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_backend_cmd_benchmark_main_benchmarkfilteredqueries",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_backend_cmd_benchmark_main_benchmarkjurybalancer",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_backend_cmd_benchmark_main_benchmarkjurybalancer",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_backend_cmd_benchmark_main_benchmarkkeysetpagination",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_backend_cmd_benchmark_main_benchmarkkeysetpagination",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_backend_cmd_benchmark_main_benchmarkkeysetvsoffset",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_backend_cmd_benchmark_main_benchmarkkeysetvsoffset",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_backend_cmd_benchmark_main_benchmarkstandingsaggregation",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_backend_cmd_benchmark_main_benchmarkstandingsaggregation",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_backend_cmd_benchmark_main_ensuretestusers",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_backend_cmd_benchmark_main_ensuretestusers",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_backend_cmd_benchmark_main_explainqueryplans",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_backend_cmd_benchmark_main_explainqueryplans",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_backend_cmd_benchmark_main_getorcreatebenchmarkcontest",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_backend_cmd_benchmark_main_getorcreatebenchmarkcontest",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_backend_cmd_benchmark_main_insertbenchmarkarticles",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_backend_cmd_benchmark_main_insertbenchmarkarticles",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_backend_cmd_benchmark_main_main",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_backend_cmd_benchmark_main_main",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_go_pkg_feather_backend_internal_balancer",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_go_pkg_feather_backend_internal_balancer",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_go_pkg_feather_backend_internal_config",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_go_pkg_feather_backend_internal_config",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_go_pkg_feather_backend_internal_database",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_go_pkg_feather_backend_internal_database",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_go_pkg_fmt",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_go_pkg_fmt",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_go_pkg_log",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_go_pkg_log",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_go_pkg_math_rand",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_go_pkg_math_rand",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_go_pkg_sort",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_go_pkg_sort",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_go_pkg_time",
+      "fromNode": "n_backend_cmd_benchmark_main",
+      "toNode": "n_go_pkg_time",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_cmd_benchmark_main_benchmarkfilteredqueries",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_cmd_benchmark_main_benchmarkfilteredqueries",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_cmd_benchmark_main_benchmarkjurybalancer",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_cmd_benchmark_main_benchmarkjurybalancer",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_cmd_benchmark_main_benchmarkkeysetpagination",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_cmd_benchmark_main_benchmarkkeysetpagination",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_cmd_benchmark_main_benchmarkkeysetvsoffset",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_cmd_benchmark_main_benchmarkkeysetvsoffset",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_cmd_benchmark_main_benchmarkstandingsaggregation",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_cmd_benchmark_main_benchmarkstandingsaggregation",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_cmd_benchmark_main_ensuretestusers",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_cmd_benchmark_main_ensuretestusers",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_cmd_benchmark_main_explainqueryplans",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_cmd_benchmark_main_explainqueryplans",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_cmd_benchmark_main_getorcreatebenchmarkcontest",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_cmd_benchmark_main_getorcreatebenchmarkcontest",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_cmd_benchmark_main_insertbenchmarkarticles",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_cmd_benchmark_main_insertbenchmarkarticles",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_internal_config_config_load",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_internal_config_config_load",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_main_backend_internal_database_db_connect",
+      "fromNode": "n_backend_cmd_benchmark_main_main",
+      "toNode": "n_backend_internal_database_db_connect",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_getorcreatebenchmarkcontest_backend_internal_database_db_go_database_db",
+      "fromNode": "n_backend_cmd_benchmark_main_getorcreatebenchmarkcontest",
+      "toNode": "n_backend_internal_database_db_go_database_db",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_ensuretestusers_backend_internal_database_db_go_database_db",
+      "fromNode": "n_backend_cmd_benchmark_main_ensuretestusers",
+      "toNode": "n_backend_internal_database_db_go_database_db",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_insertbenchmarkarticles_backend_internal_database_db_go_database_db",
+      "fromNode": "n_backend_cmd_benchmark_main_insertbenchmarkarticles",
+      "toNode": "n_backend_internal_database_db_go_database_db",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_explainqueryplans_backend_internal_database_db_go_database_db",
+      "fromNode": "n_backend_cmd_benchmark_main_explainqueryplans",
+      "toNode": "n_backend_internal_database_db_go_database_db",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_benchmarkkeysetpagination_backend_internal_database_db_go_database_db",
+      "fromNode": "n_backend_cmd_benchmark_main_benchmarkkeysetpagination",
+      "toNode": "n_backend_internal_database_db_go_database_db",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_benchmarkkeysetvsoffset_backend_internal_database_db_go_database_db",
+      "fromNode": "n_backend_cmd_benchmark_main_benchmarkkeysetvsoffset",
+      "toNode": "n_backend_internal_database_db_go_database_db",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_benchmarkfilteredqueries_backend_internal_database_db_go_database_db",
+      "fromNode": "n_backend_cmd_benchmark_main_benchmarkfilteredqueries",
+      "toNode": "n_backend_internal_database_db_go_database_db",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_benchmarkstandingsaggregation_backend_internal_database_db_go_database_db",
+      "fromNode": "n_backend_cmd_benchmark_main_benchmarkstandingsaggregation",
+      "toNode": "n_backend_internal_database_db_go_database_db",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_benchmarkjurybalancer_backend_internal_balancer_balancer_planscarcityfirst",
+      "fromNode": "n_backend_cmd_benchmark_main_benchmarkjurybalancer",
+      "toNode": "n_backend_internal_balancer_balancer_planscarcityfirst",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_benchmark_main_benchmarkjurybalancer_doc_scarcity_first_jury",
+      "fromNode": "n_backend_cmd_benchmark_main_benchmarkjurybalancer",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_backend_cmd_server_main_main",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_backend_cmd_server_main_main",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_backend_cmd_server_main_seedcontest",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_backend_cmd_server_main_seedcontest",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_context",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_context",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_feather_backend_internal_auth",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_feather_backend_internal_auth",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_feather_backend_internal_config",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_feather_backend_internal_config",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_feather_backend_internal_database",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_feather_backend_internal_database",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_feather_backend_internal_handlers",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_feather_backend_internal_handlers",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_feather_backend_internal_worker",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_feather_backend_internal_worker",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_fmt",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_fmt",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_github_com_go_chi_chi_v5",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_github_com_go_chi_chi_v5",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_github_com_go_chi_chi_v5_middleware",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_github_com_go_chi_chi_v5_middleware",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_github_com_go_chi_cors",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_github_com_go_chi_cors",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_log",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_log",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_net_http",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_net_http",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_os",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_os",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_os_signal",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_os_signal",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_syscall",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_syscall",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_go_pkg_time",
+      "fromNode": "n_backend_cmd_server_main",
+      "toNode": "n_go_pkg_time",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_main_backend_cmd_server_main_seedcontest",
+      "fromNode": "n_backend_cmd_server_main_main",
+      "toNode": "n_backend_cmd_server_main_seedcontest",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_main_backend_internal_auth_auth_middleware",
+      "fromNode": "n_backend_cmd_server_main_main",
+      "toNode": "n_backend_internal_auth_auth_middleware",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_main_backend_internal_config_config_load",
+      "fromNode": "n_backend_cmd_server_main_main",
+      "toNode": "n_backend_internal_config_config_load",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_main_backend_internal_database_db_connect",
+      "fromNode": "n_backend_cmd_server_main_main",
+      "toNode": "n_backend_internal_database_db_connect",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_main_backend_internal_handlers_handlers_new",
+      "fromNode": "n_backend_cmd_server_main_main",
+      "toNode": "n_backend_internal_handlers_handlers_new",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_main_backend_internal_worker_worker_newtalkqueueworker",
+      "fromNode": "n_backend_cmd_server_main_main",
+      "toNode": "n_backend_internal_worker_worker_newtalkqueueworker",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_cmd_server_main_seedcontest_backend_internal_database_db_go_database_db",
+      "fromNode": "n_backend_cmd_server_main_seedcontest",
+      "toNode": "n_backend_internal_database_db_go_database_db",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_auth_claims",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_auth_claims",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_auth_contextkey",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_auth_contextkey",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_backend_internal_auth_auth_clearauthcookie",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_backend_internal_auth_auth_clearauthcookie",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_backend_internal_auth_auth_generatetoken",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_backend_internal_auth_auth_generatetoken",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_backend_internal_auth_auth_getuser",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_backend_internal_auth_auth_getuser",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_backend_internal_auth_auth_getuserfromrequest",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_backend_internal_auth_auth_getuserfromrequest",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_backend_internal_auth_auth_middleware",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_backend_internal_auth_auth_middleware",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_backend_internal_auth_auth_parsetoken",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_backend_internal_auth_auth_parsetoken",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_backend_internal_auth_auth_setauthcookie",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_backend_internal_auth_auth_setauthcookie",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_go_pkg_context",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_go_pkg_context",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_go_pkg_errors",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_go_pkg_errors",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_go_pkg_feather_backend_internal_config",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_go_pkg_feather_backend_internal_config",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_go_pkg_feather_backend_internal_models",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_go_pkg_feather_backend_internal_models",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_go_pkg_github_com_golang_jwt_jwt_v5",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_go_pkg_github_com_golang_jwt_jwt_v5",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_go_pkg_net_http",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_go_pkg_net_http",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_go_pkg_time",
+      "fromNode": "n_backend_internal_auth_auth",
+      "toNode": "n_go_pkg_time",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_auth_claims_jwt_registeredclaims",
+      "fromNode": "n_auth_claims",
+      "toNode": "n_jwt_registeredclaims",
+      "label": "embeds [EXTRACTED]"
+    },
+    {
+      "id": "e_auth_claims_backend_internal_auth_auth_getuser",
+      "fromNode": "n_auth_claims",
+      "toNode": "n_backend_internal_auth_auth_getuser",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_auth_claims_backend_internal_auth_auth_getuserfromrequest",
+      "fromNode": "n_auth_claims",
+      "toNode": "n_backend_internal_auth_auth_getuserfromrequest",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_auth_claims_backend_internal_auth_auth_parsetoken",
+      "fromNode": "n_auth_claims",
+      "toNode": "n_backend_internal_auth_auth_parsetoken",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_generatetoken_backend_internal_config_config_go_config_config",
+      "fromNode": "n_backend_internal_auth_auth_generatetoken",
+      "toNode": "n_backend_internal_config_config_go_config_config",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_generatetoken_backend_internal_models_models_go_models_user",
+      "fromNode": "n_backend_internal_auth_auth_generatetoken",
+      "toNode": "n_backend_internal_models_models_go_models_user",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_generatetoken_handlers_handler_callback",
+      "fromNode": "n_backend_internal_auth_auth_generatetoken",
+      "toNode": "n_handlers_handler_callback",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_generatetoken_handlers_handler_devlogin",
+      "fromNode": "n_backend_internal_auth_auth_generatetoken",
+      "toNode": "n_handlers_handler_devlogin",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_parsetoken_backend_internal_auth_auth_getuserfromrequest",
+      "fromNode": "n_backend_internal_auth_auth_parsetoken",
+      "toNode": "n_backend_internal_auth_auth_getuserfromrequest",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_parsetoken_backend_internal_config_config_go_config_config",
+      "fromNode": "n_backend_internal_auth_auth_parsetoken",
+      "toNode": "n_backend_internal_config_config_go_config_config",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_setauthcookie_go_type_net_http_responsewriter",
+      "fromNode": "n_backend_internal_auth_auth_setauthcookie",
+      "toNode": "n_go_type_net_http_responsewriter",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_setauthcookie_handlers_handler_callback",
+      "fromNode": "n_backend_internal_auth_auth_setauthcookie",
+      "toNode": "n_handlers_handler_callback",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_clearauthcookie_go_type_net_http_responsewriter",
+      "fromNode": "n_backend_internal_auth_auth_clearauthcookie",
+      "toNode": "n_go_type_net_http_responsewriter",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_clearauthcookie_handlers_handler_logout",
+      "fromNode": "n_backend_internal_auth_auth_clearauthcookie",
+      "toNode": "n_handlers_handler_logout",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_getuserfromrequest_backend_internal_config_config_go_config_config",
+      "fromNode": "n_backend_internal_auth_auth_getuserfromrequest",
+      "toNode": "n_backend_internal_config_config_go_config_config",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_getuserfromrequest_go_type_net_http_request",
+      "fromNode": "n_backend_internal_auth_auth_getuserfromrequest",
+      "toNode": "n_go_type_net_http_request",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_getuserfromrequest_backend_internal_auth_auth_middleware",
+      "fromNode": "n_backend_internal_auth_auth_getuserfromrequest",
+      "toNode": "n_backend_internal_auth_auth_middleware",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_middleware_backend_internal_config_config_go_config_config",
+      "fromNode": "n_backend_internal_auth_auth_middleware",
+      "toNode": "n_backend_internal_config_config_go_config_config",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_middleware_go_type_net_http_handler",
+      "fromNode": "n_backend_internal_auth_auth_middleware",
+      "toNode": "n_go_type_net_http_handler",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_getuser_go_type_context_context",
+      "fromNode": "n_backend_internal_auth_auth_getuser",
+      "toNode": "n_go_type_context_context",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_getuser_handlers_handler_createcontest",
+      "fromNode": "n_backend_internal_auth_auth_getuser",
+      "toNode": "n_handlers_handler_createcontest",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_getuser_handlers_handler_getme",
+      "fromNode": "n_backend_internal_auth_auth_getuser",
+      "toNode": "n_handlers_handler_getme",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_getuser_handlers_handler_getusercreatedarticles",
+      "fromNode": "n_backend_internal_auth_auth_getuser",
+      "toNode": "n_handlers_handler_getusercreatedarticles",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_getuser_handlers_handler_reviewarticle",
+      "fromNode": "n_backend_internal_auth_auth_getuser",
+      "toNode": "n_handlers_handler_reviewarticle",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_auth_auth_getuser_handlers_handler_submitarticles",
+      "fromNode": "n_backend_internal_auth_auth_getuser",
+      "toNode": "n_handlers_handler_submitarticles",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_backend_internal_balancer_balancer_go_balancer_articleitem",
+      "fromNode": "n_backend_internal_balancer_balancer",
+      "toNode": "n_backend_internal_balancer_balancer_go_balancer_articleitem",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_backend_internal_balancer_balancer_planscarcityfirst",
+      "fromNode": "n_backend_internal_balancer_balancer",
+      "toNode": "n_backend_internal_balancer_balancer_planscarcityfirst",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_balancer_group",
+      "fromNode": "n_backend_internal_balancer_balancer",
+      "toNode": "n_balancer_group",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_balancer_juryload",
+      "fromNode": "n_backend_internal_balancer_balancer",
+      "toNode": "n_balancer_juryload",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_balancer_minheap",
+      "fromNode": "n_backend_internal_balancer_balancer",
+      "toNode": "n_balancer_minheap",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_go_pkg_container_heap",
+      "fromNode": "n_backend_internal_balancer_balancer",
+      "toNode": "n_go_pkg_container_heap",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_go_pkg_sort",
+      "fromNode": "n_backend_internal_balancer_balancer",
+      "toNode": "n_go_pkg_sort",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_doc_scarcity_first_jury",
+      "fromNode": "n_backend_internal_balancer_balancer",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_go_balancer_articleitem_backend_internal_balancer_balancer_planscarcityfirst",
+      "fromNode": "n_backend_internal_balancer_balancer_go_balancer_articleitem",
+      "toNode": "n_backend_internal_balancer_balancer_planscarcityfirst",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_go_balancer_articleitem_balancer_group",
+      "fromNode": "n_backend_internal_balancer_balancer_go_balancer_articleitem",
+      "toNode": "n_balancer_group",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_go_balancer_articleitem_doc_scarcity_first_jury",
+      "fromNode": "n_backend_internal_balancer_balancer_go_balancer_articleitem",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_go_balancer_articleitem_handlers_handler_balancearticles",
+      "fromNode": "n_backend_internal_balancer_balancer_go_balancer_articleitem",
+      "toNode": "n_handlers_handler_balancearticles",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_balancer_juryload_doc_scarcity_first_jury",
+      "fromNode": "n_balancer_juryload",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_balancer_minheap_balancer_minheap_len",
+      "fromNode": "n_balancer_minheap",
+      "toNode": "n_balancer_minheap_len",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_balancer_minheap_balancer_minheap_less",
+      "fromNode": "n_balancer_minheap",
+      "toNode": "n_balancer_minheap_less",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_balancer_minheap_balancer_minheap_pop",
+      "fromNode": "n_balancer_minheap",
+      "toNode": "n_balancer_minheap_pop",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_balancer_minheap_balancer_minheap_push",
+      "fromNode": "n_balancer_minheap",
+      "toNode": "n_balancer_minheap_push",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_balancer_minheap_balancer_minheap_swap",
+      "fromNode": "n_balancer_minheap",
+      "toNode": "n_balancer_minheap_swap",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_balancer_minheap_doc_scarcity_first_jury",
+      "fromNode": "n_balancer_minheap",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_balancer_minheap_len_doc_scarcity_first_jury",
+      "fromNode": "n_balancer_minheap_len",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_balancer_minheap_less_doc_scarcity_first_jury",
+      "fromNode": "n_balancer_minheap_less",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_balancer_minheap_swap_doc_scarcity_first_jury",
+      "fromNode": "n_balancer_minheap_swap",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_balancer_minheap_push_doc_scarcity_first_jury",
+      "fromNode": "n_balancer_minheap_push",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_balancer_minheap_pop_doc_scarcity_first_jury",
+      "fromNode": "n_balancer_minheap_pop",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_balancer_group_doc_scarcity_first_jury",
+      "fromNode": "n_balancer_group",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_planscarcityfirst_backend_internal_balancer_balancer_test_testplanscarcityfirstequaldistribution",
+      "fromNode": "n_backend_internal_balancer_balancer_planscarcityfirst",
+      "toNode": "n_backend_internal_balancer_balancer_test_testplanscarcityfirstequaldistribution",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_planscarcityfirst_backend_internal_balancer_balancer_test_testplanscarcityfirstpreventsjurystarvation",
+      "fromNode": "n_backend_internal_balancer_balancer_planscarcityfirst",
+      "toNode": "n_backend_internal_balancer_balancer_test_testplanscarcityfirstpreventsjurystarvation",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_planscarcityfirst_doc_scarcity_first_jury",
+      "fromNode": "n_backend_internal_balancer_balancer_planscarcityfirst",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_planscarcityfirst_handlers_handler_balancearticles",
+      "fromNode": "n_backend_internal_balancer_balancer_planscarcityfirst",
+      "toNode": "n_handlers_handler_balancearticles",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_test_backend_internal_balancer_balancer_test_testplanscarcityfirstequaldistribution",
+      "fromNode": "n_backend_internal_balancer_balancer_test",
+      "toNode": "n_backend_internal_balancer_balancer_test_testplanscarcityfirstequaldistribution",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_test_backend_internal_balancer_balancer_test_testplanscarcityfirstpreventsjurystarvation",
+      "fromNode": "n_backend_internal_balancer_balancer_test",
+      "toNode": "n_backend_internal_balancer_balancer_test_testplanscarcityfirstpreventsjurystarvation",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_test_go_pkg_testing",
+      "fromNode": "n_backend_internal_balancer_balancer_test",
+      "toNode": "n_go_pkg_testing",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_test_doc_scarcity_first_jury",
+      "fromNode": "n_backend_internal_balancer_balancer_test",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_test_testplanscarcityfirstequaldistribution_go_type_testing_t",
+      "fromNode": "n_backend_internal_balancer_balancer_test_testplanscarcityfirstequaldistribution",
+      "toNode": "n_go_type_testing_t",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_test_testplanscarcityfirstequaldistribution_doc_scarcity_first_jury",
+      "fromNode": "n_backend_internal_balancer_balancer_test_testplanscarcityfirstequaldistribution",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_test_testplanscarcityfirstpreventsjurystarvation_go_type_testing_t",
+      "fromNode": "n_backend_internal_balancer_balancer_test_testplanscarcityfirstpreventsjurystarvation",
+      "toNode": "n_go_type_testing_t",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_balancer_balancer_test_testplanscarcityfirstpreventsjurystarvation_doc_scarcity_first_jury",
+      "fromNode": "n_backend_internal_balancer_balancer_test_testplanscarcityfirstpreventsjurystarvation",
+      "toNode": "n_doc_scarcity_first_jury",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_config_config_backend_internal_config_config_go_config_config",
+      "fromNode": "n_backend_internal_config_config",
+      "toNode": "n_backend_internal_config_config_go_config_config",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_config_config_backend_internal_config_config_load",
+      "fromNode": "n_backend_internal_config_config",
+      "toNode": "n_backend_internal_config_config_load",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_config_config_go_pkg_github_com_joho_godotenv",
+      "fromNode": "n_backend_internal_config_config",
+      "toNode": "n_go_pkg_github_com_joho_godotenv",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_config_config_go_pkg_os",
+      "fromNode": "n_backend_internal_config_config",
+      "toNode": "n_go_pkg_os",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_config_config_go_config_config_backend_internal_config_config_load",
+      "fromNode": "n_backend_internal_config_config_go_config_config",
+      "toNode": "n_backend_internal_config_config_load",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_config_config_go_config_config_backend_internal_database_db_connect",
+      "fromNode": "n_backend_internal_config_config_go_config_config",
+      "toNode": "n_backend_internal_database_db_connect",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_config_config_go_config_config_backend_internal_handlers_handlers_new",
+      "fromNode": "n_backend_internal_config_config_go_config_config",
+      "toNode": "n_backend_internal_handlers_handlers_new",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_config_config_go_config_config_backend_internal_mwclient_mwclient_exchangecodefortoken",
+      "fromNode": "n_backend_internal_config_config_go_config_config",
+      "toNode": "n_backend_internal_mwclient_mwclient_exchangecodefortoken",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_config_config_go_config_config_backend_internal_mwclient_mwclient_getauthorizeurl",
+      "fromNode": "n_backend_internal_config_config_go_config_config",
+      "toNode": "n_backend_internal_mwclient_mwclient_getauthorizeurl",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_config_config_go_config_config_handlers_handler",
+      "fromNode": "n_backend_internal_config_config_go_config_config",
+      "toNode": "n_handlers_handler",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_backend_internal_database_db_connect",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_backend_internal_database_db_connect",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_backend_internal_database_db_go_database_db",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_backend_internal_database_db_go_database_db",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_pkg_database_sql",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_go_pkg_database_sql",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_pkg_embed",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_go_pkg_embed",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_pkg_feather_backend_internal_config",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_go_pkg_feather_backend_internal_config",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_pkg_feather_backend_internal_models",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_go_pkg_feather_backend_internal_models",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_pkg_fmt",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_go_pkg_fmt",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_pkg_github_com_go_sql_driver_mysql",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_go_pkg_github_com_go_sql_driver_mysql",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_pkg_log",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_go_pkg_log",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_pkg_modernc_org_sqlite",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_go_pkg_modernc_org_sqlite",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_pkg_path_filepath",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_go_pkg_path_filepath",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_pkg_time",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_go_pkg_time",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_doc_keyset_pagination",
+      "fromNode": "n_backend_internal_database_db",
+      "toNode": "n_doc_keyset_pagination",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_database_db_backend_internal_database_db_connect",
+      "fromNode": "n_backend_internal_database_db_go_database_db",
+      "toNode": "n_backend_internal_database_db_connect",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_database_db_database_db_getarticleskeyset",
+      "fromNode": "n_backend_internal_database_db_go_database_db",
+      "toNode": "n_database_db_getarticleskeyset",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_database_db_go_type_database_sql_db",
+      "fromNode": "n_backend_internal_database_db_go_database_db",
+      "toNode": "n_go_type_database_sql_db",
+      "label": "embeds [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_database_db_backend_internal_handlers_handlers_new",
+      "fromNode": "n_backend_internal_database_db_go_database_db",
+      "toNode": "n_backend_internal_handlers_handlers_new",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_database_db_doc_keyset_pagination",
+      "fromNode": "n_backend_internal_database_db_go_database_db",
+      "toNode": "n_doc_keyset_pagination",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_go_database_db_handlers_handler",
+      "fromNode": "n_backend_internal_database_db_go_database_db",
+      "toNode": "n_handlers_handler",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_database_db_connect_doc_keyset_pagination",
+      "fromNode": "n_backend_internal_database_db_connect",
+      "toNode": "n_doc_keyset_pagination",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_database_db_getarticleskeyset_backend_internal_models_models_go_models_keysetpaginationresult",
+      "fromNode": "n_database_db_getarticleskeyset",
+      "toNode": "n_backend_internal_models_models_go_models_keysetpaginationresult",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_database_db_getarticleskeyset_doc_keyset_pagination",
+      "fromNode": "n_database_db_getarticleskeyset",
+      "toNode": "n_doc_keyset_pagination",
+      "label": "implements [INFERRED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_backend_internal_handlers_handlers_generatecontestcode",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_backend_internal_handlers_handlers_generatecontestcode",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_backend_internal_handlers_handlers_jsonerror",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_backend_internal_handlers_handlers_jsonerror",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_backend_internal_handlers_handlers_jsonresponse",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_backend_internal_handlers_handlers_jsonresponse",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_backend_internal_handlers_handlers_new",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_backend_internal_handlers_handlers_new",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_backend_internal_handlers_handlers_parseflexibledate",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_backend_internal_handlers_handlers_parseflexibledate",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_crypto_rand",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_crypto_rand",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_database_sql",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_database_sql",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_encoding_hex",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_encoding_hex",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_encoding_json",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_encoding_json",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_feather_backend_internal_auth",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_feather_backend_internal_auth",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_feather_backend_internal_balancer",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_feather_backend_internal_balancer",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_feather_backend_internal_config",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_feather_backend_internal_config",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_feather_backend_internal_database",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_feather_backend_internal_database",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_feather_backend_internal_models",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_feather_backend_internal_models",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_feather_backend_internal_mwclient",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_feather_backend_internal_mwclient",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_feather_backend_internal_worker",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_feather_backend_internal_worker",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_fmt",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_fmt",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_github_com_go_chi_chi_v5",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_github_com_go_chi_chi_v5",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_log",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_log",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_net_http",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_net_http",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_strconv",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_strconv",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_strings",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_strings",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_go_pkg_time",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_go_pkg_time",
+      "label": "imports_from [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_handlers_bulksubmitrequest",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_handlers_bulksubmitrequest",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_handlers_handler",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_handlers_handler",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_backend_internal_handlers_handlers_handlers_reviewdecisionrequest",
+      "fromNode": "n_backend_internal_handlers_handlers",
+      "toNode": "n_handlers_reviewdecisionrequest",
+      "label": "contains [EXTRACTED]"
+    }
+  ]
+}

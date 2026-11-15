@@ -181,20 +181,11 @@ export default function NewContestPage() {
 
         {/* Section 2: Target Wiki & Timeframe */}
         <Card className="border-border shadow-2xs overflow-visible">
-          <CardHeader className="py-3 px-4 sm:px-6 flex flex-row items-center justify-between space-y-0 gap-3">
+          <CardHeader className="py-3 px-4 sm:px-6">
             <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
               <Globe className="h-4 w-4 text-primary shrink-0" />
               <span>{t("feather-create-sec-wiki")}</span>
             </CardTitle>
-
-            <Link
-              href="/sandbox"
-              className="text-[11px] font-medium text-muted-foreground hover:text-primary flex items-center gap-1 bg-muted/40 hover:bg-muted/70 border border-border/60 px-2 py-1 rounded-md transition-colors"
-              title="Open design sandbox"
-            >
-              <Layers className="h-3 w-3" />
-              <span className="hidden sm:inline">Design Sandbox</span>
-            </Link>
           </CardHeader>
 
           <CardContent className="space-y-3.5 pt-1 px-4 sm:px-6 pb-4">

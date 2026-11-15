@@ -119,7 +119,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-8 py-8 max-w-5xl">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
       {/* 1. Page Header Block */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
         <div className="space-y-1">
@@ -253,8 +253,8 @@ export default function HomePage() {
 
       {/* 4. Shadcn Card Grid Block */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i} className="animate-pulse bg-muted/20 h-48 border border-border rounded-lg" />
           ))}
         </div>
@@ -268,7 +268,7 @@ export default function HomePage() {
           </Button>
         </div>
       ) : processedContests.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
           {processedContests.map((c) => {
             const time = getTimeRemaining(c.start_date, c.end_date);
             const isActive = c.status === "active";
@@ -371,14 +371,14 @@ export default function HomePage() {
                 </CardContent>
 
                 {/* Clean Footer Block */}
-                <CardFooter className="flex items-center justify-between gap-2 pt-3 border-t border-border bg-muted/20">
-                  <div className="flex items-center gap-2">
+                <CardFooter className="flex items-center justify-between gap-1.5 pt-3 border-t border-border bg-muted/20">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <Link
                       href={`/contests/${c.code}`}
                       className={buttonVariants({
                         variant: "default",
                         size: "sm",
-                        className: "h-7 text-xs gap-1 font-medium cursor-pointer",
+                        className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2.5",
                       })}
                     >
                       <Eye className="h-3.5 w-3.5" />
@@ -390,7 +390,7 @@ export default function HomePage() {
                       className={buttonVariants({
                         variant: "outline",
                         size: "sm",
-                        className: "h-7 text-xs gap-1 font-medium cursor-pointer",
+                        className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2.5",
                       })}
                     >
                       <Send className="h-3 w-3" />

@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, fetchAdminOverview, logout, AUTH_BASE } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 import { toast } from "sonner";
 
 export default function Navbar() {
@@ -107,8 +108,11 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* Language Switcher */}
-          <LanguageSwitcher />
+          {/* Theme & Language Controls */}
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </div>
 
           <div className="h-4 w-px bg-border" />
 
@@ -161,7 +165,8 @@ export default function Navbar() {
         </nav>
 
         {/* Mobile Navigation Header Controls */}
-        <div className="flex md:hidden items-center gap-2">
+        <div className="flex md:hidden items-center gap-1.5">
+          <ThemeToggle />
           <LanguageSwitcher />
 
           <Button

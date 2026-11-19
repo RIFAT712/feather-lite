@@ -74,6 +74,7 @@ func main() {
 		api.Post("/contests", h.CreateContest)
 		api.Get("/contests/{code}", h.GetContest)
 		api.Put("/contests/{code}", h.UpdateContest)
+		api.Delete("/contests/{code}", h.DeleteContest)
 		api.Post("/contests/{code}/sub-contests", h.CreateSubContest)
 		api.Get("/contests/{code}/available-contests", h.GetAvailableContests)
 		api.Post("/contests/{code}/attach-contest", h.AttachContest)
@@ -87,6 +88,14 @@ func main() {
 		api.Post("/contests/{code}/redistribute", h.RedistributeQueues)
 		api.Get("/contests/{code}/users/{username}", h.GetContestUserProfile)
 		api.Get("/users/{username}/profile", h.GetUserGlobalProfile)
+
+		// Admin & Platform Management routes
+		api.Get("/admin/overview", h.GetAdminOverview)
+		api.Get("/admin/contests", h.GetAdminContests)
+		api.Post("/admin/contests/{code}/approve", h.ApproveContest)
+		api.Post("/admin/contests/{code}/reject", h.RejectContest)
+		api.Delete("/admin/contests/{code}", h.DeleteContest)
+
 		api.Post("/articles/{id}/review", h.ReviewArticle)
 		api.Post("/articles/{id}/review/undo", h.UndoReview)
 		api.Post("/articles/{id}/lock", h.AcquireArticleLock)

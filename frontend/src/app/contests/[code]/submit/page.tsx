@@ -38,6 +38,7 @@ import {
   Calendar,
   Layers,
   Edit3,
+  ShieldAlert,
 } from "lucide-react";
 import { WikimediaLogoIcon } from "@/components/icons/CodexIcons";
 import { UserAutocompleteInput } from "@/components/contests/UserAutocompleteInput";
@@ -111,6 +112,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
   const now = Date.now();
   const isContestClosed = contest?.end_date ? now > new Date(contest.end_date).getTime() : false;
   const isContestNotOpen = contest?.start_date ? now < new Date(contest.start_date).getTime() : false;
+  const isPendingApproval = contest?.status === "pending_approval";
 
   // 6. Fetch User Created Articles from Target Wiki
   const handleFetchArticles = useCallback(async () => {
@@ -241,6 +243,11 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
 
   // 9. Batch Submission
   const handleSubmit = async () => {
+    if (isPendingApproval) {
+      toast.error(t("feather-contest-pending-approval-banner"));
+      return;
+    }
+
     let titlesToSubmit: string[] = [];
 
     if (activeTab === "auto") {
@@ -312,6 +319,13 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
       </Link>
 
       {/* Contest Window Alerts */}
+      {isPendingApproval && (
+        <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs sm:text-sm text-amber-900 dark:text-amber-200 font-medium flex items-center gap-2.5">
+          <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span>{t("feather-contest-pending-approval-banner")}</span>
+        </div>
+      )}
+
       {isContestClosed && (
         <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs sm:text-sm text-amber-700 dark:text-amber-400 font-medium flex items-center gap-2">
           <AlertCircle className="h-4 w-4 shrink-0" />
@@ -776,6 +790,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
             onClick={handleSubmit}
             disabled={
               isSubmitting ||
+              isPendingApproval ||
               isContestClosed ||
               isContestNotOpen ||
               (activeTab === "auto" ? selectedArticles.length === 0 : !manualTitles.trim())

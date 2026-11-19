@@ -181,15 +181,23 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, http.StatusOK, map[string]any{
 			"is_authenticated": false,
 			"role":             "anonymous",
+			"is_owner":         false,
 		})
 		return
+	}
+
+	role := user.Role
+	isOwner := h.isPlatformOwner(user)
+	if isOwner {
+		role = "owner"
 	}
 
 	jsonResponse(w, http.StatusOK, map[string]any{
 		"is_authenticated": true,
 		"user_id":          user.UserID,
 		"wiki_username":    user.WikiUsername,
-		"role":             user.Role,
+		"role":             role,
+		"is_owner":         isOwner,
 	})
 }
 
@@ -315,7 +323,10 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 			?, ?, ?, ?, NULL, ?
 		)
 	`
-	status := "active"
+	status := "pending_approval"
+	if h.isPlatformOwner(currentUser) {
+		status = "active"
+	}
 	isDraft := 0
 	mustBeCreator := 0
 	if req.RuleMustBeCreator {
@@ -532,10 +543,12 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusCreated, map[string]any{
 		"message": "Contest created successfully",
 		"code":    code,
+		"status":  status,
 		"contest": map[string]any{
 			"id":         contestID,
 			"code":       code,
 			"name":       req.Name,
+			"status":     status,
 			"wiki_url":   wikiURL,
 			"wiki_tz":    wikiTZ,
 			"start_date": startDate,
@@ -545,6 +558,13 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ListContests(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	isOwner := h.isPlatformOwner(currentUser)
+	var currentUserID int64
+	if currentUser != nil {
+		currentUserID = currentUser.UserID
+	}
+
 	query := `
 		SELECT c.id, c.code, c.name, c.description, c.wiki_dbname, c.wiki_url, c.wiki_lang, 
 		       c.start_date, c.end_date, c.status, c.is_draft,
@@ -554,16 +574,24 @@ func (h *Handler) ListContests(w http.ResponseWriter, r *http.Request) {
 		       COUNT(DISTINCT a.id) as total_articles,
 		       COUNT(DISTINCT CASE WHEN a.status = 'accepted' THEN a.id END) as accepted_articles,
 		       COUNT(DISTINCT cj.user_id) as total_juries,
-		       COALESCE(GROUP_CONCAT(DISTINCT u.wiki_username), '') as jury_names
+		       COALESCE(GROUP_CONCAT(DISTINCT u.wiki_username), '') as jury_names,
+		       c.created_by_id,
+		       COALESCE(creator.wiki_username, '') as created_by_username
 		FROM contests c
 		LEFT JOIN articles a ON (c.id = a.contest_id OR (c.is_umbrella = 1 AND a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = c.id)))
 		LEFT JOIN contest_juries cj ON c.id = cj.contest_id
 		LEFT JOIN users u ON cj.user_id = u.id
-		WHERE c.is_draft = 0
+		LEFT JOIN users creator ON c.created_by_id = creator.id
+		WHERE c.is_draft = 0 AND c.parent_contest_id IS NULL
+		  AND (c.status != 'pending_approval' OR (c.created_by_id = ? AND ? > 0) OR ? = 1)
 		GROUP BY c.id
 		ORDER BY c.start_date DESC
 	`
-	rows, err := h.db.Query(query)
+	ownerFlag := 0
+	if isOwner {
+		ownerFlag = 1
+	}
+	rows, err := h.db.Query(query, currentUserID, currentUserID, ownerFlag)
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, "Failed to fetch contests")
 		return
@@ -580,6 +608,7 @@ func (h *Handler) ListContests(w http.ResponseWriter, r *http.Request) {
 			&c.StartDate, &c.EndDate, &c.Status, &c.IsDraft,
 			&isUmbrellaInt, &c.ParentContestID, &c.SubContestCount,
 			&c.TotalArticles, &c.AcceptedArticles, &c.TotalJuries, &juryNames,
+			&c.CreatedByID, &c.CreatedByUsername,
 		)
 		if err != nil {
 			jsonError(w, http.StatusInternalServerError, "Failed to parse contest row")
@@ -602,14 +631,16 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 
 	query := `
-		SELECT id, code, name, description, wiki_dbname, wiki_url, wiki_lang, wiki_tz,
-		       start_date, end_date, status, is_draft, rule_must_be_creator, rule_no_redirect,
-		       rule_no_disambig, rule_mainspace_only, rule_created_in_window,
-		       custom_creation_start_date, custom_creation_end_date, min_bytes,
-		       min_words, min_refs, max_submissions_per_user, rank_by_words, add_talk_template,
-		       talk_template_name, COALESCE(distribute_jury_queue, 0), COALESCE(is_umbrella, 0), parent_contest_id, created_at
-		FROM contests
-		WHERE code = ?
+		SELECT c.id, c.code, c.name, c.description, c.wiki_dbname, c.wiki_url, c.wiki_lang, c.wiki_tz,
+		       c.start_date, c.end_date, c.status, c.is_draft, c.rule_must_be_creator, c.rule_no_redirect,
+		       c.rule_no_disambig, c.rule_mainspace_only, c.rule_created_in_window,
+		       c.custom_creation_start_date, c.custom_creation_end_date, c.min_bytes,
+		       c.min_words, c.min_refs, c.max_submissions_per_user, c.rank_by_words, c.add_talk_template,
+		       c.talk_template_name, COALESCE(c.distribute_jury_queue, 0), COALESCE(c.is_umbrella, 0), c.parent_contest_id, c.created_at,
+		       c.created_by_id, COALESCE(creator.wiki_username, '') as created_by_username
+		FROM contests c
+		LEFT JOIN users creator ON c.created_by_id = creator.id
+		WHERE c.code = ?
 	`
 	var c models.Contest
 	var isUmbrellaInt, distributeJuryQueueInt int
@@ -620,6 +651,7 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 		&c.CustomCreationStartDate, &c.CustomCreationEndDate, &c.MinBytes,
 		&c.MinWords, &c.MinRefs, &c.MaxSubmissionsPerUser, &c.RankByWords, &c.AddTalkTemplate,
 		&c.TalkTemplateName, &distributeJuryQueueInt, &isUmbrellaInt, &c.ParentContestID, &c.CreatedAt,
+		&c.CreatedByID, &c.CreatedByUsername,
 	)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Contest not found")
@@ -1381,6 +1413,15 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 	}
 	contest.DistributeJuryQueue = distributeJuryQueueInt == 1
 
+	if contest.Status == "pending_approval" {
+		jsonError(w, http.StatusForbidden, "Contest is currently pending administrator approval")
+		return
+	}
+	if contest.Status == "rejected" {
+		jsonError(w, http.StatusForbidden, "Contest has been rejected by administrator")
+		return
+	}
+
 	var req BulkSubmitRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		jsonError(w, http.StatusBadRequest, "Invalid request body")
@@ -1547,6 +1588,26 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 		"results":   results,
 		"message":   fmt.Sprintf("Processed %d articles (%d accepted to queue)", len(results), submittedCount),
 	})
+}
+
+// isPlatformOwner verifies if a user has platform owner or administrator privileges.
+func (h *Handler) isPlatformOwner(user *auth.Claims) bool {
+	if user == nil {
+		return false
+	}
+	if user.Role == "owner" || user.Role == "admin" {
+		return true
+	}
+	if h.cfg.OwnerUsername != "" && strings.EqualFold(user.WikiUsername, h.cfg.OwnerUsername) {
+		return true
+	}
+	// Fallback DB check in case role in claims was before promotion
+	var dbRole string
+	err := h.db.QueryRow("SELECT role FROM users WHERE id = ?", user.UserID).Scan(&dbRole)
+	if err == nil && (dbRole == "owner" || dbRole == "admin") {
+		return true
+	}
+	return false
 }
 
 // isUserJuryOrOrganizer verifies if a user has jury, contest creator, or platform owner rights for a contest (including via parent umbrella campaign).
@@ -2654,6 +2715,284 @@ func (h *Handler) SuggestUsers(w http.ResponseWriter, r *http.Request) {
 		result = []string{}
 	}
 	jsonResponse(w, http.StatusOK, result)
+}
+
+// -------------------------------------------------------------
+// Admin & Platform Management Endpoints
+// -------------------------------------------------------------
+
+func (h *Handler) GetAdminOverview(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if !h.isPlatformOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Owner privileges required")
+		return
+	}
+
+	var overview models.AdminOverview
+	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0").Scan(&overview.TotalContests)
+	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0 AND status = 'pending_approval'").Scan(&overview.PendingContests)
+	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0 AND status = 'active'").Scan(&overview.ActiveContests)
+	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0 AND status = 'ended'").Scan(&overview.EndedContests)
+	_ = h.db.QueryRow("SELECT COUNT(*) FROM articles").Scan(&overview.TotalArticles)
+	_ = h.db.QueryRow("SELECT COUNT(*) FROM users").Scan(&overview.TotalUsers)
+
+	jsonResponse(w, http.StatusOK, overview)
+}
+
+func (h *Handler) GetAdminContests(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if !h.isPlatformOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Owner privileges required")
+		return
+	}
+
+	statusFilter := r.URL.Query().Get("status")
+
+	query := `
+		SELECT c.id, c.code, c.name, c.description, c.wiki_dbname, c.wiki_url, c.wiki_lang, 
+		       c.start_date, c.end_date, c.status, c.is_draft,
+		       COALESCE(c.is_umbrella, 0) as is_umbrella,
+		       c.parent_contest_id,
+		       (SELECT COUNT(*) FROM contests sub WHERE sub.parent_contest_id = c.id) as sub_contest_count,
+		       COUNT(DISTINCT a.id) as total_articles,
+		       COUNT(DISTINCT CASE WHEN a.status = 'accepted' THEN a.id END) as accepted_articles,
+		       COUNT(DISTINCT cj.user_id) as total_juries,
+		       COALESCE(u.wiki_username, '') as created_by_username,
+		       c.created_at
+		FROM contests c
+		LEFT JOIN articles a ON (c.id = a.contest_id OR (c.is_umbrella = 1 AND a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = c.id)))
+		LEFT JOIN contest_juries cj ON c.id = cj.contest_id
+		LEFT JOIN users u ON c.created_by_id = u.id
+		WHERE c.parent_contest_id IS NULL AND c.is_draft = 0
+	`
+	var args []any
+	if statusFilter != "" && statusFilter != "all" {
+		query += " AND c.status = ?"
+		args = append(args, statusFilter)
+	}
+	query += `
+		GROUP BY c.id
+		ORDER BY CASE WHEN c.status = 'pending_approval' THEN 0 ELSE 1 END, c.created_at DESC
+	`
+
+	rows, err := h.db.Query(query, args...)
+	if err != nil {
+		log.Printf("[GetAdminContests] Query error: %v", err)
+		jsonError(w, http.StatusInternalServerError, "Failed to fetch admin contests")
+		return
+	}
+	defer rows.Close()
+
+	var contests []models.Contest
+	for rows.Next() {
+		var c models.Contest
+		var isUmbrellaInt int
+		err := rows.Scan(
+			&c.ID, &c.Code, &c.Name, &c.Description, &c.WikiDbName, &c.WikiURL, &c.WikiLang,
+			&c.StartDate, &c.EndDate, &c.Status, &c.IsDraft,
+			&isUmbrellaInt, &c.ParentContestID, &c.SubContestCount,
+			&c.TotalArticles, &c.AcceptedArticles, &c.TotalJuries,
+			&c.CreatedByUsername, &c.CreatedAt,
+		)
+		if err != nil {
+			log.Printf("[GetAdminContests] Scan error: %v", err)
+			continue
+		}
+		c.IsUmbrella = isUmbrellaInt == 1
+		contests = append(contests, c)
+	}
+	if contests == nil {
+		contests = []models.Contest{}
+	}
+	jsonResponse(w, http.StatusOK, contests)
+}
+
+func (h *Handler) ApproveContest(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if !h.isPlatformOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Owner privileges required")
+		return
+	}
+
+	code := chi.URLParam(r, "code")
+	if code == "" {
+		jsonError(w, http.StatusBadRequest, "Contest code required")
+		return
+	}
+
+	var contestID int64
+	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Transaction error")
+		return
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec("UPDATE contests SET status = 'active' WHERE id = ?", contestID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to approve contest")
+		return
+	}
+	_, _ = tx.Exec("UPDATE contests SET status = 'active' WHERE parent_contest_id = ?", contestID)
+
+	if err := tx.Commit(); err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to commit approval")
+		return
+	}
+
+	log.Printf("[ApproveContest] Contest %s (ID: %d) approved by %s", code, contestID, currentUser.WikiUsername)
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"status":  "ok",
+		"message": "Contest approved successfully",
+	})
+}
+
+func (h *Handler) RejectContest(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if !h.isPlatformOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Owner privileges required")
+		return
+	}
+
+	code := chi.URLParam(r, "code")
+	if code == "" {
+		jsonError(w, http.StatusBadRequest, "Contest code required")
+		return
+	}
+
+	var contestID int64
+	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Transaction error")
+		return
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec("UPDATE contests SET status = 'rejected' WHERE id = ?", contestID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to reject contest")
+		return
+	}
+	_, _ = tx.Exec("UPDATE contests SET status = 'rejected' WHERE parent_contest_id = ?", contestID)
+
+	if err := tx.Commit(); err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to commit rejection")
+		return
+	}
+
+	log.Printf("[RejectContest] Contest %s (ID: %d) rejected by %s", code, contestID, currentUser.WikiUsername)
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"status":  "ok",
+		"message": "Contest rejected",
+	})
+}
+
+func (h *Handler) DeleteContest(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil || currentUser.UserID <= 0 {
+		jsonError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	code := chi.URLParam(r, "code")
+	if code == "" {
+		jsonError(w, http.StatusBadRequest, "Contest code required")
+		return
+	}
+
+	var contestID int64
+	var createdByID *int64
+	var contestName string
+	err := h.db.QueryRow("SELECT id, created_by_id, name FROM contests WHERE code = ?", code).Scan(&contestID, &createdByID, &contestName)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	isOwner := h.isPlatformOwner(currentUser)
+	isCreator := createdByID != nil && *createdByID == currentUser.UserID
+
+	if !isOwner && !isCreator {
+		jsonError(w, http.StatusForbidden, "You do not have permission to delete this contest")
+		return
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Transaction error")
+		return
+	}
+	defer tx.Rollback()
+
+	// Collect all contest IDs (main contest + sub-contests)
+	contestIDs := []int64{contestID}
+	subRows, err := tx.Query("SELECT id FROM contests WHERE parent_contest_id = ?", contestID)
+	if err == nil {
+		for subRows.Next() {
+			var subID int64
+			if err := subRows.Scan(&subID); err == nil {
+				contestIDs = append(contestIDs, subID)
+			}
+		}
+		subRows.Close()
+	}
+
+	for _, cid := range contestIDs {
+		// 1. Delete talk_page_jobs
+		_, _ = tx.Exec("DELETE FROM talk_page_jobs WHERE contest_id = ?", cid)
+		// 2. Delete reviews associated with articles of this contest
+		_, _ = tx.Exec("DELETE FROM reviews WHERE article_id IN (SELECT id FROM articles WHERE contest_id = ?)", cid)
+		// 3. Delete articles
+		_, _ = tx.Exec("DELETE FROM articles WHERE contest_id = ?", cid)
+		// 4. Delete jury restrictions
+		_, _ = tx.Exec("DELETE FROM contest_jury_restrictions WHERE contest_id = ?", cid)
+		// 5. Delete jury associations
+		_, _ = tx.Exec("DELETE FROM contest_juries WHERE contest_id = ?", cid)
+		// 6. Delete sub-contest record if not main
+		if cid != contestID {
+			_, _ = tx.Exec("DELETE FROM contests WHERE id = ?", cid)
+		}
+	}
+
+	// 7. Delete main contest
+	_, err = tx.Exec("DELETE FROM contests WHERE id = ?", contestID)
+	if err != nil {
+		log.Printf("[DeleteContest] Error deleting contest %s (%d): %v", code, contestID, err)
+		jsonError(w, http.StatusInternalServerError, "Failed to delete contest")
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to commit deletion")
+		return
+	}
+
+	log.Printf("[DeleteContest] Contest %s ('%s', ID: %d) permanently deleted by %s", code, contestName, contestID, currentUser.WikiUsername)
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"status":  "ok",
+		"message": fmt.Sprintf("Contest '%s' deleted successfully", contestName),
+	})
 }
 
 func jsonResponse(w http.ResponseWriter, status int, data any) {

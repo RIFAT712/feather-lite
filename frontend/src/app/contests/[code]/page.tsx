@@ -2,11 +2,12 @@
 
 import { use, useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   fetchContest, fetchStandings, fetchArticles, createSubContest,
   fetchAvailableContests, attachContestToCampaign, detachContestFromCampaign,
-  updateContest, fetchMe,
+  updateContest, fetchMe, approveContest, deleteContest,
   Contest, StandingEntry, Article, SubContestSummary, AvailableContestSummary,
   UpdateContestPayload
 } from "@/lib/api";
@@ -37,7 +38,7 @@ import {
   Users, ShieldCheck, Share2, Copy, Check, Search, 
   FileCode, CheckCheck, XCircle, AlertCircle, Layers, Plus, Globe,
   Link2, Unlink, Settings, Save, Sliders, Sparkles, UserCheck, CheckCircle, Shield, X,
-  BarChart3
+  BarChart3, Trash2, AlertTriangle, ShieldAlert
 } from "lucide-react";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
 import { UserTagInput } from "@/components/contests/UserTagInput";
@@ -47,6 +48,7 @@ import { calculateEndOfDay } from "@/lib/time";
 export default function ContestDashboardPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const { t, n, formatDate, locale, isRtl } = useI18n();
+  const router = useRouter();
 
   const queryClient = useQueryClient();
 
@@ -267,11 +269,46 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
 
   const isOrganizer = useMemo(() => {
     if (!me?.is_authenticated) return false;
-    if (me.role === "owner") return true;
+    if (me.role === "owner" || (me as any)?.is_owner) return true;
     if (contest?.created_by_id && me.user_id && contest.created_by_id === me.user_id) return true;
     if (contest?.juries && me.wiki_username && contest.juries.includes(me.wiki_username)) return true;
     return false;
   }, [me, contest]);
+
+  const isOwner = me?.role === "owner" || Boolean((me as any)?.is_owner);
+  const isCreator = Boolean(contest?.created_by_id && me?.user_id && contest.created_by_id === me.user_id);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeletingContest, setIsDeletingContest] = useState(false);
+
+  const handleQuickApprove = async () => {
+    setIsApproving(true);
+    try {
+      await approveContest(code);
+      toast.success(t("feather-admin-approved-success"));
+      queryClient.invalidateQueries({ queryKey: ["contest", code] });
+      queryClient.invalidateQueries({ queryKey: ["contests"] });
+      queryClient.invalidateQueries({ queryKey: ["adminOverview"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to approve contest");
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleDeleteContest = async () => {
+    setIsDeletingContest(true);
+    try {
+      await deleteContest(code);
+      toast.success(t("feather-admin-delete-success"));
+      queryClient.invalidateQueries({ queryKey: ["contests"] });
+      queryClient.invalidateQueries({ queryKey: ["adminOverview"] });
+      router.push("/");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete contest");
+      setIsDeletingContest(false);
+    }
+  };
 
   function formatDateForInput(d?: string | Date) {
     if (!d) return "";
@@ -487,6 +524,30 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
         </div>
       )}
 
+      {/* Pending Approval Banner */}
+      {contest.status === "pending_approval" && (
+        <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs sm:text-sm text-amber-900 dark:text-amber-200">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed">
+              <strong className="font-semibold block mb-0.5">Pending Administrator Review</strong>
+              {t("feather-contest-pending-approval-banner")}
+            </div>
+          </div>
+          {isOwner && (
+            <Button
+              size="sm"
+              disabled={isApproving}
+              onClick={handleQuickApprove}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-xs font-semibold shrink-0 cursor-pointer shadow-xs"
+            >
+              <Check className="h-3.5 w-3.5" />
+              <span>{t("feather-contest-pending-approval-action")}</span>
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* 1. Header Overview Card */}
       <Card className="mb-6 shadow-2xs border-border/80">
         <CardHeader className="pb-4">
@@ -572,17 +633,30 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
 
             {/* Action CTAs */}
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
-              <Link
-                href={`/contests/${code}/submit`}
-                className={buttonVariants({
-                  variant: "default",
-                  size: "sm",
-                  className: "flex-1 sm:flex-none gap-1.5 cursor-pointer font-medium shadow-xs",
-                })}
-              >
-                <Upload className="h-4 w-4" />
-                {t("feather-contest-action-submit")}
-              </Link>
+              {contest.status !== "pending_approval" ? (
+                <Link
+                  href={`/contests/${code}/submit`}
+                  className={buttonVariants({
+                    variant: "default",
+                    size: "sm",
+                    className: "flex-1 sm:flex-none gap-1.5 cursor-pointer font-medium shadow-xs",
+                  })}
+                >
+                  <Upload className="h-4 w-4" />
+                  {t("feather-contest-action-submit")}
+                </Link>
+              ) : (
+                <Button
+                  disabled
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 sm:flex-none gap-1.5 text-xs text-muted-foreground opacity-60 cursor-not-allowed"
+                  title={t("feather-contest-pending-approval-banner")}
+                >
+                  <Upload className="h-4 w-4" />
+                  {t("feather-contest-action-submit")}
+                </Button>
+              )}
 
               {contest.is_umbrella && isOrganizer && (
                 <Button
@@ -2699,9 +2773,95 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
               </div>
             </div>
           </form>
+
+          {/* Danger Zone: Delete Contest (Owner or Creator only) */}
+          {(isOwner || isCreator) && (
+            <Card className="border-destructive/40 bg-destructive/[0.02] dark:bg-destructive/[0.04] shadow-xs mt-6">
+              <CardHeader className="py-3 px-4 sm:px-6 border-b border-destructive/20 bg-destructive/5 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <CardTitle className="text-sm sm:text-base font-bold text-destructive">
+                    {t("feather-contest-danger-zone")}
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h4 className="text-sm font-semibold text-foreground">
+                    {t("feather-admin-delete")}
+                  </h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
+                    {t("feather-contest-danger-delete-desc")}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="gap-1.5 text-xs font-semibold cursor-pointer shrink-0 shadow-xs"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>{t("feather-admin-delete")}</span>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Delete Contest Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2.5 text-destructive mb-1">
+              <div className="p-2 bg-destructive/10 rounded-full">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <DialogTitle className="text-lg font-bold">
+                {t("feather-admin-delete-confirm-title")}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-muted-foreground pt-1 leading-relaxed">
+              {t("feather-admin-delete-confirm-desc")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {contest && (
+            <div className="p-3 my-2 rounded-md bg-muted/50 border text-xs space-y-1">
+              <div>
+                <strong>Contest:</strong> {contest.name} ({contest.code})
+              </div>
+              <div>
+                <strong>Wiki:</strong> {contest.wiki_dbname}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isDeletingContest}
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="text-xs cursor-pointer"
+            >
+              {t("feather-submit-cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={isDeletingContest}
+              onClick={handleDeleteContest}
+              className="text-xs gap-1.5 cursor-pointer shadow-xs"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>{isDeletingContest ? "Deleting..." : t("feather-admin-delete-confirm-btn")}</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

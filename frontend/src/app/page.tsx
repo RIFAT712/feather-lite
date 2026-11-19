@@ -552,15 +552,23 @@ export default function HomePage() {
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                       <Badge
-                        variant={isActive ? "secondary" : "outline"}
+                        variant={isActive ? "secondary" : c.status === "pending_approval" ? "destructive" : "outline"}
                         className="text-[11px] font-medium gap-1 px-1.5 py-0.5 h-5"
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${
-                            isActive ? "bg-emerald-500" : "bg-muted-foreground"
+                            isActive
+                              ? "bg-emerald-500"
+                              : c.status === "pending_approval"
+                              ? "bg-amber-400 animate-pulse"
+                              : "bg-muted-foreground"
                           }`}
                         />
-                        {isActive ? t("feather-contest-status-active") : c.status}
+                        {isActive
+                          ? t("feather-contest-status-active")
+                          : c.status === "pending_approval"
+                          ? "Pending Approval"
+                          : c.status}
                       </Badge>
 
                       {c.is_umbrella ? (

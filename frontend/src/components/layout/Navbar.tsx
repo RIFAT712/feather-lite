@@ -3,12 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Feather, Trophy, UserCheck, LogOut, Loader2, PlusCircle, Menu, X } from "lucide-react";
+import { Feather, Trophy, UserCheck, LogOut, Loader2, PlusCircle, Menu, X, ShieldAlert } from "lucide-react";
 import { WikimediaLogoIcon } from "@/components/icons/CodexIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchMe, logout, AUTH_BASE } from "@/lib/api";
+import { fetchMe, fetchAdminOverview, logout, AUTH_BASE } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import { toast } from "sonner";
@@ -23,6 +23,15 @@ export default function Navbar() {
     queryKey: ["me"],
     queryFn: fetchMe,
     staleTime: 60 * 1000,
+  });
+
+  const isOwner = me?.role === "owner" || Boolean((me as any)?.is_owner);
+
+  const { data: adminOverview } = useQuery({
+    queryKey: ["adminOverview"],
+    queryFn: fetchAdminOverview,
+    enabled: isOwner,
+    staleTime: 30 * 1000,
   });
 
   if (pathname && /\/contests\/[^/]+\/review(?:\/|$)/.test(pathname)) {
@@ -81,6 +90,22 @@ export default function Navbar() {
             <PlusCircle className="h-3.5 w-3.5 text-primary" />
             <span>{t("feather-nav-create-contest")}</span>
           </Link>
+
+          {/* Admin Dashboard (Owner only) */}
+          {isOwner && (
+            <Link
+              href="/admin"
+              className="flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors"
+            >
+              <ShieldAlert className="h-4 w-4" />
+              <span>{t("feather-nav-admin")}</span>
+              {adminOverview && adminOverview.pending_contests > 0 && (
+                <Badge variant="destructive" className="h-4 px-1.5 text-[10px] font-bold rounded-full">
+                  {adminOverview.pending_contests}
+                </Badge>
+              )}
+            </Link>
+          )}
 
           {/* Language Switcher */}
           <LanguageSwitcher />
@@ -172,6 +197,24 @@ export default function Navbar() {
               <PlusCircle className="h-4 w-4 text-primary" />
               <span>{t("feather-nav-create-contest")}</span>
             </Link>
+
+            {isOwner && (
+              <Link
+                href="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3 py-2 rounded-md text-sm font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShieldAlert className="h-4 w-4" />
+                  <span>{t("feather-nav-admin")}</span>
+                </div>
+                {adminOverview && adminOverview.pending_contests > 0 && (
+                  <Badge variant="destructive" className="h-4 px-1.5 text-[10px] font-bold rounded-full">
+                    {adminOverview.pending_contests}
+                  </Badge>
+                )}
+              </Link>
+            )}
           </div>
 
           <div className="border-t border-border/70 pt-2.5">

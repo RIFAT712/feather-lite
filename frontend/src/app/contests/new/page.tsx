@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/i18n/I18nContext";
-import { createContest, CreateContestPayload, CommunityRuleConfig } from "@/lib/api";
+import { createContest, fetchMe, CreateContestPayload, CommunityRuleConfig } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
@@ -14,7 +15,7 @@ import TimezoneSelector from "@/components/contests/TimezoneSelector";
 import { UserTagInput } from "@/components/contests/UserTagInput";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { 
-  ArrowLeft, ArrowRight, Shield, Globe, BookOpen, CheckCircle, 
+  ArrowLeft, ArrowRight, Shield, ShieldAlert, Globe, BookOpen, CheckCircle, 
   Clock, Sparkles, UserCheck, Layers, Loader2, Calendar, X, Users
 } from "lucide-react";
 import { toast } from "sonner";
@@ -28,6 +29,12 @@ export default function NewContestPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: fetchMe,
+  });
+  const isOwner = me?.role === "owner" || Boolean((me as any)?.is_owner);
 
   // Form State (NO custom code/slug input - automatically 4 random characters)
   const [name, setName] = useState("");
@@ -230,7 +237,11 @@ export default function NewContestPage() {
 
     try {
       const res = await createContest(payload);
-      toast.success(t("feather-create-success", name));
+      if (res.status === "pending_approval") {
+        toast.info(t("feather-create-pending-success", name));
+      } else {
+        toast.success(t("feather-create-success", name));
+      }
       router.push(`/contests/${res.code}`);
     } catch (err: any) {
       setError(err.message || "Failed to create contest");
@@ -264,6 +275,16 @@ export default function NewContestPage() {
       {error && (
         <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-xs sm:text-sm text-destructive font-medium">
           {error}
+        </div>
+      )}
+
+      {!isOwner && (
+        <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs sm:text-sm text-amber-900 dark:text-amber-200">
+          <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="leading-relaxed">
+            <strong className="font-semibold block mb-0.5">Admin Review Notice:</strong>
+            {t("feather-contest-create-pending-notice")}
+          </div>
         </div>
       )}
 

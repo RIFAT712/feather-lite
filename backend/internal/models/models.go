@@ -46,6 +46,7 @@ type Contest struct {
 	SubContestCount       int        `json:"sub_contest_count,omitempty"`
 	SubContests           []SubContestSummary `json:"sub_contests,omitempty"`
 	CreatedByID           *int64     `json:"created_by_id,omitempty"`
+	CreatedByUsername     string     `json:"created_by_username,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`
 	
 	// Aggregated stats (calculated)
@@ -332,4 +333,13 @@ type ContestUserProfile struct {
 	Standing    *StandingEntry          `json:"standing,omitempty"`
 	Submissions []ContestUserSubmission `json:"submissions"`
 	Reviews     []GlobalProfileReview   `json:"reviews"`
+}
+
+type AdminOverview struct {
+	TotalContests   int `json:"total_contests"`
+	PendingContests int `json:"pending_contests"`
+	ActiveContests  int `json:"active_contests"`
+	EndedContests   int `json:"ended_contests"`
+	TotalArticles   int `json:"total_articles"`
+	TotalUsers      int `json:"total_users"`
 }

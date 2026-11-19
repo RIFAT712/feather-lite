@@ -6,6 +6,7 @@ export interface UserSession {
   user_id?: number;
   wiki_username?: string;
   role: "owner" | "jury" | "participant" | "anonymous";
+  is_owner?: boolean;
 }
 
 export interface SubContestSummary {
@@ -42,6 +43,8 @@ export interface Contest {
   status: string;
   is_umbrella?: boolean;
   created_by_id?: number;
+  created_by_username?: string;
+  created_at?: string;
   parent_contest_id?: number;
   parent_contest_code?: string;
   parent_contest_name?: string;
@@ -448,7 +451,7 @@ export async function createSubContest(
 
 export async function createContest(
   payload: CreateContestPayload
-): Promise<{ code: string; message: string; contest: any }> {
+): Promise<{ code: string; message: string; status?: string; contest: any }> {
   const res = await fetch(`${API_BASE}/contests`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -679,6 +682,83 @@ export async function updateContest(code: string, payload: UpdateContestPayload)
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || err.message || "Failed to update contest");
+  }
+  return res.json();
+}
+
+// -------------------------------------------------------------
+// Admin & Platform Management API
+// -------------------------------------------------------------
+
+export interface AdminOverview {
+  total_contests: number;
+  pending_contests: number;
+  active_contests: number;
+  ended_contests: number;
+  total_articles: number;
+  total_users: number;
+}
+
+export async function fetchAdminOverview(): Promise<AdminOverview> {
+  const res = await fetch(`${API_BASE}/admin/overview`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to fetch admin overview");
+  }
+  return res.json();
+}
+
+export async function fetchAdminContests(status?: string): Promise<Contest[]> {
+  const url = new URL(`${API_BASE}/admin/contests`, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+  if (status && status !== "all") {
+    url.searchParams.set("status", status);
+  }
+  const res = await fetch(url.toString(), {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to fetch admin contests");
+  }
+  return res.json();
+}
+
+export async function approveContest(code: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE}/admin/contests/${encodeURIComponent(code)}/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to approve contest");
+  }
+  return res.json();
+}
+
+export async function rejectContest(code: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE}/admin/contests/${encodeURIComponent(code)}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to reject contest");
+  }
+  return res.json();
+}
+
+export async function deleteContest(code: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to delete contest");
   }
   return res.json();
 }

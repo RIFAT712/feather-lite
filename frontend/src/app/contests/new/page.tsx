@@ -29,7 +29,7 @@ import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { 
   ArrowLeft, ArrowRight, Shield, ShieldAlert, Globe, BookOpen, CheckCircle, 
-  Clock, Sparkles, UserCheck, Layers, Loader2, Calendar, X, Users, Search,
+  Clock, UserCheck, Layers, Loader2, Calendar, X, Users, Search,
   ChevronDown, Check
 } from "lucide-react";
 import { toast } from "sonner";
@@ -167,13 +167,20 @@ export default function NewContestPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError(t("feather-create-name-required"));
+      const msg = t("feather-create-name-required");
+      setError(msg);
+      toast.error(msg);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.getElementById("contest-name-input")?.focus();
       return;
     }
 
     const isUmbrella = contestType === "umbrella";
     if (isUmbrella && selectedExistingContests.length === 0) {
-      setError(t("feather-campaign-requires-one-comp", "Please select at least one existing competition for this multi-community campaign."));
+      const msg = t("feather-campaign-requires-one-comp", "Please select at least one existing competition for this multi-community campaign.");
+      setError(msg);
+      toast.error(msg);
+      document.getElementById("participating-competitions-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -225,7 +232,9 @@ export default function NewContestPage() {
       }
       router.push(`/contests/${res.code}`);
     } catch (err: any) {
-      setError(err.message || "Failed to create contest");
+      const msg = err.message || "Failed to create contest";
+      setError(msg);
+      toast.error(msg);
       setIsSubmitting(false);
     }
   };
@@ -269,7 +278,7 @@ export default function NewContestPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
         {/* Section 1: Contest Details & Schedule */}
         <Card className="border-border shadow-2xs relative z-30 overflow-visible">
           <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
@@ -281,9 +290,13 @@ export default function NewContestPage() {
           <CardContent className="space-y-4 pt-4 px-4 sm:px-6 pb-5">
             {/* Contest Name */}
             <FloatingInput
+              id="contest-name-input"
               label={`${t("feather-create-name-label")} *`}
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (error) setError(null);
+              }}
               required
             />
 
@@ -384,7 +397,7 @@ export default function NewContestPage() {
                 </div>
               ) : (
                 /* Multi-Community Campaign: Select Existing Standalone Competitions */
-                <div className="space-y-4 rounded-xl border border-border/80 bg-muted/10 p-4">
+                <div id="participating-competitions-section" className="space-y-4 rounded-xl border border-border/80 bg-muted/10 p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
                     <div>
                       <div className="flex items-center gap-2">
@@ -1319,31 +1332,35 @@ export default function NewContestPage() {
       )}
 
         {/* Form Action Controls */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-          <Link
-            href="/"
-            className="px-4 py-2 text-xs font-medium rounded-md border border-border hover:bg-muted transition-colors cursor-pointer"
-          >
-            {t("feather-create-cancel")}
-          </Link>
+        <div className="pt-4 border-t border-border">
+          {error && (
+            <p className="text-xs text-destructive font-medium mb-3 text-right animate-in fade-in-0">
+              {error}
+            </p>
+          )}
+          <div className="flex items-center justify-end gap-3">
+            <Link
+              href="/"
+              className="px-4 py-2 text-xs font-medium rounded-md border border-border hover:bg-muted transition-colors cursor-pointer"
+            >
+              {t("feather-create-cancel")}
+            </Link>
 
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="gap-2 text-xs font-medium cursor-pointer shadow-xs min-w-[140px]"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {t("feather-create-creating-btn")}
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                {t("feather-create-submit-btn")}
-              </>
-            )}
-          </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="text-xs font-semibold cursor-pointer shadow-xs min-w-[130px]"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin me-1.5" />
+                  {t("feather-create-creating-btn")}
+                </>
+              ) : (
+                t("feather-create-submit-btn")
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

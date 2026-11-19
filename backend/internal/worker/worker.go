@@ -121,11 +121,14 @@ func (w *TalkQueueWorker) processNextJob() {
 	// Order by attempts ASC first so failed jobs do not starve fresh jobs, then id ASC
 	row := w.db.QueryRow(`
 		SELECT q.id, q.contest_id, q.article_id, q.title, q.attempts,
-		       c.wiki_url, c.wiki_lang, c.add_talk_template, c.talk_template_name,
-		       COALESCE(u.oauth_access_token, '')
+		       c.name, c.wiki_url, c.wiki_lang, c.add_talk_template, c.talk_template_name,
+		       COALESCE(u.oauth_access_token, ''),
+		       COALESCE(sub.wiki_username, '')
 		FROM talk_page_jobs q
 		JOIN contests c ON q.contest_id = c.id
 		LEFT JOIN users u ON c.created_by_id = u.id
+		LEFT JOIN articles a ON q.article_id = a.id
+		LEFT JOIN users sub ON a.submitter_id = sub.id
 		WHERE q.status = 'queued' 
 		  AND (q.retry_after IS NULL OR q.retry_after <= CURRENT_TIMESTAMP)
 		ORDER BY q.attempts ASC, q.id ASC
@@ -133,22 +136,25 @@ func (w *TalkQueueWorker) processNextJob() {
 	`)
 
 	var (
-		jobID            int64
-		contestID        int64
-		articleID        int64
-		title            string
-		attempts         int
-		wikiURL          string
-		wikiLang         string
-		addTalkTemplate  int
-		talkTemplateName string
-		oauthToken       string
+		jobID             int64
+		contestID         int64
+		articleID         int64
+		title             string
+		attempts          int
+		contestName       string
+		wikiURL           string
+		wikiLang          string
+		addTalkTemplate   int
+		talkTemplateName  string
+		oauthToken        string
+		submitterUsername string
 	)
 
 	err := row.Scan(
 		&jobID, &contestID, &articleID, &title, &attempts,
-		&wikiURL, &wikiLang, &addTalkTemplate, &talkTemplateName,
+		&contestName, &wikiURL, &wikiLang, &addTalkTemplate, &talkTemplateName,
 		&oauthToken,
+		&submitterUsername,
 	)
 	if err == sql.ErrNoRows {
 		// Queue is empty, nothing to do
@@ -178,12 +184,15 @@ func (w *TalkQueueWorker) processNextJob() {
 		return
 	}
 
-	// 3. Format templates (support multiple templates newline-separated or JSON array)
+	// 3. Format templates (support multiple templates newline-separated or JSON array) and substitute dynamic parameters
 	templates := FormatTemplates(talkTemplateName)
 	if len(templates) == 0 {
 		_, _ = w.db.Exec("UPDATE talk_page_jobs SET status = 'done', processed_at = CURRENT_TIMESTAMP WHERE id = ?", jobID)
 		return
 	}
+
+	currentYear := fmt.Sprintf("%d", time.Now().Year())
+	templates = SubstitutePlaceholders(templates, submitterUsername, title, contestName, currentYear)
 	templatesBlock := strings.Join(templates, "\n")
 
 	// 4. Determine Talk Page Title (MediaWiki canonical namespace Talk: resolves across all languages)
@@ -262,4 +271,19 @@ func FormatTemplates(raw string) []string {
 		cleaned = append(cleaned, t)
 	}
 	return cleaned
+}
+
+// SubstitutePlaceholders replaces $USER, $SUBMITTER, $TITLE, $ARTICLE, $CONTEST, $YEAR in templates
+func SubstitutePlaceholders(templates []string, submitter, title, contest, year string) []string {
+	res := make([]string, len(templates))
+	for i, t := range templates {
+		t = strings.ReplaceAll(t, "$USER", submitter)
+		t = strings.ReplaceAll(t, "$SUBMITTER", submitter)
+		t = strings.ReplaceAll(t, "$TITLE", title)
+		t = strings.ReplaceAll(t, "$ARTICLE", title)
+		t = strings.ReplaceAll(t, "$CONTEST", contest)
+		t = strings.ReplaceAll(t, "$YEAR", year)
+		res[i] = t
+	}
+	return res
 }

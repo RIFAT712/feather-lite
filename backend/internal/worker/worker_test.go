@@ -86,3 +86,25 @@ func TestGetBackoffSeconds(t *testing.T) {
 		}
 	}
 }
+
+func TestSubstitutePlaceholders(t *testing.T) {
+	templates := []string{
+		"{{Talk page}}",
+		"{{Wiki Loves Earth $YEAR|user=$USER|article=$TITLE}}",
+		"{{$CONTEST|author=$SUBMITTER}}",
+	}
+
+	res := SubstitutePlaceholders(templates, "R1F4T", "Shundorbon", "WLE Contest", "2026")
+
+	expected := []string{
+		"{{Talk page}}",
+		"{{Wiki Loves Earth 2026|user=R1F4T|article=Shundorbon}}",
+		"{{WLE Contest|author=R1F4T}}",
+	}
+
+	for i := range expected {
+		if res[i] != expected[i] {
+			t.Errorf("res[%d] = %q, want %q", i, res[i], expected[i])
+		}
+	}
+}

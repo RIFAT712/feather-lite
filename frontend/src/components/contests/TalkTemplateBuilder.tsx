@@ -256,19 +256,57 @@ export default function TalkTemplateBuilder({
         ))}
       </div>
 
-      {/* Add Button */}
-      {!disabled && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleAddTemplate}
-          className="text-xs gap-1.5 h-8 border-dashed hover:border-primary/50 cursor-pointer"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>{t("feather-templates-add-btn")}</span>
-        </Button>
-      )}
+      {/* Add Button & Quick Variables Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
+        {!disabled && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleAddTemplate}
+            className="text-xs gap-1.5 h-8 border-dashed hover:border-primary/50 cursor-pointer w-fit"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>{t("feather-templates-add-btn")}</span>
+          </Button>
+        )}
+
+        {/* Dynamic Placeholders Helper */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+            <Sparkles className="h-3 w-3 text-primary" />
+            <span>{t("feather-templates-vars-title")}:</span>
+          </span>
+          {[
+            { tag: "$USER", label: t("feather-var-user") },
+            { tag: "$TITLE", label: t("feather-var-title") },
+            { tag: "$CONTEST", label: t("feather-var-contest") },
+            { tag: "$YEAR", label: t("feather-var-year") },
+          ].map((v) => (
+            <button
+              key={v.tag}
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                if (items.length > 0) {
+                  const lastIdx = items.length - 1;
+                  const current = items[lastIdx];
+                  const updated = current
+                    ? current.includes("|")
+                      ? `${current} |user=${v.tag}`
+                      : `${current} |user=${v.tag}`
+                    : `{{talk template |user=${v.tag}}}`;
+                  handleItemChange(lastIdx, updated);
+                }
+              }}
+              className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-muted/60 hover:bg-muted text-foreground border border-border/70 hover:border-primary/40 cursor-pointer transition-colors"
+              title={`${v.tag} — ${v.label}`}
+            >
+              <span className="text-primary font-bold">{v.tag}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Real-time Wikitext Preview */}
       {previewWikitext ? (

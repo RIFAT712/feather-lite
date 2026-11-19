@@ -72,6 +72,7 @@ func main() {
 		api.Get("/me", h.GetMe)
 		api.Get("/overview", h.GetOverview)
 		api.Get("/contests", h.ListContests)
+		api.Get("/available-contests", h.ListGlobalAvailableContests)
 		api.Post("/contests", h.CreateContest)
 		api.Get("/contests/{code}", h.GetContest)
 		api.Put("/contests/{code}", h.UpdateContest)

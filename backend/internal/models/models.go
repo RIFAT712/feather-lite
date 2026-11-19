@@ -231,6 +231,8 @@ type CreateContestRequest struct {
 	EndDate               string                `json:"end_date"`
 	IsUmbrella            bool                  `json:"is_umbrella"`
 	ParticipatingWikis    []CommunityRuleConfig `json:"participating_wikis,omitempty"`
+	ExistingContestCodes  []string              `json:"existing_contest_codes,omitempty"`
+	ExistingContestIDs    []int64               `json:"existing_contest_ids,omitempty"`
 	RuleMustBeCreator     bool                  `json:"rule_must_be_creator"`
 	RuleNoRedirect        bool                  `json:"rule_no_redirect"`
 	RuleNoDisambig        bool                  `json:"rule_no_disambig"`

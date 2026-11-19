@@ -430,6 +430,21 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// If this is a Multi-Community Campaign, attach any selected existing contests
+	if req.IsUmbrella {
+		for _, cCode := range req.ExistingContestCodes {
+			cCode = strings.TrimSpace(cCode)
+			if cCode != "" {
+				_, _ = tx.Exec("UPDATE contests SET parent_contest_id = ? WHERE code = ? AND is_umbrella = 0", contestID, cCode)
+			}
+		}
+		for _, cID := range req.ExistingContestIDs {
+			if cID > 0 {
+				_, _ = tx.Exec("UPDATE contests SET parent_contest_id = ? WHERE id = ? AND is_umbrella = 0", contestID, cID)
+			}
+		}
+	}
+
 	// If this is a Multi-Community Campaign, spawn initial sub-contests for each participating community
 	if req.IsUmbrella && len(req.ParticipatingWikis) > 0 {
 		for _, p := range req.ParticipatingWikis {
@@ -1107,6 +1122,8 @@ func (h *Handler) GetAvailableContests(w http.ResponseWriter, r *http.Request) {
 			LEFT JOIN articles a ON a.contest_id = c.id
 			WHERE c.is_umbrella = 0
 			  AND (c.parent_contest_id IS NULL OR c.parent_contest_id = 0)
+			  AND c.status = 'active'
+			  AND c.is_draft = 0
 			  AND c.id != ?
 			  AND (c.name LIKE ? OR c.code LIKE ? OR c.wiki_dbname LIKE ?)
 			GROUP BY c.id
@@ -1121,6 +1138,8 @@ func (h *Handler) GetAvailableContests(w http.ResponseWriter, r *http.Request) {
 			LEFT JOIN articles a ON a.contest_id = c.id
 			WHERE c.is_umbrella = 0
 			  AND (c.parent_contest_id IS NULL OR c.parent_contest_id = 0)
+			  AND c.status = 'active'
+			  AND c.is_draft = 0
 			  AND c.id != ?
 			GROUP BY c.id
 			ORDER BY c.id DESC LIMIT 30
@@ -1131,6 +1150,66 @@ func (h *Handler) GetAvailableContests(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.db.Query(query, args...)
 	if err != nil {
 		log.Printf("[GetAvailableContests] Query error: %v", err)
+		jsonError(w, http.StatusInternalServerError, "Failed to query available contests")
+		return
+	}
+	defer rows.Close()
+
+	list := make([]models.AvailableContestSummary, 0)
+	for rows.Next() {
+		var item models.AvailableContestSummary
+		var start, end time.Time
+		if err := rows.Scan(
+			&item.ID, &item.Code, &item.Name, &item.WikiDbName, &item.WikiURL, &item.WikiLang,
+			&start, &end, &item.Status, &item.TotalArticles,
+		); err != nil {
+			continue
+		}
+		item.StartDate = start.Format(time.RFC3339)
+		item.EndDate = end.Format(time.RFC3339)
+		list = append(list, item)
+	}
+
+	jsonResponse(w, http.StatusOK, list)
+}
+
+func (h *Handler) ListGlobalAvailableContests(w http.ResponseWriter, r *http.Request) {
+	search := strings.TrimSpace(r.URL.Query().Get("q"))
+	wikiFilter := strings.TrimSpace(r.URL.Query().Get("wiki"))
+	var query string
+	var args []any
+
+	baseWhere := `
+		WHERE c.is_umbrella = 0
+		  AND (c.parent_contest_id IS NULL OR c.parent_contest_id = 0)
+		  AND c.status = 'active'
+		  AND c.is_draft = 0
+	`
+
+	if wikiFilter != "" && wikiFilter != "all" {
+		baseWhere += " AND c.wiki_dbname = ? "
+		args = append(args, wikiFilter)
+	}
+
+	if search != "" {
+		likePattern := "%" + search + "%"
+		baseWhere += " AND (c.name LIKE ? OR c.code LIKE ? OR c.wiki_dbname LIKE ?) "
+		args = append(args, likePattern, likePattern, likePattern)
+	}
+
+	query = `
+		SELECT c.id, c.code, c.name, c.wiki_dbname, c.wiki_url, c.wiki_lang, c.start_date, c.end_date, c.status,
+		       COUNT(a.id) as total_articles
+		FROM contests c
+		LEFT JOIN articles a ON a.contest_id = c.id
+	` + baseWhere + `
+		GROUP BY c.id
+		ORDER BY c.id DESC LIMIT 100
+	`
+
+	rows, err := h.db.Query(query, args...)
+	if err != nil {
+		log.Printf("[ListGlobalAvailableContests] Query error: %v", err)
 		jsonError(w, http.StatusInternalServerError, "Failed to query available contests")
 		return
 	}

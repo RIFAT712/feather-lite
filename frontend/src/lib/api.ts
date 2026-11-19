@@ -446,6 +446,8 @@ export interface CreateContestPayload {
   end_date: string;
   is_umbrella?: boolean;
   participating_wikis?: CommunityRuleConfig[];
+  existing_contest_codes?: string[];
+  existing_contest_ids?: number[];
   rule_must_be_creator?: boolean;
   rule_no_redirect?: boolean;
   rule_no_disambig?: boolean;
@@ -494,6 +496,21 @@ export async function createContest(
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error || "Failed to create contest");
   }
+  return res.json();
+}
+
+export type AvailableContest = AvailableContestSummary;
+
+export async function fetchGlobalAvailableContests(search?: string, wiki?: string): Promise<AvailableContestSummary[]> {
+  const params = new URLSearchParams();
+  if (search?.trim()) params.set("q", search.trim());
+  if (wiki?.trim() && wiki !== "all") params.set("wiki", wiki.trim());
+  const q = params.toString() ? `?${params.toString()}` : "";
+  const res = await fetch(`${API_BASE}/available-contests${q}`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch available contests");
   return res.json();
 }
 

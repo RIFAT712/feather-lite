@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/i18n/I18nContext";
-import { createContest, fetchMe, CreateContestPayload, CommunityRuleConfig } from "@/lib/api";
+import { 
+  createContest, fetchMe, CreateContestPayload, CommunityRuleConfig,
+  AvailableContest, fetchGlobalAvailableContests 
+} from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
@@ -17,7 +20,7 @@ import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { 
   ArrowLeft, ArrowRight, Shield, ShieldAlert, Globe, BookOpen, CheckCircle, 
-  Clock, Sparkles, UserCheck, Layers, Loader2, Calendar, X, Users
+  Clock, Sparkles, UserCheck, Layers, Loader2, Calendar, X, Users, Search
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -44,103 +47,36 @@ export default function NewContestPage() {
   // Contest Type: "standard" (single wiki) vs "umbrella" (multi-community campaign)
   const [contestType, setContestType] = useState<"standard" | "umbrella">("standard");
 
-  // Participating communities for Multi-Community Campaign
-  const [participatingWikis, setParticipatingWikis] = useState<CommunityRuleConfig[]>([
-    {
-      wiki_dbname: "bnwiki",
-      wiki_url: "https://bn.wikipedia.org",
-      wiki_lang: "bn",
-      name: "বাংলা উইকিপিডিয়া",
-      min_words: 300,
-      min_bytes: 3000,
-      min_refs: 1,
-      rule_must_be_creator: true,
-      juries: [],
-    },
-    {
-      wiki_dbname: "enwiki",
-      wiki_url: "https://en.wikipedia.org",
-      wiki_lang: "en",
-      name: "English Wikipedia",
-      min_words: 300,
-      min_bytes: 3000,
-      min_refs: 1,
-      rule_must_be_creator: true,
-      juries: [],
-    },
-  ]);
+  // Selected existing competitions for Multi-Community Campaign
+  const [selectedExistingContests, setSelectedExistingContests] = useState<AvailableContest[]>([]);
+  const [compSearch, setCompSearch] = useState("");
+  const [compWikiFilter, setCompWikiFilter] = useState("all");
 
-  // Candidate wiki state to add
-  const [candidateWiki, setCandidateWiki] = useState({
-    dbname: "hiwiki",
-    url: "https://hi.wikipedia.org",
-    lang: "hi",
-    name: "हिन्दी विकिपीडिया",
+  const { data: availableContests = [], isLoading: isLoadingAvailable } = useQuery<AvailableContest[]>({
+    queryKey: ["availableContests", compSearch, compWikiFilter],
+    queryFn: () => fetchGlobalAvailableContests(compSearch, compWikiFilter),
+    enabled: contestType === "umbrella",
   });
 
-  const handleAddCommunity = () => {
-    if (!candidateWiki.dbname) return;
-    if (participatingWikis.some((w) => w.wiki_dbname === candidateWiki.dbname)) {
-      toast.error(`${candidateWiki.dbname} is already added`);
+  const availableWikis = useMemo(() => {
+    const set = new Set<string>();
+    availableContests.forEach((c) => {
+      if (c.wiki_dbname) set.add(c.wiki_dbname);
+    });
+    return Array.from(set).sort();
+  }, [availableContests]);
+
+  const handleAddExistingContest = (contest: AvailableContest) => {
+    if (selectedExistingContests.some((c) => c.code === contest.code)) {
+      toast.error(t("feather-campaign-already-selected", "Competition is already added"));
       return;
     }
-    setParticipatingWikis((prev) => [
-      ...prev,
-      {
-        wiki_dbname: candidateWiki.dbname,
-        wiki_url: candidateWiki.url,
-        wiki_lang: candidateWiki.lang,
-        name: candidateWiki.name || candidateWiki.dbname,
-        min_words: hasMinWords ? Number(minWords) || 300 : 0,
-        min_bytes: hasMinBytes ? Number(minBytes) || 3000 : 0,
-        min_refs: hasMinRefs ? Number(minRefs) || 1 : 0,
-        rule_must_be_creator: mustBeCreator,
-        juries: [],
-      },
-    ]);
-    toast.success(`Added ${candidateWiki.dbname}`);
+    setSelectedExistingContests((prev) => [...prev, contest]);
+    toast.success(`Added ${contest.name}`);
   };
 
-  const handleRemoveCommunity = (dbname: string) => {
-    setParticipatingWikis((prev) => prev.filter((w) => w.wiki_dbname !== dbname));
-  };
-
-  const handleUpdateCommunityRule = (dbname: string, updates: Partial<CommunityRuleConfig>) => {
-    setParticipatingWikis((prev) =>
-      prev.map((w) => (w.wiki_dbname === dbname ? { ...w, ...updates } : w))
-    );
-  };
-
-  const handleAddPresetIndic = () => {
-    const indic: CommunityRuleConfig[] = [
-      { wiki_dbname: "bnwiki", wiki_url: "https://bn.wikipedia.org", wiki_lang: "bn", name: "বাংলা উইকিপিডিয়া", min_words: 300, min_bytes: 3000, rule_must_be_creator: true },
-      { wiki_dbname: "hiwiki", wiki_url: "https://hi.wikipedia.org", wiki_lang: "hi", name: "हिन्दी विकिपीडिया", min_words: 300, min_bytes: 3000, rule_must_be_creator: true },
-      { wiki_dbname: "tawiki", wiki_url: "https://ta.wikipedia.org", wiki_lang: "ta", name: "தமிழ் விக்கிப்பீடியா", min_words: 300, min_bytes: 3000, rule_must_be_creator: true },
-      { wiki_dbname: "tewiki", wiki_url: "https://te.wikipedia.org", wiki_lang: "te", name: "తెలుగు వికీపీడియా", min_words: 300, min_bytes: 3000, rule_must_be_creator: true },
-      { wiki_dbname: "mrwiki", wiki_url: "https://mr.wikipedia.org", wiki_lang: "mr", name: "मराठी विकिपीडिया", min_words: 300, min_bytes: 3000, rule_must_be_creator: true },
-    ];
-    setParticipatingWikis((prev) => {
-      const existing = new Set(prev.map((w) => w.wiki_dbname));
-      const newItems = indic.filter((w) => !existing.has(w.wiki_dbname));
-      return [...prev, ...newItems];
-    });
-    toast.success("Added Indic wikis cluster");
-  };
-
-  const handleAddPresetTop = () => {
-    const top: CommunityRuleConfig[] = [
-      { wiki_dbname: "enwiki", wiki_url: "https://en.wikipedia.org", wiki_lang: "en", name: "English Wikipedia", min_words: 300, min_bytes: 3000, rule_must_be_creator: true },
-      { wiki_dbname: "eswiki", wiki_url: "https://es.wikipedia.org", wiki_lang: "es", name: "Wikipedia en español", min_words: 300, min_bytes: 3000, rule_must_be_creator: true },
-      { wiki_dbname: "frwiki", wiki_url: "https://fr.wikipedia.org", wiki_lang: "fr", name: "Wikipédia en français", min_words: 300, min_bytes: 3000, rule_must_be_creator: true },
-      { wiki_dbname: "dewiki", wiki_url: "https://de.wikipedia.org", wiki_lang: "de", name: "Deutsch Wikipedia", min_words: 300, min_bytes: 3000, rule_must_be_creator: true },
-      { wiki_dbname: "jawiki", wiki_url: "https://ja.wikipedia.org", wiki_lang: "ja", name: "日本語版ウィキペディア", min_words: 300, min_bytes: 3000, rule_must_be_creator: true },
-    ];
-    setParticipatingWikis((prev) => {
-      const existing = new Set(prev.map((w) => w.wiki_dbname));
-      const newItems = top.filter((w) => !existing.has(w.wiki_dbname));
-      return [...prev, ...newItems];
-    });
-    toast.success("Added global top wikis cluster");
+  const handleRemoveExistingContest = (code: string) => {
+    setSelectedExistingContests((prev) => prev.filter((c) => c.code !== code));
   };
   
   // Wiki Target (default Bengali Wikipedia)
@@ -193,8 +129,8 @@ export default function NewContestPage() {
     }
 
     const isUmbrella = contestType === "umbrella";
-    if (isUmbrella && participatingWikis.length === 0) {
-      setError(t("feather-campaign-no-communities"));
+    if (isUmbrella && selectedExistingContests.length === 0) {
+      setError(t("feather-campaign-requires-one-comp", "Please select at least one existing competition for this multi-community campaign."));
       return;
     }
 
@@ -204,36 +140,37 @@ export default function NewContestPage() {
     const payload: CreateContestPayload = {
       name: name.trim(),
       description: description.trim(),
-      wiki_dbname: isUmbrella ? (participatingWikis[0]?.wiki_dbname || "bnwiki") : (wikiDbName.trim() || "bnwiki"),
-      wiki_url: isUmbrella ? (participatingWikis[0]?.wiki_url || "https://bn.wikipedia.org") : (wikiURL.trim() || "https://bn.wikipedia.org"),
-      wiki_lang: isUmbrella ? (participatingWikis[0]?.wiki_lang || "bn") : (wikiLang.trim() || "bn"),
+      wiki_dbname: isUmbrella ? (selectedExistingContests[0]?.wiki_dbname || "meta") : (wikiDbName.trim() || "bnwiki"),
+      wiki_url: isUmbrella ? (selectedExistingContests[0]?.wiki_url || "https://meta.wikimedia.org") : (wikiURL.trim() || "https://bn.wikipedia.org"),
+      wiki_lang: isUmbrella ? (selectedExistingContests[0]?.wiki_lang || "en") : (wikiLang.trim() || "bn"),
       wiki_tz: wikiTZ.trim() || "UTC",
       start_date: new Date(startDate).toISOString(),
       end_date: new Date(endDate).toISOString(),
       is_umbrella: isUmbrella,
-      participating_wikis: isUmbrella ? participatingWikis : undefined,
-      rule_must_be_creator: mustBeCreator,
-      rule_no_redirect: noRedirect,
-      rule_no_disambig: noDisambig,
-      rule_mainspace_only: mainspaceOnly,
-      rule_created_in_window: createdInWindow,
+      existing_contest_codes: isUmbrella ? selectedExistingContests.map((c) => c.code) : undefined,
+      existing_contest_ids: isUmbrella ? selectedExistingContests.map((c) => c.id) : undefined,
+      rule_must_be_creator: isUmbrella ? false : mustBeCreator,
+      rule_no_redirect: isUmbrella ? false : noRedirect,
+      rule_no_disambig: isUmbrella ? false : noDisambig,
+      rule_mainspace_only: isUmbrella ? false : mainspaceOnly,
+      rule_created_in_window: isUmbrella ? false : createdInWindow,
       custom_creation_start_date:
-        !createdInWindow && customCreationStart
+        !isUmbrella && !createdInWindow && customCreationStart
           ? new Date(customCreationStart).toISOString()
           : undefined,
       custom_creation_end_date:
-        !createdInWindow && customCreationEnd
+        !isUmbrella && !createdInWindow && customCreationEnd
           ? new Date(customCreationEnd).toISOString()
           : undefined,
-      min_bytes: hasMinBytes ? Number(minBytes) || 0 : 0,
-      min_words: hasMinWords ? Number(minWords) || 0 : 0,
-      min_refs: hasMinRefs ? Number(minRefs) || 0 : 0,
+      min_bytes: isUmbrella ? 0 : (hasMinBytes ? Number(minBytes) || 0 : 0),
+      min_words: isUmbrella ? 0 : (hasMinWords ? Number(minWords) || 0 : 0),
+      min_refs: isUmbrella ? 0 : (hasMinRefs ? Number(minRefs) || 0 : 0),
       max_submissions_per_user: 0,
       rank_by_words: rankByWords,
-      add_talk_template: addTalkTemplate,
-      talk_template_name: talkTemplateName.trim(),
+      add_talk_template: isUmbrella ? false : addTalkTemplate,
+      talk_template_name: isUmbrella ? "" : (addTalkTemplate ? talkTemplateName.trim() : ""),
       distribute_jury_queue: distributeJuryQueue,
-      juries: juries,
+      juries: juries.filter(Boolean),
     };
 
     try {
@@ -403,18 +340,18 @@ export default function NewContestPage() {
                   </div>
                 </div>
               ) : (
-                /* Multi-Community Campaign: Community Manager with Autonomous Rules */
+                /* Multi-Community Campaign: Select Existing Standalone Competitions */
                 <div className="space-y-4 rounded-xl border border-border/80 bg-muted/10 p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
                     <div>
                       <div className="flex items-center gap-2">
                         <Layers className="h-4 w-4 text-primary" />
                         <h3 className="text-sm font-semibold text-foreground">
-                          {t("feather-campaign-manage-communities", participatingWikis.length)}
+                          {t("feather-campaign-select-existing-title", String(selectedExistingContests.length))}
                         </h3>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {t("feather-campaign-rule-autonomy-hint")}
+                        {t("feather-campaign-select-existing-hint")}
                       </p>
                     </div>
                     <div className="w-full sm:w-auto">
@@ -426,154 +363,192 @@ export default function NewContestPage() {
                     </div>
                   </div>
 
-                  {/* Preset Quick-Add Buttons */}
-                  <div className="flex items-center gap-2 flex-wrap text-xs">
-                    <span className="text-muted-foreground text-[11px] font-medium">Quick Clusters:</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-7 px-2.5 cursor-pointer"
-                      onClick={handleAddPresetIndic}
-                    >
-                      {t("feather-campaign-preset-indic")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-7 px-2.5 cursor-pointer"
-                      onClick={handleAddPresetTop}
-                    >
-                      {t("feather-campaign-preset-top")}
-                    </Button>
-                  </div>
+                  {/* Search, Filter & Pick Existing Standalone Competitions */}
+                  <div className="space-y-2.5 bg-card p-3 rounded-lg border border-border/60 shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                        <input
+                          type="text"
+                          value={compSearch}
+                          onChange={(e) => setCompSearch(e.target.value)}
+                          placeholder={t("feather-campaign-link-search-placeholder", "Search ongoing competitions by name, code, or wiki...")}
+                          className="w-full h-9 pl-8.5 pr-8 rounded-md border border-input bg-background text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+                        {compSearch ? (
+                          <button
+                            type="button"
+                            onClick={() => setCompSearch("")}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        ) : isLoadingAvailable ? (
+                          <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                        ) : null}
+                      </div>
+                    </div>
 
-                  {/* Add Community Picker Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 items-end bg-card p-3 rounded-lg border border-border/60">
-                    <div className="md:col-span-3">
-                      <WikiSelector
-                        wikiDbName={candidateWiki.dbname}
-                        wikiURL={candidateWiki.url}
-                        wikiLang={candidateWiki.lang}
-                        label="Select Community / Language Wiki to Add"
-                        onChange={(data) => {
-                          setCandidateWiki({
-                            dbname: data.dbname,
-                            url: data.url,
-                            lang: data.lang,
-                            name: data.nativeName || data.dbname,
-                          });
-                        }}
-                      />
-                    </div>
-                    <div className="md:col-span-1">
-                      <Button
-                        type="button"
-                        onClick={handleAddCommunity}
-                        className="w-full h-11 text-xs cursor-pointer gap-1.5"
-                      >
-                        <Layers className="h-3.5 w-3.5" />
-                        <span>Add Community</span>
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Added Participating Communities List */}
-                  {participatingWikis.length === 0 ? (
-                    <div className="text-center py-6 text-xs text-muted-foreground border border-dashed rounded-lg bg-card/50">
-                      {t("feather-campaign-no-communities")}
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5 pt-1">
-                      {participatingWikis.map((pw, idx) => (
-                        <div
-                          key={pw.wiki_dbname}
-                          className="p-3.5 rounded-lg border border-border/80 bg-card shadow-2xs space-y-3"
+                    {/* Wiki Quick-Filter Pills */}
+                    {availableWikis.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap text-xs pt-0.5">
+                        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mr-1">
+                          Wiki:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setCompWikiFilter("all")}
+                          className={`px-2 py-0.5 text-[11px] rounded transition-colors cursor-pointer ${
+                            compWikiFilter === "all"
+                              ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                              : "bg-muted/70 text-muted-foreground hover:text-foreground border border-border/60"
+                          }`}
                         >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+                          All ({availableContests.length})
+                        </button>
+                        {availableWikis.map((wiki) => (
+                          <button
+                            key={wiki}
+                            type="button"
+                            onClick={() => setCompWikiFilter(wiki)}
+                            className={`px-2 py-0.5 text-[11px] font-mono uppercase rounded transition-colors cursor-pointer ${
+                              compWikiFilter === wiki
+                                ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                                : "bg-muted/70 text-muted-foreground hover:text-foreground border border-border/60"
+                            }`}
+                          >
+                            {wiki}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Available Contests Picker List (Only Ongoing Comps) */}
+                    <div className="max-h-56 overflow-y-auto divide-y divide-border/40 rounded-md border border-border/60 bg-background/50">
+                      {availableContests.length === 0 ? (
+                        <div className="py-5 text-center text-xs text-muted-foreground">
+                          {t("feather-campaign-no-avail-contests", "No standalone ongoing competitions found.")}
+                        </div>
+                      ) : (
+                        availableContests.map((c) => {
+                          const isAlreadyAdded = selectedExistingContests.some((sel) => sel.code === c.code);
+                          return (
+                            <div
+                              key={c.code}
+                              className="flex items-center justify-between p-2.5 hover:bg-muted/40 transition-colors text-xs gap-2"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title="Ongoing" />
+                                  <span className="font-semibold text-foreground truncate">{c.name}</span>
+                                  <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0 h-4">
+                                    {c.code}
+                                  </Badge>
+                                  <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0 h-4 uppercase">
+                                    {c.wiki_dbname}
+                                  </Badge>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {new Date(c.start_date).toLocaleDateString()} – {new Date(c.end_date).toLocaleDateString()}
+                                  </span>
+                                  {c.total_articles > 0 && (
+                                    <span className="text-[10px] text-primary/80 font-medium">
+                                      {c.total_articles} articles
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <Button
+                                type="button"
+                                variant={isAlreadyAdded ? "ghost" : "outline"}
+                                size="sm"
+                                disabled={isAlreadyAdded}
+                                onClick={() => handleAddExistingContest(c)}
+                                className={`h-6.5 text-xs px-2.5 shrink-0 ${
+                                  isAlreadyAdded
+                                    ? "text-muted-foreground cursor-default"
+                                    : "cursor-pointer text-primary border-primary/40 hover:bg-primary/10"
+                                }`}
+                              >
+                                {isAlreadyAdded ? (
+                                  <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle className="h-3 w-3" />
+                                    {t("feather-campaign-already-added", "Added")}
+                                  </span>
+                                ) : (
+                                  <span>+ {t("feather-campaign-link-btn", "Add")}</span>
+                                )}
+                              </Button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selected Competitions List */}
+                  <div className="space-y-2 pt-1">
+                    <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Selected Competitions ({selectedExistingContests.length}):
+                    </div>
+
+                    {selectedExistingContests.length === 0 ? (
+                      <div className="text-center py-6 px-4 text-xs text-muted-foreground border border-dashed rounded-lg bg-card/40">
+                        {t("feather-campaign-no-comps-selected")}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {selectedExistingContests.map((c, idx) => (
+                          <div
+                            key={c.code}
+                            className="p-3 rounded-lg border border-border/80 bg-card shadow-2xs flex items-center justify-between gap-3"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
                                 {idx + 1}
                               </span>
-                              <Badge variant="secondary" className="font-mono text-xs font-semibold">
-                                {pw.wiki_dbname}
-                              </Badge>
-                              <span className="text-xs font-medium text-foreground">
-                                {pw.name}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground uppercase font-mono">
-                                ({pw.wiki_lang})
-                              </span>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-xs font-bold text-foreground truncate">{c.name}</span>
+                                  <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0 h-4">
+                                    {c.code}
+                                  </Badge>
+                                  <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0 h-4 uppercase">
+                                    {c.wiki_dbname}
+                                  </Badge>
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[10px] px-1.5 py-0 h-4 capitalize ${
+                                      c.status === "active"
+                                        ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    {c.status}
+                                  </Badge>
+                                </div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  {new Date(c.start_date).toLocaleDateString()} – {new Date(c.end_date).toLocaleDateString()}
+                                  {c.total_articles > 0 && ` • ${c.total_articles} articles`}
+                                </div>
+                              </div>
                             </div>
+
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
-                              onClick={() => handleRemoveCommunity(pw.wiki_dbname)}
-                              title="Remove community"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer shrink-0"
+                              onClick={() => handleRemoveExistingContest(c.code)}
+                              title="Remove competition"
                             >
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
-
-                          {/* Autonomous Local Rule Controls */}
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-xs border-t border-border/50">
-                            <div>
-                              <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-                                Min Words (Local)
-                              </label>
-                              <input
-                                type="number"
-                                min={0}
-                                value={pw.min_words ?? 300}
-                                onChange={(e) =>
-                                  handleUpdateCommunityRule(pw.wiki_dbname, {
-                                    min_words: Number(e.target.value) || 0,
-                                  })
-                                }
-                                className="w-full h-8 px-2.5 rounded-md border border-input bg-background text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-                                Talk Page Template
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="Template:WLC 2026"
-                                value={pw.talk_template_name || ""}
-                                onChange={(e) =>
-                                  handleUpdateCommunityRule(pw.wiki_dbname, {
-                                    talk_template_name: e.target.value,
-                                  })
-                                }
-                                className="w-full h-8 px-2.5 rounded-md border border-input bg-background text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                              />
-                            </div>
-
-                            <div className="pt-1">
-                              <UserTagInput
-                                label="Local Juries"
-                                value={pw.juries || []}
-                                onChange={(users) =>
-                                  handleUpdateCommunityRule(pw.wiki_dbname, {
-                                    juries: users,
-                                  })
-                                }
-                                wikiUrl={pw.wiki_url}
-                                placeholder="Add local jury..."
-                                compact
-                                labelBg="bg-card"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -636,8 +611,9 @@ export default function NewContestPage() {
           </CardContent>
         </Card>
 
-        {/* Section 2: Qualification & Eligibility Rules */}
-        <Card className="border-border shadow-2xs relative z-20 overflow-visible">
+        {/* Section 2: Qualification & Eligibility Rules (Standard only; Multi-Community uses autonomous local rules) */}
+        {contestType === "standard" ? (
+          <Card className="border-border shadow-2xs relative z-20 overflow-visible">
           <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
             <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-primary shrink-0" />
@@ -1045,8 +1021,25 @@ export default function NewContestPage() {
             </div>
           </CardContent>
         </Card>
+      ) : (
+        <Card className="border-border/70 bg-muted/20 shadow-2xs">
+          <CardContent className="p-4 sm:p-5 flex items-start gap-3.5">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+              <CheckCircle className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold text-foreground">
+                {t("feather-campaign-rules-note-title")}
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t("feather-campaign-rules-note-desc")}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Section 3: Jury Administration & Automation */}
+      {/* Section 3: Jury Administration & Automation */}
         <Card className="border-border shadow-2xs relative z-10">
           <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
             <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
@@ -1114,35 +1107,37 @@ export default function NewContestPage() {
               </div>
             </div>
 
-            {/* Part C: Talk-Page Automation */}
-            <div className="pt-3 border-t border-border/60 space-y-3">
-              <label className="flex items-start gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={addTalkTemplate}
-                  onChange={(e) => setAddTalkTemplate(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
-                <div className="space-y-0.5">
-                  <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5 text-primary" />
-                    <span>{t("feather-create-add-template")}</span>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {t("feather-create-add-template-hint")}
-                  </div>
-                </div>
-              </label>
-
-              {addTalkTemplate && (
-                <div className="pt-2 animate-in fade-in-0 duration-150">
-                  <TalkTemplateBuilder
-                    value={talkTemplateName}
-                    onChange={setTalkTemplateName}
+            {/* Part C: Talk-Page Automation (Standard single-wiki contests only) */}
+            {contestType === "standard" && (
+              <div className="pt-3 border-t border-border/60 space-y-3">
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={addTalkTemplate}
+                    onChange={(e) => setAddTalkTemplate(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
                   />
-                </div>
-              )}
-            </div>
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <Layers className="h-3.5 w-3.5 text-primary" />
+                      <span>{t("feather-create-add-template")}</span>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {t("feather-create-add-template-hint")}
+                    </div>
+                  </div>
+                </label>
+
+                {addTalkTemplate && (
+                  <div className="pt-2 animate-in fade-in-0 duration-150">
+                    <TalkTemplateBuilder
+                      value={talkTemplateName}
+                      onChange={setTalkTemplateName}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

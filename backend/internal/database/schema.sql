@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS talk_page_jobs (
     status TEXT NOT NULL DEFAULT 'queued', -- 'queued', 'processing', 'done', 'failed'
     attempts INTEGER NOT NULL DEFAULT 0,
     error TEXT DEFAULT '',
+    retry_after DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     processed_at DATETIME
 );
@@ -106,5 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_articles_submitter ON articles(contest_id, submit
 CREATE INDEX IF NOT EXISTS idx_reviews_article ON reviews(article_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_id);
 CREATE INDEX IF NOT EXISTS idx_talk_jobs_status ON talk_page_jobs(status, id);
+CREATE INDEX IF NOT EXISTS idx_talk_jobs_queue ON talk_page_jobs(status, attempts, id);
+CREATE INDEX IF NOT EXISTS idx_talk_jobs_contest ON talk_page_jobs(contest_id, status, id DESC);
 CREATE INDEX IF NOT EXISTS idx_contests_parent ON contests(parent_contest_id);
 CREATE INDEX IF NOT EXISTS idx_contests_is_umbrella ON contests(is_umbrella);

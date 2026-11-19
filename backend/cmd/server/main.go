@@ -36,7 +36,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	talkQueue := worker.NewTalkQueueWorker(1000)
+	talkQueue := worker.NewTalkQueueWorker(db.DB)
 	talkQueue.Start(ctx)
 
 	h := handlers.New(cfg, db, talkQueue)
@@ -87,6 +87,9 @@ func main() {
 		api.Get("/contests/{code}/jury-stats", h.GetJuryStats)
 		api.Post("/contests/{code}/redistribute", h.RedistributeQueues)
 		api.Get("/contests/{code}/users/{username}", h.GetContestUserProfile)
+		api.Get("/contests/{code}/talk-queue", h.GetTalkQueue)
+		api.Post("/contests/{code}/talk-queue/retry", h.RetryTalkQueue)
+		api.Post("/contests/{code}/talk-queue/enqueue-all", h.EnqueueMissingTalkJobs)
 		api.Get("/users/{username}/profile", h.GetUserGlobalProfile)
 
 		// Admin & Platform Management routes

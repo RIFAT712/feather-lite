@@ -438,3 +438,204 @@ func FetchUserSuggestions(wikiURL, prefix string) ([]string, error) {
 	return users, nil
 }
 
+// FetchCSRFToken queries MediaWiki action=query&meta=tokens&type=csrf to obtain an edit token.
+func FetchCSRFToken(wikiURL, oauthToken string) (string, error) {
+	if strings.TrimSpace(wikiURL) == "" {
+		wikiURL = "https://bn.wikipedia.org"
+	}
+	apiURL := fmt.Sprintf("%s/w/api.php?action=query&meta=tokens&type=csrf&format=json", strings.TrimRight(wikiURL, "/"))
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", DefaultUserAgent)
+	if oauthToken != "" {
+		req.Header.Set("Authorization", "Bearer "+oauthToken)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("csrf token request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var res struct {
+		Query struct {
+			Tokens struct {
+				CsrfToken string `json:"csrftoken"`
+			} `json:"tokens"`
+		} `json:"query"`
+		Error struct {
+			Code string `json:"code"`
+			Info string `json:"info"`
+		} `json:"error"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return "", fmt.Errorf("failed to decode csrf response: %w", err)
+	}
+	if res.Error.Code != "" {
+		return "", fmt.Errorf("mediawiki csrf error: %s", res.Error.Info)
+	}
+	if res.Query.Tokens.CsrfToken == "" {
+		return "", errors.New("empty csrf token returned from mediawiki")
+	}
+
+	return res.Query.Tokens.CsrfToken, nil
+}
+
+// FetchPageWikitext retrieves existing wikitext and page existence status.
+func FetchPageWikitext(wikiURL, title, oauthToken string) (string, bool, error) {
+	if strings.TrimSpace(wikiURL) == "" {
+		wikiURL = "https://bn.wikipedia.org"
+	}
+	apiURL := fmt.Sprintf("%s/w/api.php?action=query&prop=revisions&titles=%s&rvprop=content&rvslots=main&format=json&formatversion=2",
+		strings.TrimRight(wikiURL, "/"),
+		url.QueryEscape(title),
+	)
+
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return "", false, err
+	}
+	req.Header.Set("User-Agent", DefaultUserAgent)
+	if oauthToken != "" {
+		req.Header.Set("Authorization", "Bearer "+oauthToken)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", false, err
+	}
+	defer resp.Body.Close()
+
+	var res struct {
+		Query struct {
+			Pages []struct {
+				PageID    int    `json:"pageid"`
+				Missing   bool   `json:"missing"`
+				Revisions []struct {
+					Slots struct {
+						Main struct {
+							Content string `json:"content"`
+						} `json:"main"`
+					} `json:"slots"`
+				} `json:"revisions"`
+			} `json:"pages"`
+		} `json:"query"`
+		Error struct {
+			Code string `json:"code"`
+			Info string `json:"info"`
+		} `json:"error"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return "", false, err
+	}
+	if res.Error.Code != "" {
+		return "", false, fmt.Errorf("mediawiki error: %s", res.Error.Info)
+	}
+
+	if len(res.Query.Pages) == 0 || res.Query.Pages[0].Missing {
+		return "", false, nil
+	}
+
+	page := res.Query.Pages[0]
+	if len(page.Revisions) > 0 {
+		return page.Revisions[0].Slots.Main.Content, true, nil
+	}
+	return "", true, nil
+}
+
+// PrependTemplatesToTalkPage prepends the given templates to the talk page, skipping any already present.
+func PrependTemplatesToTalkPage(wikiURL, talkTitle, templatesBlock, summary, oauthToken string) error {
+	existingWikitext, _, err := FetchPageWikitext(wikiURL, talkTitle, oauthToken)
+	if err != nil {
+		return fmt.Errorf("failed checking talk page: %w", err)
+	}
+
+	// Parse individual template names from block to check for duplicates
+	var linesToAdd []string
+	for _, line := range strings.Split(templatesBlock, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		// Extract core template name: e.g. "{{Wiki Loves Earth}}" -> "Wiki Loves Earth", or "{{WLE|2026}}" -> "WLE"
+		coreName := strings.Trim(trimmed, "{}")
+		coreName = strings.TrimSpace(coreName)
+		templateName := coreName
+		if pipeIdx := strings.Index(templateName, "|"); pipeIdx != -1 {
+			templateName = strings.TrimSpace(templateName[:pipeIdx])
+		}
+		if templateName != "" && !strings.Contains(strings.ToLower(existingWikitext), strings.ToLower(templateName)) {
+			linesToAdd = append(linesToAdd, trimmed)
+		}
+	}
+
+	if len(linesToAdd) == 0 {
+		// All templates already exist on the talk page
+		return nil
+	}
+
+	csrfToken, err := FetchCSRFToken(wikiURL, oauthToken)
+	if err != nil {
+		return fmt.Errorf("failed fetching edit token: %w", err)
+	}
+
+	newContent := strings.Join(linesToAdd, "\n") + "\n\n" + existingWikitext
+
+	apiURL := fmt.Sprintf("%s/w/api.php", strings.TrimRight(wikiURL, "/"))
+	form := url.Values{}
+	form.Set("action", "edit")
+	form.Set("title", talkTitle)
+	form.Set("text", strings.TrimSpace(newContent))
+	form.Set("summary", summary)
+	form.Set("token", csrfToken)
+	form.Set("bot", "1")
+	form.Set("format", "json")
+	form.Set("formatversion", "2")
+
+	req, err := http.NewRequest("POST", apiURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", DefaultUserAgent)
+	if oauthToken != "" {
+		req.Header.Set("Authorization", "Bearer "+oauthToken)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("edit request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var editRes struct {
+		Edit struct {
+			Result   string `json:"result"`
+			PageID   int    `json:"pageid"`
+			Title    string `json:"title"`
+			OldRevID int    `json:"oldrevid"`
+			NewRevID int    `json:"newrevid"`
+		} `json:"edit"`
+		Error struct {
+			Code string `json:"code"`
+			Info string `json:"info"`
+		} `json:"error"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&editRes); err != nil {
+		return fmt.Errorf("failed to decode edit response: %w", err)
+	}
+	if editRes.Error.Code != "" {
+		return fmt.Errorf("mediawiki edit error: %s (%s)", editRes.Error.Info, editRes.Error.Code)
+	}
+	if editRes.Edit.Result != "Success" {
+		return fmt.Errorf("mediawiki edit failed with result: %s", editRes.Edit.Result)
+	}
+
+	return nil
+}
+

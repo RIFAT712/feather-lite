@@ -42,6 +42,8 @@ import {
 } from "lucide-react";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
 import { UserTagInput } from "@/components/contests/UserTagInput";
+import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
+import TalkQueueMonitor from "@/components/contests/TalkQueueMonitor";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { calculateEndOfDay } from "@/lib/time";
 
@@ -1035,30 +1037,24 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                             />
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs font-medium text-foreground block mb-1">
-                                Minimum Words (Local)
-                              </label>
-                              <Input
-                                type="number"
-                                min={0}
-                                value={newSubMinWords}
-                                onChange={(e) => setNewSubMinWords(Number(e.target.value) || 0)}
-                                className="text-xs h-8"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs font-medium text-foreground block mb-1">
-                                Talk Page Template
-                              </label>
-                              <Input
-                                placeholder="Template:..."
-                                value={newSubTalkTemplate}
-                                onChange={(e) => setNewSubTalkTemplate(e.target.value)}
-                                className="text-xs h-8"
-                              />
-                            </div>
+                          <div>
+                            <label className="text-xs font-medium text-foreground block mb-1">
+                              {t("feather-create-min-words")} (Local)
+                            </label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={newSubMinWords}
+                              onChange={(e) => setNewSubMinWords(Number(e.target.value) || 0)}
+                              className="text-xs h-8"
+                            />
+                          </div>
+
+                          <div className="pt-2 border-t border-border/50">
+                            <TalkTemplateBuilder
+                              value={newSubTalkTemplate}
+                              onChange={setNewSubTalkTemplate}
+                            />
                           </div>
 
                           <div className="pt-1">
@@ -2707,7 +2703,7 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                 </div>
 
                 {/* Part C: Talk-Page Automation */}
-                <div className="pt-3 border-t border-border/60 space-y-3">
+                <div className="pt-3 border-t border-border/60 space-y-4">
                   <label className="flex items-start gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -2728,18 +2724,19 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                   </label>
 
                   {editAddTalkTemplate && (
-                    <div className="space-y-2 pt-1 animate-in fade-in-0 duration-150">
-                      <FloatingInput
-                        label={t("feather-create-template-name")}
+                    <div className="space-y-4 pt-1 animate-in fade-in-0 duration-150">
+                      <TalkTemplateBuilder
                         value={editTalkTemplateName}
-                        onChange={(e) => isOrganizer && setEditTalkTemplateName(e.target.value)}
+                        onChange={setEditTalkTemplateName}
                         disabled={!isOrganizer}
                       />
-                      {editTalkTemplateName && (
-                        <p className="text-[11px] text-muted-foreground font-mono pl-1">
-                          Preview syntax: <span className="text-primary font-semibold">{`{{${editTalkTemplateName}}}`}</span>
-                        </p>
-                      )}
+
+                      {/* Talk Page Live Rate-Limited Queue Monitor */}
+                      <TalkQueueMonitor
+                        contestCode={code}
+                        wikiUrl={contest?.wiki_url}
+                        isOrganizer={isOrganizer}
+                      />
                     </div>
                   )}
                 </div>

@@ -65,21 +65,18 @@ export default function LanguageSwitcher() {
               <DropdownMenuItem
                 key={lang.code}
                 onClick={() => setLocale(lang.code)}
-                dir={lang.dir}
-                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md hover:bg-muted/70 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
+                  <span
+                    className={isSelected ? "font-bold text-foreground" : "text-foreground/85"}
+                    dir={lang.dir}
+                  >
                     {lang.autonym}
                   </span>
-                  <span className="text-[10px] font-mono text-muted-foreground bg-muted/70 px-1 py-0.5 rounded">
+                  <span className="text-[10px] font-mono text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded">
                     {lang.code}
                   </span>
-                  {lang.dir === "rtl" && (
-                    <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground/80 bg-muted/50 px-1 rounded">
-                      RTL
-                    </span>
-                  )}
                 </div>
                 {isSelected && <Check className="h-3.5 w-3.5 text-primary ms-2 shrink-0" />}
               </DropdownMenuItem>

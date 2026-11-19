@@ -763,3 +763,70 @@ export async function deleteContest(code: string): Promise<{ status: string; mes
   return res.json();
 }
 
+// -------------------------------------------------------------
+// Talk Page Template Queue API
+// -------------------------------------------------------------
+
+export interface TalkQueueJob {
+  id: number;
+  article_id: number;
+  title: string;
+  status: "queued" | "processing" | "done" | "failed";
+  attempts: number;
+  error?: string;
+  retry_after?: string;
+  created_at: string;
+  processed_at?: string;
+}
+
+export interface TalkQueueResponse {
+  enabled: boolean;
+  talk_template_name: string;
+  counts: {
+    queued: number;
+    processing: number;
+    done: number;
+    failed: number;
+    total: number;
+  };
+  jobs?: TalkQueueJob[];
+}
+
+export async function fetchTalkQueue(code: string): Promise<TalkQueueResponse> {
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}/talk-queue`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to fetch talk queue status");
+  }
+  return res.json();
+}
+
+export async function retryTalkQueue(code: string): Promise<{ message: string; retried: number }> {
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}/talk-queue/retry`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to retry talk queue");
+  }
+  return res.json();
+}
+
+export async function enqueueMissingTalkQueue(code: string): Promise<{ message: string; enqueued: number }> {
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}/talk-queue/enqueue-all`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to enqueue missing talk page jobs");
+  }
+  return res.json();
+}
+
+

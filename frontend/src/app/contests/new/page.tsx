@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import WikiSelector from "@/components/contests/WikiSelector";
 import TimezoneSelector from "@/components/contests/TimezoneSelector";
 import { UserTagInput } from "@/components/contests/UserTagInput";
+import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { 
   ArrowLeft, ArrowRight, Shield, ShieldAlert, Globe, BookOpen, CheckCircle, 
@@ -1134,17 +1135,11 @@ export default function NewContestPage() {
               </label>
 
               {addTalkTemplate && (
-                <div className="space-y-2 pt-1 animate-in fade-in-0 duration-150">
-                  <FloatingInput
-                    label={t("feather-create-template-name")}
+                <div className="pt-2 animate-in fade-in-0 duration-150">
+                  <TalkTemplateBuilder
                     value={talkTemplateName}
-                    onChange={(e) => setTalkTemplateName(e.target.value)}
+                    onChange={setTalkTemplateName}
                   />
-                  {talkTemplateName && (
-                    <p className="text-[11px] text-muted-foreground font-mono pl-1">
-                      Preview syntax: <span className="text-primary font-semibold">{`{{${talkTemplateName}}}`}</span>
-                    </p>
-                  )}
                 </div>
               )}
             </div>

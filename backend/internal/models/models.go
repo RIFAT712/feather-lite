@@ -103,6 +103,7 @@ type TalkPageJob struct {
 	Status      string     `json:"status"` // "queued", "processing", "done", "failed"
 	Attempts    int        `json:"attempts"`
 	Error       string     `json:"error,omitempty"`
+	RetryAfter  *time.Time `json:"retry_after,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	ProcessedAt *time.Time `json:"processed_at,omitempty"`
 }

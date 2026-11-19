@@ -1557,12 +1557,14 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 
 		if err == nil {
 			submittedCount++
+			articleID, _ := res.LastInsertId()
 			if status == "pending" {
-				articleID, _ := res.LastInsertId()
 				newPendingArticles = append(newPendingArticles, balancer.ArticleItem{
 					ArticleID:   articleID,
 					SubmitterID: submitterID,
 				})
+			}
+			if (status == "pending" || status == "accepted") && contest.AddTalkTemplate && strings.TrimSpace(contest.TalkTemplateName) != "" && h.talkQueue != nil {
 				h.talkQueue.Enqueue(models.TalkPageJob{
 					ContestID: contest.ID,
 					ArticleID: articleID,
@@ -1858,6 +1860,26 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 
 	if req.Status == "accepted" || req.Status == "rejected" {
 		_, _ = h.db.Exec("UPDATE articles SET status = ? WHERE id = ?", req.Status, articleID)
+	}
+
+	// If article is accepted, ensure talk page template is queued if contest automation is enabled
+	if req.Status == "accepted" && h.talkQueue != nil {
+		var addTalkTemplate int
+		var talkTemplateName string
+		var articleTitle string
+		_ = h.db.QueryRow(`
+			SELECT c.add_talk_template, COALESCE(c.talk_template_name, ''), a.title
+			FROM contests c
+			JOIN articles a ON a.contest_id = c.id
+			WHERE a.id = ?
+		`, articleID).Scan(&addTalkTemplate, &talkTemplateName, &articleTitle)
+		if addTalkTemplate == 1 && strings.TrimSpace(talkTemplateName) != "" {
+			h.talkQueue.Enqueue(models.TalkPageJob{
+				ContestID: contestID,
+				ArticleID: articleID,
+				Title:     articleTitle,
+			})
+		}
 	}
 
 	jsonResponse(w, http.StatusOK, map[string]string{
@@ -2992,6 +3014,194 @@ func (h *Handler) DeleteContest(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, map[string]any{
 		"status":  "ok",
 		"message": fmt.Sprintf("Contest '%s' deleted successfully", contestName),
+	})
+}
+
+// GetTalkQueue returns the status counts and recent jobs of the talk page queue for a contest.
+func (h *Handler) GetTalkQueue(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+
+	var contestID int64
+	var addTalkTemplate int
+	var talkTemplateName string
+	err := h.db.QueryRow(`
+		SELECT id, add_talk_template, COALESCE(talk_template_name, '')
+		FROM contests WHERE code = ?
+	`, code).Scan(&contestID, &addTalkTemplate, &talkTemplateName)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database query error")
+		return
+	}
+
+	// 1. Get status counts
+	rows, err := h.db.Query(`
+		SELECT status, COUNT(*)
+		FROM talk_page_jobs
+		WHERE contest_id = ?
+		GROUP BY status
+	`, contestID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to query queue counts")
+		return
+	}
+	defer rows.Close()
+
+	counts := map[string]int{
+		"queued":     0,
+		"processing": 0,
+		"done":       0,
+		"failed":     0,
+		"total":      0,
+	}
+
+	for rows.Next() {
+		var status string
+		var count int
+		if err := rows.Scan(&status, &count); err == nil {
+			counts[status] = count
+			counts["total"] += count
+		}
+	}
+
+	// 2. Get recent jobs (up to 30)
+	jobRows, err := h.db.Query(`
+		SELECT id, article_id, title, status, attempts, COALESCE(error, ''), created_at, processed_at
+		FROM talk_page_jobs
+		WHERE contest_id = ?
+		ORDER BY id DESC
+		LIMIT 30
+	`, contestID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to query queue jobs")
+		return
+	}
+	defer jobRows.Close()
+
+	var jobs []models.TalkPageJob
+	for jobRows.Next() {
+		var j models.TalkPageJob
+		j.ContestID = contestID
+		if err := jobRows.Scan(&j.ID, &j.ArticleID, &j.Title, &j.Status, &j.Attempts, &j.Error, &j.CreatedAt, &j.ProcessedAt); err == nil {
+			jobs = append(jobs, j)
+		}
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"enabled":            addTalkTemplate == 1,
+		"talk_template_name": talkTemplateName,
+		"counts":             counts,
+		"jobs":               jobs,
+	})
+}
+
+// RetryTalkQueue resets failed talk page jobs to 'queued' so the background worker picks them up again.
+func (h *Handler) RetryTalkQueue(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+
+	var contestID int64
+	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database query error")
+		return
+	}
+
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+	if !h.isUserOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+		jsonError(w, http.StatusForbidden, "Only organizers or juries can retry queue jobs")
+		return
+	}
+
+	// Reset failed or stuck jobs back to 'queued' with attempts reset to 0 and retry_after cleared
+	res, err := h.db.Exec(`
+		UPDATE talk_page_jobs
+		SET status = 'queued', attempts = 0, error = '', retry_after = NULL
+		WHERE contest_id = ? AND (status = 'failed' OR status = 'processing')
+	`, contestID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to retry jobs")
+		return
+	}
+
+	affected, _ := res.RowsAffected()
+	if h.talkQueue != nil {
+		h.talkQueue.Notify()
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"message": fmt.Sprintf("Retried %d talk page job(s)", affected),
+		"retried": affected,
+	})
+}
+
+// EnqueueMissingTalkJobs enqueues all pending/accepted articles for this contest that do not already have a talk page job.
+func (h *Handler) EnqueueMissingTalkJobs(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+
+	var contestID int64
+	var addTalkTemplate int
+	var talkTemplateName string
+	err := h.db.QueryRow(`
+		SELECT id, add_talk_template, COALESCE(talk_template_name, '')
+		FROM contests WHERE code = ?
+	`, code).Scan(&contestID, &addTalkTemplate, &talkTemplateName)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database query error")
+		return
+	}
+
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+	if !h.isUserOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+		jsonError(w, http.StatusForbidden, "Only organizers can enqueue talk page jobs")
+		return
+	}
+
+	if addTalkTemplate == 0 || strings.TrimSpace(talkTemplateName) == "" {
+		jsonError(w, http.StatusBadRequest, "Talk template is not enabled for this contest")
+		return
+	}
+
+	// Insert all pending/accepted articles that are not yet in talk_page_jobs
+	res, err := h.db.Exec(`
+		INSERT INTO talk_page_jobs (contest_id, article_id, title, status, attempts, error)
+		SELECT a.contest_id, a.id, a.title, 'queued', 0, ''
+		FROM articles a
+		WHERE a.contest_id = ? 
+		  AND a.status IN ('pending', 'accepted')
+		  AND NOT EXISTS (
+		      SELECT 1 FROM talk_page_jobs j
+		      WHERE j.contest_id = a.contest_id AND j.article_id = a.id
+		  )
+	`, contestID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to enqueue missing articles")
+		return
+	}
+
+	enqueued, _ := res.RowsAffected()
+	if h.talkQueue != nil && enqueued > 0 {
+		h.talkQueue.Notify()
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"message":  fmt.Sprintf("Enqueued %d missing article(s) to talk page queue", enqueued),
+		"enqueued": enqueued,
 	})
 }
 

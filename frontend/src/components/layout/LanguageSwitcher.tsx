@@ -36,6 +36,7 @@ export default function LanguageSwitcher() {
       <DropdownMenuTrigger
         className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background"
         title={t("feather-nav-language-select", "Select language")}
+        aria-label={t("feather-nav-language-select", "Select language")}
       >
         <CodexLanguageIcon className="h-4 w-4 text-foreground/80 shrink-0" />
         <span className="font-medium">{currentLang.autonym}</span>

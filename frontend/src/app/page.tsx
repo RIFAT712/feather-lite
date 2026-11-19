@@ -522,7 +522,26 @@ export default function HomePage() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mt-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={`skeleton-${i}`} className="animate-pulse bg-muted/20 h-36 border border-border rounded-lg" />
+            <div
+              key={`skeleton-${i}`}
+              className="min-h-[210px] rounded-lg border border-border/60 bg-muted/20 p-3.5 sm:p-4 flex flex-col justify-between gap-3"
+            >
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="h-5 w-24 bg-muted/40 rounded" />
+                  <div className="h-4 w-16 bg-muted/30 rounded" />
+                </div>
+                <div className="h-5 w-3/4 bg-muted/40 rounded" />
+                <div className="h-3 w-full bg-muted/30 rounded" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-1.5 w-full bg-muted/30 rounded-full" />
+                <div className="flex justify-between items-center pt-2">
+                  <div className="h-4 w-28 bg-muted/30 rounded" />
+                  <div className="h-7 w-20 bg-muted/40 rounded-md" />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       ) : error ? (
@@ -545,7 +564,7 @@ export default function HomePage() {
             return (
               <div
                 key={c.id}
-                className="group flex flex-col justify-between rounded-lg border border-border bg-card p-3.5 sm:p-4 hover:border-foreground/25 hover:shadow-2xs transition-colors duration-150 text-card-foreground gap-2.5"
+                className="group flex flex-col justify-between rounded-lg border border-border bg-card p-3.5 sm:p-4 hover:border-foreground/25 hover:shadow-2xs transition-colors duration-150 text-card-foreground gap-2.5 [content-visibility:auto] [contain-intrinsic-size:auto_210px]"
               >
                 <div className="space-y-2">
                   {/* Meta badges & time row */}
@@ -580,6 +599,10 @@ export default function HomePage() {
                           <img
                             src="/icons/projects/meta.svg"
                             alt=""
+                            width={14}
+                            height={14}
+                            loading="lazy"
+                            decoding="async"
                             className="h-3.5 w-3.5 object-contain shrink-0"
                             onError={(e) => {
                               e.currentTarget.src = "/icons/projects/wikimedia.svg";
@@ -605,6 +628,10 @@ export default function HomePage() {
                             <img
                               src={pMeta.icon}
                               alt=""
+                              width={14}
+                              height={14}
+                              loading="lazy"
+                              decoding="async"
                               className="h-3.5 w-3.5 object-contain shrink-0"
                               onError={(e) => {
                                 e.currentTarget.src = "/icons/projects/wikipedia.svg";

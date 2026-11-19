@@ -93,13 +93,17 @@ export default function Footer() {
             target="_blank"
             rel="noopener noreferrer"
             title="Wikimedia Cloud Services"
+            aria-label="Wikimedia Cloud Services"
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/60 bg-muted/40 hover:bg-muted/80 text-xs transition-colors group cursor-pointer shrink-0"
           >
             <img
-              src="https://upload.wikimedia.org/wikipedia/commons/3/3d/Wikimedia_Cloud_Services_logo.svg"
-              alt="WMCS"
-              className="h-3.5 w-3.5 object-contain"
+              src="/icons/projects/wikimedia.svg"
+              alt=""
+              width={14}
+              height={14}
               loading="lazy"
+              decoding="async"
+              className="h-3.5 w-3.5 object-contain shrink-0"
             />
             <span className="text-[11px] text-muted-foreground group-hover:text-foreground">
               Powered by <span className="font-medium text-foreground">Wikimedia Cloud Services</span>
@@ -115,6 +119,7 @@ export default function Footer() {
               href="https://creativecommons.org/licenses/by-sa/4.0/"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={t("feather-footer-license-name")}
               className="underline hover:text-foreground transition-colors cursor-pointer"
             >
               {t("feather-footer-license-name")}

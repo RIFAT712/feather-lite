@@ -50,7 +50,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background md:bg-background/90 md:backdrop-blur-md transform-gpu will-change-transform [backface-visibility:hidden]">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-xs">
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 shrink-0">

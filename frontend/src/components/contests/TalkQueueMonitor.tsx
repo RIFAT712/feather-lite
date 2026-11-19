@@ -7,6 +7,7 @@ import { fetchTalkQueue, retryTalkQueue, enqueueMissingTalkQueue, TalkQueueRespo
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   RotateCw, Clock, CheckCircle2, AlertCircle, Loader2, 
   Layers, ExternalLink, ShieldCheck, AlertTriangle, Plus
@@ -176,9 +177,22 @@ export default function TalkQueueMonitor({
 
       <CardContent className="pt-3 space-y-3">
         {isLoading && (
-          <div className="flex items-center justify-center p-6 text-xs text-muted-foreground gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span>{t("feather-talk-queue-loading")}</span>
+          <div className="space-y-1.5">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-3 p-2 rounded-md border border-border/60 bg-background/50 text-xs"
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Skeleton className="h-3.5 w-3.5 rounded-full shrink-0" />
+                  <Skeleton className="h-4 w-44 rounded" />
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Skeleton className="h-3 w-14 rounded" />
+                  <Skeleton className="h-5 w-16 rounded-md" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

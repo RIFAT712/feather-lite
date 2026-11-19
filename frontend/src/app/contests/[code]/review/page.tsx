@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -1066,9 +1067,22 @@ export default function ReviewQueuePage({ params }: { params: Promise<{ code: st
           {/* Virtualized Article List */}
           <div ref={parentRef} className="flex-1 overflow-y-auto divide-y divide-border/60">
             {articlesLoading ? (
-              <div className="py-16 text-center text-xs text-muted-foreground flex flex-col items-center gap-2">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                <span>{t("feather-review-loading-queue")}</span>
+              <div className="divide-y divide-border/60">
+                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <div key={i} className="p-2.5 sm:p-3 flex items-center gap-2.5">
+                    <Skeleton className="h-4 w-4 rounded shrink-0" />
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Skeleton className="h-4 w-32 rounded" />
+                        <Skeleton className="h-3.5 w-12 rounded" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-20 rounded" />
+                        <Skeleton className="h-3 w-16 rounded" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : activeTabArticles.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-foreground">
@@ -1458,9 +1472,22 @@ export default function ReviewQueuePage({ params }: { params: Promise<{ code: st
                   </div>
 
                   {previewLoading ? (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <p className="text-xs">{t("feather-review-preview-fetching")}</p>
+                    <div className="flex-1 p-6 space-y-4 bg-background">
+                      <div className="flex items-center justify-between border-b border-border/40 pb-3">
+                        <Skeleton className="h-7 w-1/2 rounded" />
+                        <Skeleton className="h-4 w-24 rounded" />
+                      </div>
+                      <div className="space-y-2.5 pt-2">
+                        <Skeleton className="h-4 w-full rounded" />
+                        <Skeleton className="h-4 w-11/12 rounded" />
+                        <Skeleton className="h-4 w-4/5 rounded" />
+                      </div>
+                      <div className="space-y-2.5 pt-4">
+                        <Skeleton className="h-5 w-1/3 rounded" />
+                        <Skeleton className="h-4 w-full rounded" />
+                        <Skeleton className="h-4 w-5/6 rounded" />
+                        <Skeleton className="h-4 w-2/3 rounded" />
+                      </div>
                     </div>
                   ) : previewData?.html &&
                     !previewData.html.includes("Failed to load preview") &&

@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -307,7 +308,27 @@ export default function JuryStatsHubPage({ params }: { params: Promise<{ code: s
 
       {/* 3. Overall Judging Progress & KPI Cards */}
       <div className="space-y-4">
-        {stats && (
+        {statsLoading ? (
+          <Card className="border-border shadow-2xs">
+            <CardHeader className="py-3 px-4 border-b border-border bg-muted/20">
+              <div className="flex items-center justify-between text-xs">
+                <Skeleton className="h-4 w-36 rounded" />
+                <Skeleton className="h-4 w-28 rounded" />
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              <Skeleton className="h-2 w-full rounded-full" />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="p-3 rounded-lg border border-border bg-muted/20 space-y-2">
+                    <Skeleton className="h-3 w-20 rounded" />
+                    <Skeleton className="h-6 w-14 rounded" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : stats ? (
           <Card className="border-border shadow-2xs">
             <CardHeader className="py-3 px-4 border-b border-border bg-muted/20">
               <div className="flex items-center justify-between text-xs">
@@ -376,7 +397,7 @@ export default function JuryStatsHubPage({ params }: { params: Promise<{ code: s
               </div>
             </CardContent>
           </Card>
-        )}
+        ) : null}
       </div>
 
       {/* 4. Individual Jury Member Progress Table */}
@@ -394,9 +415,42 @@ export default function JuryStatsHubPage({ params }: { params: Promise<{ code: s
         </CardHeader>
         <CardContent className="p-0">
           {statsLoading ? (
-            <div className="py-12 text-center text-xs text-muted-foreground animate-pulse">
-              Crunching jury statistics...
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs">{t("feather-jury-col-member")}</TableHead>
+                  <TableHead className="text-right text-xs">{t("feather-jury-col-assigned")}</TableHead>
+                  <TableHead className="text-right text-xs">{t("feather-jury-col-judged")}</TableHead>
+                  <TableHead className="text-right text-xs">{t("feather-jury-col-remaining")}</TableHead>
+                  <TableHead className="text-right text-xs">{t("feather-jury-col-accepted")}</TableHead>
+                  <TableHead className="text-right text-xs">{t("feather-jury-col-rejected")}</TableHead>
+                  <TableHead className="w-36 text-right text-xs">{t("feather-jury-col-progress")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3, 4].map((row) => (
+                  <TableRow key={row} className="hover:bg-transparent">
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-6 w-6 rounded-full" />
+                        <Skeleton className="h-4 w-24 rounded" />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto rounded" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto rounded" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto rounded" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto rounded" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto rounded" /></TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Skeleton className="h-1.5 w-16 rounded-full" />
+                        <Skeleton className="h-4 w-8 rounded" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           ) : stats?.juries && stats.juries.length > 0 ? (
             <Table>
               <TableHeader>
@@ -474,7 +528,32 @@ export default function JuryStatsHubPage({ params }: { params: Promise<{ code: s
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          {stats?.juries && stats.juries.length > 0 ? (
+          {statsLoading ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs">{t("feather-jury-col-member")}</TableHead>
+                  <TableHead className="text-right text-xs">{t("feather-jury-col-total-evaluated")}</TableHead>
+                  <TableHead className="text-right text-xs">{t("feather-jury-col-accepted")}</TableHead>
+                  <TableHead className="text-right text-xs">{t("feather-jury-col-rejected")}</TableHead>
+                  <TableHead className="text-right text-xs">{t("feather-jury-col-skipped")}</TableHead>
+                  <TableHead className="text-right text-xs">{t("feather-jury-col-acceptance-rate")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3, 4].map((row) => (
+                  <TableRow key={row} className="hover:bg-transparent">
+                    <TableCell><Skeleton className="h-4 w-24 rounded" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto rounded" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto rounded" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto rounded" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto rounded" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto rounded" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : stats?.juries && stats.juries.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

@@ -9,6 +9,7 @@ import { getProjectMeta, getWikiInfo, getLanguageName } from "@/lib/wikis";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -525,22 +526,47 @@ export default function HomePage() {
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={`skeleton-${i}`}
-              className="min-h-[210px] rounded-lg border border-border/60 bg-muted/20 p-3.5 sm:p-4 flex flex-col justify-between gap-3"
+              className="group flex flex-col justify-between rounded-lg border border-border bg-card p-3.5 sm:p-4 min-h-[210px] gap-2.5 [contain-intrinsic-size:auto_210px]"
             >
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="h-5 w-24 bg-muted/40 rounded" />
-                  <div className="h-4 w-16 bg-muted/30 rounded" />
-                </div>
-                <div className="h-5 w-3/4 bg-muted/40 rounded" />
-                <div className="h-3 w-full bg-muted/30 rounded" />
-              </div>
               <div className="space-y-2">
-                <div className="h-1.5 w-full bg-muted/30 rounded-full" />
-                <div className="flex justify-between items-center pt-2">
-                  <div className="h-4 w-28 bg-muted/30 rounded" />
-                  <div className="h-7 w-20 bg-muted/40 rounded-md" />
+                {/* Meta badges & time row */}
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Skeleton className="h-5 w-16 rounded-md" />
+                    <Skeleton className="h-5 w-24 rounded-md" />
+                  </div>
+                  <Skeleton className="h-4 w-16 rounded" />
                 </div>
+
+                {/* Title & Description */}
+                <div className="space-y-1">
+                  <Skeleton className="h-5 w-3/4 rounded" />
+                  <Skeleton className="h-3.5 w-full rounded" />
+                </div>
+
+                {/* Timeline Tracker */}
+                <div className="space-y-1 pt-0.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <Skeleton className="h-3 w-20 rounded" />
+                    <Skeleton className="h-3 w-8 rounded" />
+                  </div>
+                  <Skeleton className="h-1.5 w-full rounded-full" />
+                </div>
+
+                {/* Clean Metrics Row */}
+                <div className="flex items-center gap-3 pt-1.5 border-t border-border/50">
+                  <Skeleton className="h-4 w-20 rounded" />
+                  <Skeleton className="h-4 w-20 rounded" />
+                </div>
+              </div>
+
+              {/* Actions Footer */}
+              <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-border/60">
+                <div className="flex items-center gap-1.5">
+                  <Skeleton className="h-7 w-16 rounded-md" />
+                  <Skeleton className="h-7 w-24 rounded-md" />
+                </div>
+                <Skeleton className="h-7 w-20 rounded-md" />
               </div>
             </div>
           ))}

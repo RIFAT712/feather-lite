@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -306,6 +307,65 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
   };
 
   const submitProgress = totalToSubmit > 0 ? Math.round((processedCount / totalToSubmit) * 100) : 0;
+
+  if (contestLoading) {
+    return (
+      <div className="container mx-auto px-4 sm:px-8 py-8 max-w-4xl space-y-6">
+        {/* Back Link Skeleton */}
+        <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+          <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
+          <Skeleton className="h-3.5 w-24 rounded" />
+        </div>
+
+        {/* Page Title & Subtitle Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-56 rounded-md" />
+              <Skeleton className="h-5 w-24 rounded-md" />
+            </div>
+            <Skeleton className="h-4 w-80 rounded" />
+          </div>
+          <Skeleton className="h-8 w-28 rounded-md" />
+        </div>
+
+        {/* On Behalf Box Skeleton */}
+        <Card className="border-border shadow-2xs">
+          <CardContent className="p-4 flex items-center justify-between">
+            <Skeleton className="h-4 w-44 rounded" />
+            <Skeleton className="h-4 w-32 rounded" />
+          </CardContent>
+        </Card>
+
+        {/* Tabs Skeleton */}
+        <div className="flex items-center gap-2 border-b border-border pb-1">
+          <Skeleton className="h-8 w-36 rounded-md" />
+          <Skeleton className="h-8 w-28 rounded-md" />
+        </div>
+
+        {/* Main Content Box Skeleton */}
+        <Card className="border-border shadow-2xs">
+          <CardHeader className="pb-3 border-b border-border bg-muted/20">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-48 rounded" />
+              <Skeleton className="h-8 w-32 rounded-md" />
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 w-52 rounded" />
+                </div>
+                <Skeleton className="h-4 w-24 rounded" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-8 py-8 max-w-4xl space-y-6">

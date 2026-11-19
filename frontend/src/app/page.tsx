@@ -50,6 +50,7 @@ export default function HomePage() {
   const { data: contests, isLoading, error } = useQuery<Contest[]>({
     queryKey: ["contests"],
     queryFn: fetchContests,
+    staleTime: 60 * 1000,
   });
 
   // Extract unique projects (normalized Wikimedia projects: wikipedia, wiktionary, wikisource, wikibooks, etc.)
@@ -649,7 +650,7 @@ export default function HomePage() {
                     </div>
 
                     <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 shrink-0">
-                      <Clock className="h-3 w-3 text-muted-foreground/70" />
+                      <Clock className="h-3 w-3 text-muted-foreground" />
                       {time.isEnded
                         ? t("feather-contest-ended")
                         : time.diffDays <= 0
@@ -660,14 +661,14 @@ export default function HomePage() {
 
                   {/* Title & Description */}
                   <div className="space-y-0.5">
-                    <h3 className="text-sm sm:text-base font-bold tracking-tight line-clamp-1">
+                    <h2 className="text-sm sm:text-base font-bold tracking-tight line-clamp-1">
                       <Link
                         href={`/contests/${c.code}`}
                         className="hover:underline text-foreground cursor-pointer"
                       >
                         {c.name}
                       </Link>
-                    </h3>
+                    </h2>
 
                     <p className="line-clamp-1 text-xs text-muted-foreground leading-normal">
                       {c.description || t("feather-contest-no-desc")}
@@ -810,7 +811,7 @@ export default function HomePage() {
         /* Empty State */
         <div className="p-8 text-center border border-dashed rounded-lg bg-muted/10 mt-5">
           <Search className="mx-auto h-6 w-6 text-muted-foreground mb-2" />
-          <h3 className="font-semibold text-sm text-foreground">{t("feather-home-search-empty-title")}</h3>
+          <h2 className="font-semibold text-sm text-foreground">{t("feather-home-search-empty-title")}</h2>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
             {t("feather-home-search-empty-desc", searchQuery || statusFilter)}
           </p>

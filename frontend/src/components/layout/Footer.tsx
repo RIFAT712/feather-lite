@@ -138,7 +138,7 @@ export default function Footer() {
         </div>
 
         {/* Row 2: Licensing */}
-        <div className="pt-2 border-t border-border/40 text-[11px] leading-relaxed text-muted-foreground/80">
+        <div className="pt-2 border-t border-border/40 text-[11px] leading-relaxed text-muted-foreground">
           <p>
             {t("feather-footer-license-prefix")}{" "}
             <a

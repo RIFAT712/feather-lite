@@ -201,15 +201,15 @@ export default function HomePage() {
 
       {/* 2. Unified Toolbar Block */}
       <div className="mt-3.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
-        {/* Search Input */}
-        <div className="relative flex-1 max-w-xs sm:max-w-sm">
+        {/* Search Input (Full width on mobile, bounded on desktop) */}
+        <div className="relative w-full md:w-72 lg:w-80 shrink-0">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
             placeholder={t("feather-search-specific-comp")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 pr-7 h-8 text-xs bg-muted/20 border-border/70 focus:bg-background rounded-md transition-colors"
+            className="pl-8 pr-7 h-8 text-xs bg-muted/20 border-border/70 focus:bg-background rounded-md transition-colors w-full"
           />
           {searchQuery && (
             <button
@@ -223,14 +223,14 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Filters and Sorting */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto shrink-0">
+        {/* Filters and Sorting Ribbon (Silky smooth full-bleed horizontal scroll on mobile) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1 w-full md:w-auto -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth shrink-0 touch-pan-x">
           {/* Status Segmented Control */}
-          <div className="inline-flex items-center rounded-md border border-border/70 bg-muted/30 p-0.5 text-xs font-medium">
+          <div className="inline-flex items-center rounded-md border border-border/70 bg-muted/30 p-0.5 text-xs font-medium shrink-0">
             <button
               type="button"
               onClick={() => setStatusFilter("active")}
-              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                 statusFilter === "active"
                   ? "bg-background text-foreground shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -241,7 +241,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => setStatusFilter("all")}
-              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                 statusFilter === "all"
                   ? "bg-background text-foreground shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -252,7 +252,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => setStatusFilter("ended")}
-              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                 statusFilter === "ended"
                   ? "bg-background text-foreground shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -265,11 +265,15 @@ export default function HomePage() {
           {/* Format / Type Filter Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground"
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer whitespace-nowrap shrink-0 ${
+                typeFilter !== "all"
+                  ? "border-primary/50 bg-primary/5 text-primary"
+                  : "border-border/70 bg-background text-foreground hover:bg-muted/80"
+              }`}
               aria-label={t("feather-filter-type")}
             >
               <Layers className="h-3.5 w-3.5 opacity-75 shrink-0" />
-              <span>
+              <span className="whitespace-nowrap">
                 {typeFilter === "all" && t("feather-filter-all-types")}
                 {typeFilter === "campaigns" && t("feather-filter-type-campaigns")}
                 {typeFilter === "single" && t("feather-filter-type-single")}
@@ -320,7 +324,11 @@ export default function HomePage() {
           {/* Project Filter Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground"
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer whitespace-nowrap shrink-0 ${
+                selectedProject !== "all"
+                  ? "border-primary/50 bg-primary/5 text-primary"
+                  : "border-border/70 bg-background text-foreground hover:bg-muted/80"
+              }`}
               aria-label={t("feather-filter-project")}
             >
               {selectedProject === "all" ? (
@@ -330,7 +338,7 @@ export default function HomePage() {
                     alt=""
                     className="h-3.5 w-3.5 object-contain opacity-75 shrink-0"
                   />
-                  <span>{t("feather-filter-all-projects")}</span>
+                  <span className="whitespace-nowrap">{t("feather-filter-all-projects")}</span>
                 </>
               ) : (
                 (() => {
@@ -346,7 +354,7 @@ export default function HomePage() {
                           e.currentTarget.src = "/icons/projects/wikipedia.svg";
                         }}
                       />
-                      <span className="font-semibold text-foreground">{label}</span>
+                      <span className="font-semibold text-foreground whitespace-nowrap">{label}</span>
                     </>
                   );
                 })()
@@ -407,17 +415,21 @@ export default function HomePage() {
           {/* Language Filter Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground"
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer whitespace-nowrap shrink-0 ${
+                selectedLanguage !== "all"
+                  ? "border-primary/50 bg-primary/5 text-primary"
+                  : "border-border/70 bg-background text-foreground hover:bg-muted/80"
+              }`}
               aria-label={t("feather-filter-language")}
             >
               <CodexLanguageIcon className="h-3.5 w-3.5 opacity-75 shrink-0" />
               {selectedLanguage === "all" ? (
-                <span>{t("feather-filter-all-languages")}</span>
+                <span className="whitespace-nowrap">{t("feather-filter-all-languages")}</span>
               ) : (
                 (() => {
                   const langName = getLanguageName(selectedLanguage, locale);
                   return (
-                    <span className="font-semibold text-foreground">
+                    <span className="font-semibold text-foreground whitespace-nowrap">
                       {langName} ({selectedLanguage.toUpperCase()})
                     </span>
                   );
@@ -469,11 +481,11 @@ export default function HomePage() {
           {/* Sort Selector Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground"
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground whitespace-nowrap shrink-0"
               aria-label="Sort options"
             >
               <SlidersHorizontal className="h-3 w-3 text-muted-foreground shrink-0" />
-              <span>
+              <span className="whitespace-nowrap">
                 {sortOption === "ending_soon" && t("feather-sort-ending-soon")}
                 {sortOption === "newest" && t("feather-sort-newest")}
                 {sortOption === "submissions" && t("feather-sort-submissions")}
@@ -512,14 +524,14 @@ export default function HomePage() {
 
       {/* 3. Subtle Results Counter */}
       {(searchQuery || selectedProject !== "all" || selectedLanguage !== "all" || statusFilter !== "active" || typeFilter !== "all") && (
-        <div className="mt-2.5 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="mt-2.5 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
           <span>
-            Showing <strong className="text-foreground font-medium">{processedContests.length}</strong> {processedContests.length === 1 ? "competition" : "competitions"}
+            {t("feather-home-showing-count", n(processedContests.length))}
           </span>
           <button
             type="button"
             onClick={resetFilters}
-            className="text-primary hover:underline cursor-pointer font-medium text-xs"
+            className="text-primary hover:underline cursor-pointer font-medium text-xs whitespace-nowrap"
           >
             {t("feather-home-clear-filters")}
           </button>

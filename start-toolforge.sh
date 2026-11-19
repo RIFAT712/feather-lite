@@ -15,15 +15,22 @@ echo "=== [Feather-Lite] Initializing deployment from ${APP_DIR} ==="
 export PORT="${PORT:-8000}"
 export BACKEND_PORT="${BACKEND_PORT:-8081}"
 export DB_TYPE="${DB_TYPE:-sqlite}"
-export DATABASE_URL="${DATABASE_URL:-${TOOL_DIR}/feather.db}"
 export FRONTEND_URL="${FRONTEND_URL:-https://feather-lite.toolforge.org}"
 export OAUTH_CALLBACK_URL="${OAUTH_CALLBACK_URL:-https://feather-lite.toolforge.org/auth/callback}"
 export OWNER_USERNAME="${OWNER_USERNAME:-R1F4T}"
 
-# 2. Make Linux backend executable
-if [ -f "${APP_DIR}/backend/feather-server-linux" ]; then
-    chmod +x "${APP_DIR}/backend/feather-server-linux"
+# Database path resolution: check if /data/project/feather-lite is writable
+if [ -d "${TOOL_DIR}" ] && [ -w "${TOOL_DIR}" ]; then
+    export DATABASE_URL="${DATABASE_URL:-${TOOL_DIR}/feather.db}"
+else
+    mkdir -p "${APP_DIR}/backend/data" 2>/dev/null || true
+    export DATABASE_URL="${DATABASE_URL:-${APP_DIR}/backend/data/feather.db}"
 fi
+
+echo "[Feather-Lite] Using DATABASE_URL=${DATABASE_URL}"
+
+# 2. Make Linux backend executable
+chmod +x "${APP_DIR}/backend/feather-server-linux" 2>/dev/null || true
 
 # 3. Start Go Backend in background
 echo "[Backend] Launching Go service on port ${BACKEND_PORT}..."
@@ -53,4 +60,12 @@ sleep 2
 echo "[Frontend] Launching Next.js on port ${PORT}..."
 cd "${APP_DIR}/frontend"
 
-exec pnpm start --port "${PORT}" --hostname 0.0.0.0
+if [ -f "./node_modules/.bin/next" ]; then
+    exec ./node_modules/.bin/next start -p "${PORT}" -H 0.0.0.0
+elif command -v pnpm >/dev/null 2>&1; then
+    exec pnpm start -- -p "${PORT}" -H 0.0.0.0
+elif [ -f "${APP_DIR}/node_modules/.bin/next" ]; then
+    exec "${APP_DIR}/node_modules/.bin/next" start -p "${PORT}" -H 0.0.0.0
+else
+    exec npx next start -p "${PORT}" -H 0.0.0.0
+fi

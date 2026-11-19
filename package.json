@@ -1,0 +1,13 @@
+{
+  "name": "feather-lite",
+  "version": "2.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "build": "pnpm --filter frontend build",
+    "start": "bash start-toolforge.sh"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

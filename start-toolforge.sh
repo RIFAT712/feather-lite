@@ -18,24 +18,23 @@ export DB_TYPE="${DB_TYPE:-sqlite}"
 export DATABASE_URL="${DATABASE_URL:-${TOOL_DIR}/feather.db}"
 export FRONTEND_URL="${FRONTEND_URL:-https://feather-lite.toolforge.org}"
 export OAUTH_CALLBACK_URL="${OAUTH_CALLBACK_URL:-https://feather-lite.toolforge.org/auth/callback}"
+export OWNER_USERNAME="${OWNER_USERNAME:-R1F4T}"
 
-# 2. Build or verify Linux backend executable
-if [ ! -f "${APP_DIR}/backend/feather-server-linux" ]; then
-    echo "[Backend] Compiling Go server for Linux..."
-    (cd "${APP_DIR}/backend" && go build -o feather-server-linux ./cmd/server)
+# 2. Make Linux backend executable
+if [ -f "${APP_DIR}/backend/feather-server-linux" ]; then
+    chmod +x "${APP_DIR}/backend/feather-server-linux"
 fi
 
-chmod +x "${APP_DIR}/backend/feather-server-linux"
-
-# 3. Start Backend in background
+# 3. Start Go Backend in background
 echo "[Backend] Launching Go service on port ${BACKEND_PORT}..."
 (
     cd "${APP_DIR}/backend"
-    PORT=${BACKEND_PORT} \
+    PORT="${BACKEND_PORT}" \
     DATABASE_URL="${DATABASE_URL}" \
     DB_TYPE="${DB_TYPE}" \
     FRONTEND_URL="${FRONTEND_URL}" \
     OAUTH_CALLBACK_URL="${OAUTH_CALLBACK_URL}" \
+    OWNER_USERNAME="${OWNER_USERNAME}" \
     ./feather-server-linux
 ) &
 BACKEND_PID=$!
@@ -54,12 +53,4 @@ sleep 2
 echo "[Frontend] Launching Next.js on port ${PORT}..."
 cd "${APP_DIR}/frontend"
 
-if [ ! -d "node_modules" ]; then
-    echo "[Frontend] Installing dependencies via pnpm..."
-    corepack enable || true
-    pnpm install --frozen-lockfile || npm install
-fi
-
-# Run Next.js production or dev server on port 8000
-export PORT=8000
-pnpm dev --port 8000 --hostname 0.0.0.0
+exec pnpm start --port "${PORT}" --hostname 0.0.0.0

@@ -73,26 +73,26 @@ export default function PlatformPulse() {
 
   if (isLoading) {
     return (
-      <div className="w-full my-4 sm:my-6 p-4 sm:p-6 sm:px-8 rounded-xl sm:rounded-2xl bg-card/40 border border-border/50">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 divide-y lg:divide-y-0 lg:divide-x divide-border/50">
+      <div className="w-full my-6 py-6 px-4 sm:px-8 rounded-2xl bg-card/40 border border-border/50">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 divide-y lg:divide-y-0 lg:divide-x divide-border/50">
           {/* Col 1 Skeleton */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center gap-2">
               <Skeleton className="h-4 w-4 rounded-full" />
               <Skeleton className="h-4 w-24 rounded" />
             </div>
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
+            <div className="grid grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-4 sm:gap-y-6">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className={`flex items-center gap-3 p-2.5 rounded-lg border border-border/30 bg-muted/20 ${
-                    i === 5 ? "col-span-2 sm:col-span-1" : ""
+                  className={`flex items-center gap-3.5 ${
+                    i === 5 ? "col-span-2 lg:col-span-1" : ""
                   }`}
                 >
-                  <Skeleton className="h-8 w-8 rounded-md shrink-0" />
+                  <Skeleton className="h-10 w-10 rounded-full shrink-0" />
                   <div className="space-y-1.5 min-w-0 flex-1">
-                    <Skeleton className="h-5 w-16 rounded" />
-                    <Skeleton className="h-3 w-12 rounded" />
+                    <Skeleton className="h-7 w-20 sm:w-24 rounded" />
+                    <Skeleton className="h-3 w-14 sm:w-16 rounded" />
                   </div>
                 </div>
               ))}
@@ -100,27 +100,27 @@ export default function PlatformPulse() {
           </div>
 
           {/* Col 2 Skeleton */}
-          <div className="pt-6 lg:pt-0 lg:pl-10 space-y-4">
+          <div className="pt-8 lg:pt-0 lg:pl-12 space-y-5">
             <div className="flex items-center gap-2">
               <Skeleton className="h-4 w-4 rounded-full" />
               <Skeleton className="h-4 w-24 rounded" />
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-1 gap-2 sm:space-y-3 sm:gap-0">
+            <div className="grid grid-cols-3 lg:grid-cols-1 gap-2 lg:space-y-4 lg:gap-0">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="flex flex-col sm:flex-row items-center sm:items-center gap-2 p-2.5 rounded-lg border border-border/30 bg-muted/20"
+                  className="flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3.5 text-center sm:text-left"
                 >
-                  <Skeleton className="h-7 w-7 sm:h-8 sm:w-8 rounded-md shrink-0" />
+                  <Skeleton className="h-9 w-9 sm:h-10 sm:w-10 rounded-full shrink-0" />
                   <div className="space-y-1.5 min-w-0 flex-1 w-full text-center sm:text-left">
-                    <Skeleton className="h-5 w-12 mx-auto sm:mx-0 rounded" />
+                    <Skeleton className="h-6 sm:h-7 w-12 sm:w-24 mx-auto sm:mx-0 rounded" />
                     <Skeleton className="h-3 w-16 mx-auto sm:mx-0 rounded" />
                   </div>
                 </div>
               ))}
             </div>
-            <div className="pt-2 space-y-1.5">
-              <div className="flex items-end gap-1 h-10 sm:h-12">
+            <div className="pt-4 space-y-2">
+              <div className="flex items-end gap-1 h-12">
                 {[...Array(30)].map((_, i) => (
                   <Skeleton key={i} className="flex-1 rounded-t-[2px] h-[30%]" />
                 ))}
@@ -134,86 +134,86 @@ export default function PlatformPulse() {
   }
 
   return (
-    <section className="w-full my-4 sm:my-6 p-4 sm:p-6 sm:px-8 rounded-xl sm:rounded-2xl bg-card/40 border border-border/50 transition-colors">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 divide-y lg:divide-y-0 lg:divide-x divide-border/60">
+    <section className="w-full my-6 py-6 px-4 sm:px-8 rounded-2xl bg-card/40 border border-border/50">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 divide-y lg:divide-y-0 lg:divide-x divide-border/50">
         {/* Column 1: All Time (সব সময়) */}
-        <div className="space-y-3.5 sm:space-y-4">
-          <div className="flex items-center gap-2 text-primary font-bold text-xs sm:text-sm tracking-tight select-none">
+        <div className="space-y-5 sm:space-y-6">
+          <div className="flex items-center gap-2 text-primary font-bold text-sm tracking-tight select-none">
             <InfinityIcon className="h-4 w-4 stroke-[2.5]" />
             <span>{t("feather-pulse-all-time")}</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-4 sm:gap-y-6">
             {/* 1. Words Accepted */}
-            <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-background/50 hover:bg-background/80 border border-border/50 transition-colors min-w-0 shadow-2xs">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md flex items-center justify-center shrink-0 bg-blue-500/12 text-blue-600 dark:text-blue-400">
-                <AlignJustify className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-blue-500/12 text-blue-600 dark:text-blue-400">
+                <AlignJustify className="h-4.5 w-4.5" />
               </div>
-              <div className="min-w-0 flex-1">
-                <b className="block text-lg sm:text-2xl font-black tracking-tight tabular-nums text-foreground leading-tight">
+              <div className="min-w-0">
+                <b className="block text-2xl sm:text-[1.75rem] font-black tracking-tight tabular-nums text-foreground leading-none">
                   <SmoothCount value={data?.totals?.words ?? 0} formatFn={n} />
                 </b>
-                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-0.5 truncate leading-tight">
+                <small className="block text-xs text-muted-foreground font-medium mt-1 truncate">
                   {t("feather-pulse-words-accepted")}
                 </small>
               </div>
             </div>
 
             {/* 2. Articles Accepted */}
-            <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-background/50 hover:bg-background/80 border border-border/50 transition-colors min-w-0 shadow-2xs">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md flex items-center justify-center shrink-0 bg-emerald-500/12 text-emerald-600 dark:text-emerald-400">
-                <FileText className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-emerald-500/12 text-emerald-600 dark:text-emerald-400">
+                <FileText className="h-4.5 w-4.5" />
               </div>
-              <div className="min-w-0 flex-1">
-                <b className="block text-lg sm:text-2xl font-black tracking-tight tabular-nums text-foreground leading-tight">
+              <div className="min-w-0">
+                <b className="block text-2xl sm:text-[1.75rem] font-black tracking-tight tabular-nums text-foreground leading-none">
                   <SmoothCount value={data?.totals?.articles ?? 0} formatFn={n} />
                 </b>
-                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-0.5 truncate leading-tight">
+                <small className="block text-xs text-muted-foreground font-medium mt-1 truncate">
                   {t("feather-pulse-articles-accepted")}
                 </small>
               </div>
             </div>
 
             {/* 3. Contributors */}
-            <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-background/50 hover:bg-background/80 border border-border/50 transition-colors min-w-0 shadow-2xs">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md flex items-center justify-center shrink-0 bg-rose-500/12 text-rose-600 dark:text-rose-400">
-                <Users className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-rose-500/12 text-rose-600 dark:text-rose-400">
+                <Users className="h-4.5 w-4.5" />
               </div>
-              <div className="min-w-0 flex-1">
-                <b className="block text-lg sm:text-2xl font-black tracking-tight tabular-nums text-foreground leading-tight">
+              <div className="min-w-0">
+                <b className="block text-2xl sm:text-[1.75rem] font-black tracking-tight tabular-nums text-foreground leading-none">
                   <SmoothCount value={data?.totals?.people ?? 0} formatFn={n} />
                 </b>
-                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-0.5 truncate leading-tight">
+                <small className="block text-xs text-muted-foreground font-medium mt-1 truncate">
                   {t("feather-pulse-contributors")}
                 </small>
               </div>
             </div>
 
             {/* 4. Wikis */}
-            <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-background/50 hover:bg-background/80 border border-border/50 transition-colors min-w-0 shadow-2xs">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md flex items-center justify-center shrink-0 bg-cyan-500/12 text-cyan-600 dark:text-cyan-400">
-                <Globe className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-cyan-500/12 text-cyan-600 dark:text-cyan-400">
+                <Globe className="h-4.5 w-4.5" />
               </div>
-              <div className="min-w-0 flex-1">
-                <b className="block text-lg sm:text-2xl font-black tracking-tight tabular-nums text-foreground leading-tight">
+              <div className="min-w-0">
+                <b className="block text-2xl sm:text-[1.75rem] font-black tracking-tight tabular-nums text-foreground leading-none">
                   <SmoothCount value={data?.totals?.wikis ?? 0} formatFn={n} />
                 </b>
-                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-0.5 truncate leading-tight">
+                <small className="block text-xs text-muted-foreground font-medium mt-1 truncate">
                   {t("feather-pulse-wikis")}
                 </small>
               </div>
             </div>
 
-            {/* 5. Public Events (Spans 2 columns on mobile so no awkward orphan blank) */}
-            <div className="col-span-2 sm:col-span-1 flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-background/50 hover:bg-background/80 border border-border/50 transition-colors min-w-0 shadow-2xs">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md flex items-center justify-center shrink-0 bg-indigo-500/12 text-indigo-600 dark:text-indigo-400">
-                <Calendar className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+            {/* 5. Public Events (Spans 2 columns on mobile so no awkward orphan blank, exactly 1 column on PC) */}
+            <div className="col-span-2 lg:col-span-1 flex items-center gap-3 sm:gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-indigo-500/12 text-indigo-600 dark:text-indigo-400">
+                <Calendar className="h-4.5 w-4.5" />
               </div>
-              <div className="min-w-0 flex-1">
-                <b className="block text-lg sm:text-2xl font-black tracking-tight tabular-nums text-foreground leading-tight">
+              <div className="min-w-0">
+                <b className="block text-2xl sm:text-[1.75rem] font-black tracking-tight tabular-nums text-foreground leading-none">
                   <SmoothCount value={data?.totals?.contests ?? 0} formatFn={n} />
                 </b>
-                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-0.5 truncate leading-tight">
+                <small className="block text-xs text-muted-foreground font-medium mt-1 truncate">
                   {t("feather-pulse-public-events")}
                 </small>
               </div>
@@ -222,54 +222,54 @@ export default function PlatformPulse() {
         </div>
 
         {/* Column 2: This Month (এই মাসে) */}
-        <div className="pt-5 lg:pt-0 lg:pl-10 space-y-3.5 sm:space-y-4">
-          <div className="flex items-center gap-2 text-primary font-bold text-xs sm:text-sm tracking-tight select-none">
+        <div className="pt-6 lg:pt-0 lg:pl-12 space-y-4 sm:space-y-5">
+          <div className="flex items-center gap-2 text-primary font-bold text-sm tracking-tight select-none">
             <Calendar className="h-4 w-4" />
             <span>{t("feather-pulse-this-month")}</span>
           </div>
 
-          {/* On mobile: 3-column compact mini-grid so it takes 1 single compact row! */}
-          <div className="grid grid-cols-3 sm:grid-cols-1 gap-2 sm:gap-3">
+          {/* On mobile: 3-column compact horizontal row; on desktop: exact vertical stack of Image 2 */}
+          <div className="grid grid-cols-3 lg:grid-cols-1 gap-2 sm:gap-4 lg:space-y-4 lg:gap-0">
             {/* 1. Monthly Submissions */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-3 p-2 sm:p-3 rounded-lg bg-background/50 hover:bg-background/80 border border-border/50 transition-colors text-center sm:text-left min-w-0 shadow-2xs">
-              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md flex items-center justify-center shrink-0 bg-blue-500/12 text-blue-600 dark:text-blue-400">
-                <Upload className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
+            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-3.5 text-center sm:text-left min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 bg-blue-500/12 text-blue-600 dark:text-blue-400">
+                <Upload className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
               </div>
-              <div className="min-w-0 flex-1 w-full">
-                <b className="block text-base sm:text-2xl font-black tracking-tight tabular-nums text-foreground leading-tight">
+              <div className="min-w-0 w-full">
+                <b className="block text-xl sm:text-2xl lg:text-[1.75rem] font-black tracking-tight tabular-nums text-foreground leading-none">
                   <SmoothCount value={data?.month?.entries ?? 0} formatFn={n} />
                 </b>
-                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-0.5 truncate leading-tight">
+                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-1 truncate">
                   {t("feather-pulse-submissions")}
                 </small>
               </div>
             </div>
 
             {/* 2. Monthly Words Accepted */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-3 p-2 sm:p-3 rounded-lg bg-background/50 hover:bg-background/80 border border-border/50 transition-colors text-center sm:text-left min-w-0 shadow-2xs">
-              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md flex items-center justify-center shrink-0 bg-emerald-500/12 text-emerald-600 dark:text-emerald-400">
-                <AlignJustify className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
+            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-3.5 text-center sm:text-left min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 bg-emerald-500/12 text-emerald-600 dark:text-emerald-400">
+                <AlignJustify className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
               </div>
-              <div className="min-w-0 flex-1 w-full">
-                <b className="block text-base sm:text-2xl font-black tracking-tight tabular-nums text-foreground leading-tight">
+              <div className="min-w-0 w-full">
+                <b className="block text-xl sm:text-2xl lg:text-[1.75rem] font-black tracking-tight tabular-nums text-foreground leading-none">
                   <SmoothCount value={data?.month?.words ?? 0} formatFn={n} />
                 </b>
-                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-0.5 truncate leading-tight">
+                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-1 truncate">
                   {t("feather-pulse-words-accepted")}
                 </small>
               </div>
             </div>
 
             {/* 3. Monthly Contributors */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-3 p-2 sm:p-3 rounded-lg bg-background/50 hover:bg-background/80 border border-border/50 transition-colors text-center sm:text-left min-w-0 shadow-2xs">
-              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md flex items-center justify-center shrink-0 bg-rose-500/12 text-rose-600 dark:text-rose-400">
-                <Users className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
+            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-3.5 text-center sm:text-left min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 bg-rose-500/12 text-rose-600 dark:text-rose-400">
+                <Users className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
               </div>
-              <div className="min-w-0 flex-1 w-full">
-                <b className="block text-base sm:text-2xl font-black tracking-tight tabular-nums text-foreground leading-tight">
+              <div className="min-w-0 w-full">
+                <b className="block text-xl sm:text-2xl lg:text-[1.75rem] font-black tracking-tight tabular-nums text-foreground leading-none">
                   <SmoothCount value={data?.month?.people ?? 0} formatFn={n} />
                 </b>
-                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-0.5 truncate leading-tight">
+                <small className="block text-[10px] sm:text-xs text-muted-foreground font-medium mt-1 truncate">
                   {t("feather-pulse-contributors")}
                 </small>
               </div>
@@ -277,7 +277,7 @@ export default function PlatformPulse() {
           </div>
 
           {/* 30-Day Activity Sparkline Histogram */}
-          <div className="pt-1 sm:pt-2">
+          <div className="pt-2 sm:pt-4 space-y-2">
             <div
               className="flex items-end gap-1 sm:gap-1.5 h-10 sm:h-12 w-full pt-1"
               role="img"
@@ -303,7 +303,7 @@ export default function PlatformPulse() {
                     />
                   ))}
             </div>
-            <div className="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-muted-foreground font-medium select-none">
+            <div className="mt-2 text-[11px] text-muted-foreground font-medium select-none">
               {t("feather-pulse-sparkline-caption")}
             </div>
           </div>

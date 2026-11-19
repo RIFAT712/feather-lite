@@ -31,14 +31,11 @@ import {
   ShieldCheck,
   Send,
   Eye,
-  SlidersHorizontal,
   ChevronDown,
   Check,
   Layers,
   Globe,
 } from "lucide-react";
-
-type SortOption = "ending_soon" | "newest" | "project" | "language" | "submissions";
 
 export default function HomePage() {
   const { t, n, locale, isRtl } = useI18n();
@@ -47,7 +44,6 @@ export default function HomePage() {
   const [typeFilter, setTypeFilter] = useState<"all" | "campaigns" | "single">("all");
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
-  const [sortOption, setSortOption] = useState<SortOption>("ending_soon");
 
   const { data: contests, isLoading, error } = useQuery<Contest[]>({
     queryKey: ["contests"],
@@ -131,26 +127,10 @@ export default function HomePage() {
     });
 
     return filtered.sort((a, b) => {
-      if (sortOption === "ending_soon") {
-        return new Date(a.end_date).getTime() - new Date(b.end_date).getTime();
-      }
-      if (sortOption === "newest") {
-        return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
-      }
-      if (sortOption === "project") {
-        const aMeta = getProjectMeta(a.wiki_dbname);
-        const bMeta = getProjectMeta(b.wiki_dbname);
-        return aMeta.name.localeCompare(bMeta.name);
-      }
-      if (sortOption === "language") {
-        return (a.wiki_lang || "").localeCompare(b.wiki_lang || "");
-      }
-      if (sortOption === "submissions") {
-        return (b.total_articles || 0) - (a.total_articles || 0);
-      }
-      return 0;
+      // Default: competitions ending soonest first
+      return new Date(a.end_date).getTime() - new Date(b.end_date).getTime();
     });
-  }, [contests, statusFilter, typeFilter, selectedProject, selectedLanguage, searchQuery, sortOption, locale]);
+  }, [contests, statusFilter, typeFilter, selectedProject, selectedLanguage, searchQuery, locale]);
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -158,51 +138,7 @@ export default function HomePage() {
     setTypeFilter("all");
     setSelectedProject("all");
     setSelectedLanguage("all");
-    setSortOption("ending_soon");
   };
-
-  const renderSortMenu = (isMobile: boolean = false) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className="inline-flex items-center gap-1.5 h-8 px-2 sm:px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground whitespace-nowrap shrink-0"
-        aria-label="Sort options"
-      >
-        <SlidersHorizontal className="h-3 w-3 text-muted-foreground shrink-0" />
-        <span className="truncate">
-          {sortOption === "ending_soon" && t("feather-sort-ending-soon")}
-          {sortOption === "newest" && t("feather-sort-newest")}
-          {sortOption === "submissions" && t("feather-sort-submissions")}
-          {sortOption === "project" && t("feather-sort-project")}
-          {sortOption === "language" && t("feather-sort-language")}
-        </span>
-        <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent align="end" className="w-44 p-1 rounded-lg shadow-md border bg-popover z-50">
-        {[
-          { id: "ending_soon", label: t("feather-sort-ending-soon") },
-          { id: "newest", label: t("feather-sort-newest") },
-          { id: "submissions", label: t("feather-sort-submissions") },
-          { id: "project", label: t("feather-sort-project") },
-          { id: "language", label: t("feather-sort-language") },
-        ].map((opt) => {
-          const isSelected = sortOption === opt.id;
-          return (
-            <DropdownMenuItem
-              key={opt.id}
-              onClick={() => setSortOption(opt.id as SortOption)}
-              className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
-            >
-              <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
-                {opt.label}
-              </span>
-              {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 max-w-7xl">
@@ -266,51 +202,43 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Filters and Sorting Controls (Responsive: 100% visible on mobile without horizontal scroll, clean toolbar on desktop) */}
+        {/* Filters and Controls (Responsive: clean toolbar on desktop, full width on mobile) */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
-          {/* Mobile Top Controls: Status Segmented Control + Sort Selector */}
-          <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto shrink-0">
-            {/* Status Segmented Control */}
-            <div className="inline-flex items-center rounded-md border border-border/70 bg-muted/30 p-0.5 text-xs font-medium shrink-0">
-              <button
-                type="button"
-                onClick={() => setStatusFilter("active")}
-                className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  statusFilter === "active"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t("feather-home-filter-active")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("all")}
-                className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  statusFilter === "all"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t("feather-home-filter-all")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("ended")}
-                className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  statusFilter === "ended"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t("feather-home-filter-ended")}
-              </button>
-            </div>
-
-            {/* Mobile Only: Sort Selector */}
-            <div className="sm:hidden shrink-0">
-              {renderSortMenu(true)}
-            </div>
+          {/* Status Segmented Control */}
+          <div className="inline-flex items-center rounded-md border border-border/70 bg-muted/30 p-0.5 text-xs font-medium w-full sm:w-auto shrink-0 justify-center sm:justify-start">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("active")}
+              className={`flex-1 sm:flex-initial px-3 py-1 rounded-sm text-xs transition-colors cursor-pointer text-center whitespace-nowrap ${
+                statusFilter === "active"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t("feather-home-filter-active")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("all")}
+              className={`flex-1 sm:flex-initial px-3 py-1 rounded-sm text-xs transition-colors cursor-pointer text-center whitespace-nowrap ${
+                statusFilter === "all"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t("feather-home-filter-all")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("ended")}
+              className={`flex-1 sm:flex-initial px-3 py-1 rounded-sm text-xs transition-colors cursor-pointer text-center whitespace-nowrap ${
+                statusFilter === "ended"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t("feather-home-filter-ended")}
+            </button>
           </div>
 
           {/* Dimension Filters: Type, Project, Language */}
@@ -536,11 +464,6 @@ export default function HomePage() {
                 })}
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* Desktop Only: Sort Selector Dropdown */}
-            <div className="hidden sm:block shrink-0">
-              {renderSortMenu(false)}
-            </div>
           </div>
         </div>
       </div>

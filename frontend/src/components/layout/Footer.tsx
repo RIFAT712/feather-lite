@@ -87,28 +87,54 @@ export default function Footer() {
             </nav>
           </div>
 
-          {/* Wikimedia Cloud Services Credit Badge */}
-          <a
-            href="https://wikitech.wikimedia.org/wiki/Portal:Cloud_Services"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Wikimedia Cloud Services"
-            aria-label="Wikimedia Cloud Services"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/60 bg-muted/40 hover:bg-muted/80 text-xs transition-colors group cursor-pointer shrink-0"
-          >
-            <img
-              src="/icons/projects/wikimedia.svg"
-              alt=""
-              width={14}
-              height={14}
-              loading="lazy"
-              decoding="async"
-              className="h-3.5 w-3.5 object-contain shrink-0"
-            />
-            <span className="text-[11px] text-muted-foreground group-hover:text-foreground">
-              Powered by <span className="font-medium text-foreground">Wikimedia Cloud Services</span>
-            </span>
-          </a>
+          {/* Badges: WikiConnect + Wikimedia Cloud Services */}
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            {/* WikiConnect Initiative Badge */}
+            <a
+              href="https://meta.wikimedia.org/wiki/Bangla_WikiConnect"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="WikiConnect"
+              aria-label="WikiConnect Initiative"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/60 bg-muted/40 hover:bg-muted/80 text-xs transition-colors group cursor-pointer shrink-0"
+            >
+              <img
+                src="/icons/wikiconnect.svg"
+                alt=""
+                width={14}
+                height={14}
+                loading="lazy"
+                decoding="async"
+                className="h-3.5 w-3.5 object-contain shrink-0"
+              />
+              <span className="text-[11px] font-medium text-foreground">
+                {t("feather-footer-wikiconnect", "WikiConnect")}
+              </span>
+            </a>
+
+            {/* Wikimedia Cloud Services Credit Badge */}
+            <a
+              href="https://wikitech.wikimedia.org/wiki/Portal:Cloud_Services"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Wikimedia Cloud Services"
+              aria-label="Wikimedia Cloud Services"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/60 bg-muted/40 hover:bg-muted/80 text-xs transition-colors group cursor-pointer shrink-0"
+            >
+              <img
+                src="/icons/projects/wikimedia.svg"
+                alt=""
+                width={14}
+                height={14}
+                loading="lazy"
+                decoding="async"
+                className="h-3.5 w-3.5 object-contain shrink-0"
+              />
+              <span className="text-[11px] text-muted-foreground group-hover:text-foreground">
+                Powered by <span className="font-medium text-foreground">Wikimedia Cloud Services</span>
+              </span>
+            </a>
+          </div>
         </div>
 
         {/* Row 2: Licensing */}

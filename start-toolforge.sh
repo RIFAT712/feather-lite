@@ -11,13 +11,13 @@ APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "=== [Feather-Lite] Initializing deployment from ${APP_DIR} ==="
 
-# 1. Environment Configuration
-export PORT=8000
-export BACKEND_PORT=8081
-export DB_TYPE="sqlite"
-export DATABASE_URL="${TOOL_DIR}/feather.db"
-export FRONTEND_URL="https://feather-lite.toolforge.org"
-export OAUTH_CALLBACK_URL="https://feather-lite.toolforge.org/auth/callback"
+# 1. Environment Configuration (Toolforge envvars take precedence if set)
+export PORT="${PORT:-8000}"
+export BACKEND_PORT="${BACKEND_PORT:-8081}"
+export DB_TYPE="${DB_TYPE:-sqlite}"
+export DATABASE_URL="${DATABASE_URL:-${TOOL_DIR}/feather.db}"
+export FRONTEND_URL="${FRONTEND_URL:-https://feather-lite.toolforge.org}"
+export OAUTH_CALLBACK_URL="${OAUTH_CALLBACK_URL:-https://feather-lite.toolforge.org/auth/callback}"
 
 # 2. Build or verify Linux backend executable
 if [ ! -f "${APP_DIR}/backend/feather-server-linux" ]; then

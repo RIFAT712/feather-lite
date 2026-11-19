@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -e
+
+# Do NOT use set -e so minor non-fatal warnings never kill the startup
+set +e
 
 # ==============================================================================
 # Feather 2.0 - Toolforge Combined Entrypoint
@@ -29,11 +31,20 @@ fi
 
 echo "[Feather-Lite] Using DATABASE_URL=${DATABASE_URL}"
 
-# 2. Make Linux backend executable
-chmod +x "${APP_DIR}/backend/feather-server-linux" 2>/dev/null || true
+# 2. Binary execution handling (copy to /tmp if read-only or not executable)
+EXEC_BIN="${APP_DIR}/backend/feather-server-linux"
+chmod +x "${EXEC_BIN}" 2>/dev/null || true
+if [ ! -x "${EXEC_BIN}" ]; then
+    echo "[Backend] Copying binary to /tmp for execution..."
+    cp "${EXEC_BIN}" /tmp/feather-server 2>/dev/null || true
+    chmod +x /tmp/feather-server 2>/dev/null || true
+    if [ -x "/tmp/feather-server" ]; then
+        EXEC_BIN="/tmp/feather-server"
+    fi
+fi
 
 # 3. Start Go Backend in background
-echo "[Backend] Launching Go service on port ${BACKEND_PORT}..."
+echo "[Backend] Launching Go service on port ${BACKEND_PORT} using ${EXEC_BIN}..."
 (
     cd "${APP_DIR}/backend"
     PORT="${BACKEND_PORT}" \
@@ -42,7 +53,7 @@ echo "[Backend] Launching Go service on port ${BACKEND_PORT}..."
     FRONTEND_URL="${FRONTEND_URL}" \
     OAUTH_CALLBACK_URL="${OAUTH_CALLBACK_URL}" \
     OWNER_USERNAME="${OWNER_USERNAME}" \
-    ./feather-server-linux
+    "${EXEC_BIN}"
 ) &
 BACKEND_PID=$!
 

@@ -164,9 +164,7 @@ export default function HomePage() {
   const renderSortMenu = (isMobile: boolean = false) => (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={`inline-flex items-center gap-1.5 h-8 px-2 sm:px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground whitespace-nowrap shrink-0 ${
-          isMobile ? "max-w-[120px]" : ""
-        }`}
+        className="inline-flex items-center gap-1.5 h-8 px-2 sm:px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground whitespace-nowrap shrink-0"
         aria-label="Sort options"
       >
         <SlidersHorizontal className="h-3 w-3 text-muted-foreground shrink-0" />

@@ -554,5 +554,7 @@
   "feather-contest-pending-approval-action": "এখনই অনুমোদন করুন",
   "feather-contest-create-pending-notice": "কমিউনিটি আয়োজকদের তৈরি প্রতিযোগিতা সর্বজনীনভাবে প্রকাশিত হওয়ার আগে প্ল্যাটফর্ম প্রশাসকের অনুমোদনের প্রয়োজন হয়।",
   "feather-contest-danger-zone": "বিপজ্জনক অঞ্চল",
+  "feather-contest-danger-irreversible": "অপরিবর্তনযোগ্য ক্রিয়া",
+  "feather-contest-danger-permanent": "স্থায়ী",
   "feather-contest-danger-delete-desc": "এই প্রতিযোগিতা, এর সকল নিবন্ধ ও মূল্যায়ন স্থায়ীভাবে মুছে ফেলুন।"
 }

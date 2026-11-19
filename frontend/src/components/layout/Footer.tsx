@@ -15,196 +15,113 @@ export default function Footer() {
 
   return (
     <footer className="w-full border-t border-border/60 bg-muted/20 dark:bg-card/20 text-muted-foreground mt-auto">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Top Header: Brand + Modern Cloud Services Credit */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 sm:pb-6 border-b border-border/50">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-2xs shrink-0">
-              <Feather className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-foreground tracking-tight text-sm">
-                  {t("feather-title")}
-                </span>
-                <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground border border-border/60">
-                  2.0
-                </span>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 space-y-2.5">
+        {/* Row 1: Brand + Nav Links + Cloud Services Credit */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            {/* Brand Logo & Name */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-2xs shrink-0">
+                <Feather className="h-3.5 w-3.5" />
               </div>
-              <p className="text-xs text-muted-foreground hidden sm:block">
-                {t("feather-footer-tagline")}
-              </p>
+              <span className="font-bold text-foreground tracking-tight text-xs sm:text-sm">
+                {t("feather-title")}
+              </span>
+              <span className="text-[10px] font-semibold tracking-wider uppercase px-1 py-0.2 rounded bg-muted text-muted-foreground border border-border/60">
+                2.0
+              </span>
             </div>
+
+            <span className="text-border hidden sm:inline">•</span>
+
+            {/* Nav Links */}
+            <nav className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs">
+              <a
+                href="https://github.com/RIFAT712/Feather#readme"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors cursor-pointer"
+              >
+                {t("feather-footer-link-about")}
+              </a>
+              <a
+                href="https://meta.wikimedia.org/wiki/Privacy_policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors cursor-pointer"
+              >
+                {t("feather-footer-link-privacy")}
+              </a>
+              <a
+                href="https://wikitech.wikimedia.org/wiki/Portal:Toolforge"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors cursor-pointer"
+              >
+                {t("feather-footer-link-toolforge")}
+              </a>
+              <a
+                href="https://github.com/RIFAT712/Feather"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors cursor-pointer"
+              >
+                {t("feather-footer-link-developers")}
+              </a>
+              <a
+                href="https://github.com/RIFAT712/Feather/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors cursor-pointer"
+              >
+                {t("feather-footer-link-issues")}
+              </a>
+              <a
+                href="https://www.mediawiki.org/wiki/Code_of_Conduct"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors cursor-pointer"
+              >
+                {t("feather-footer-link-coc")}
+              </a>
+            </nav>
           </div>
 
-          {/* Wikimedia Cloud Services Credit Card (Hidden on Mobile like Wikipedia) */}
+          {/* Wikimedia Cloud Services Credit Badge */}
           <a
             href="https://wikitech.wikimedia.org/wiki/Portal:Cloud_Services"
             target="_blank"
             rel="noopener noreferrer"
             title="Wikimedia Cloud Services"
-            className="hidden sm:inline-flex items-center gap-3 px-3.5 py-2 rounded-lg border border-border/70 bg-card hover:bg-accent/60 transition-colors shadow-2xs group cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/60 bg-muted/40 hover:bg-muted/80 text-xs transition-colors group cursor-pointer shrink-0"
           >
-            <div className="flex h-8 w-8 items-center justify-center shrink-0">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/3/3d/Wikimedia_Cloud_Services_logo.svg"
-                alt="Wikimedia Cloud Services"
-                className="h-7 w-7 object-contain"
-                loading="lazy"
-              />
-            </div>
-            <div className="text-start">
-              <div className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">
-                Powered by
-              </div>
-              <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
-                Wikimedia Cloud Services
-              </div>
-            </div>
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/3/3d/Wikimedia_Cloud_Services_logo.svg"
+              alt="WMCS"
+              className="h-3.5 w-3.5 object-contain"
+              loading="lazy"
+            />
+            <span className="text-[11px] text-muted-foreground group-hover:text-foreground">
+              Powered by <span className="font-medium text-foreground">Wikimedia Cloud Services</span>
+            </span>
           </a>
         </div>
 
-        {/* Middle Navigation Links */}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-          <a
-            href="https://meta.wikimedia.org/wiki/Privacy_policy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors cursor-pointer"
-          >
-            {t("feather-footer-link-privacy")}
-          </a>
-          <a
-            href="https://github.com/RIFAT712/Feather#readme"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors cursor-pointer"
-          >
-            {t("feather-footer-link-about")}
-          </a>
-          <a
-            href="https://meta.wikimedia.org/wiki/Terms_of_use"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors cursor-pointer"
-          >
-            {t("feather-footer-link-disclaimers")}
-          </a>
-          <a
-            href="https://www.wikimedia.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors cursor-pointer"
-          >
-            {t("feather-footer-link-wikimedia")}
-          </a>
-          <a
-            href="https://wikitech.wikimedia.org/wiki/Portal:Toolforge"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors cursor-pointer"
-          >
-            {t("feather-footer-link-toolforge")}
-          </a>
-          <a
-            href="https://github.com/RIFAT712/Feather"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors cursor-pointer"
-          >
-            {t("feather-footer-link-developers")}
-          </a>
-          <a
-            href="https://github.com/RIFAT712/Feather/issues"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors cursor-pointer"
-          >
-            {t("feather-footer-link-issues")}
-          </a>
-          <a
-            href="https://www.mediawiki.org/wiki/Code_of_Conduct"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors cursor-pointer"
-          >
-            {t("feather-footer-link-coc")}
-          </a>
-        </div>
-
-        {/* Bottom Legal & Licensing Notice (Wikipedia style: clean on mobile, full on desktop) */}
-        <div className="space-y-1.5 text-[11px] leading-relaxed text-muted-foreground/85">
-          {locale === "bn" ? (
-            <p>
-              {t("feather-footer-license-prefix")}{" "}
-              <a
-                href="https://creativecommons.org/licenses/by-sa/4.0/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground transition-colors cursor-pointer"
-              >
-                {t("feather-footer-license-name")}
-              </a>
-              {t("feather-footer-license-suffix")}
-              <span className="hidden sm:inline">
-                {" "}
-                <a
-                  href="https://wikitech.wikimedia.org/wiki/Portal:Cloud_Services"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground transition-colors cursor-pointer"
-                >
-                  {t("feather-footer-wmcs-name")}
-                </a>{" "}
-                (
-                <a
-                  href="https://wikitech.wikimedia.org/wiki/Portal:Toolforge"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground transition-colors cursor-pointer"
-                >
-                  {t("feather-footer-toolforge-name")}
-                </a>
-                ) {t("feather-footer-wmcs-credit")}।
-              </span>
-            </p>
-          ) : (
-            <p>
-              {t("feather-footer-license-prefix")}{" "}
-              <a
-                href="https://creativecommons.org/licenses/by-sa/4.0/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground transition-colors cursor-pointer"
-              >
-                {t("feather-footer-license-name")}
-              </a>
-              {t("feather-footer-license-suffix")}
-              <span className="hidden sm:inline">
-                {" "}
-                {t("feather-footer-wmcs-credit")}{" "}
-                <a
-                  href="https://wikitech.wikimedia.org/wiki/Portal:Cloud_Services"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground transition-colors cursor-pointer"
-                >
-                  {t("feather-footer-wmcs-name")}
-                </a>{" "}
-                (
-                <a
-                  href="https://wikitech.wikimedia.org/wiki/Portal:Toolforge"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground transition-colors cursor-pointer"
-                >
-                  {t("feather-footer-toolforge-name")}
-                </a>
-                ).
-              </span>
-            </p>
-          )}
-          <p className="text-[10.5px] text-muted-foreground/60 hidden sm:block">
+        {/* Row 2: Licensing & Trademark (Single sleek compact line) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-border/40 text-[11px] leading-relaxed text-muted-foreground/80">
+          <p>
+            {t("feather-footer-license-prefix")}{" "}
+            <a
+              href="https://creativecommons.org/licenses/by-sa/4.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground transition-colors cursor-pointer"
+            >
+              {t("feather-footer-license-name")}
+            </a>
+            {t("feather-footer-license-suffix")}
+          </p>
+          <p className="text-[10.5px] text-muted-foreground/60">
             {t("feather-footer-trademark")}
           </p>
         </div>

@@ -554,5 +554,7 @@
   "feather-contest-pending-approval-action": "Approve Contest Now",
   "feather-contest-create-pending-notice": "Contests created by community organizers require administrative approval before appearing on the public contest portal.",
   "feather-contest-danger-zone": "Danger Zone",
+  "feather-contest-danger-irreversible": "Irreversible Actions",
+  "feather-contest-danger-permanent": "Permanent",
   "feather-contest-danger-delete-desc": "Permanently delete this contest, all its submissions, reviews, and jury allocations."
 }

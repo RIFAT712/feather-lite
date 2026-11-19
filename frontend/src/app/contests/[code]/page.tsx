@@ -2776,20 +2776,30 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
 
           {/* Danger Zone: Delete Contest (Owner or Creator only) */}
           {(isOwner || isCreator) && (
-            <Card className="border-destructive/40 bg-destructive/[0.02] dark:bg-destructive/[0.04] shadow-xs mt-6">
-              <CardHeader className="py-3 px-4 sm:px-6 border-b border-destructive/20 bg-destructive/5 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2 text-destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <CardTitle className="text-sm sm:text-base font-bold text-destructive">
+            <div className="rounded-xl border border-destructive/25 dark:border-destructive/35 bg-card overflow-hidden shadow-xs mt-8">
+              <div className="px-4 sm:px-6 py-3 border-b border-destructive/15 bg-destructive/[0.03] dark:bg-destructive/[0.06] flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex items-center justify-center size-6 rounded-md bg-destructive/10 text-destructive ring-1 ring-destructive/20">
+                    <AlertTriangle className="size-3.5" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-destructive">
                     {t("feather-contest-danger-zone")}
-                  </CardTitle>
+                  </span>
                 </div>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <Badge variant="outline" className="border-destructive/30 text-destructive bg-destructive/5 text-[10px] font-medium">
+                  {t("feather-contest-danger-irreversible")}
+                </Badge>
+              </div>
+              <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <h4 className="text-sm font-semibold text-foreground">
-                    {t("feather-admin-delete")}
-                  </h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-semibold text-foreground">
+                      {t("feather-admin-delete")}
+                    </h4>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-destructive bg-destructive/10 px-1.5 py-0.5 rounded border border-destructive/20">
+                      {t("feather-contest-danger-permanent")}
+                    </span>
+                  </div>
                   <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
                     {t("feather-contest-danger-delete-desc")}
                   </p>
@@ -2799,13 +2809,13 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                   variant="destructive"
                   size="sm"
                   onClick={() => setIsDeleteDialogOpen(true)}
-                  className="gap-1.5 text-xs font-semibold cursor-pointer shrink-0 shadow-xs"
+                  className="gap-2 text-xs font-semibold cursor-pointer shrink-0 shadow-xs h-8.5 px-3.5"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="size-3.5" />
                   <span>{t("feather-admin-delete")}</span>
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
           </TabsContent>
         )}
@@ -2816,7 +2826,7 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-2.5 text-destructive mb-1">
-              <div className="p-2 bg-destructive/10 rounded-full">
+              <div className="p-2 bg-destructive/10 rounded-full ring-1 ring-destructive/20">
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <DialogTitle className="text-lg font-bold">
@@ -2829,12 +2839,18 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
           </DialogHeader>
 
           {contest && (
-            <div className="p-3 my-2 rounded-md bg-muted/50 border text-xs space-y-1">
-              <div>
-                <strong>Contest:</strong> {contest.name} ({contest.code})
+            <div className="p-3.5 my-2 rounded-lg bg-destructive/[0.04] border border-destructive/20 text-xs space-y-1.5">
+              <div className="text-muted-foreground font-medium">
+                You are about to permanently delete:
               </div>
-              <div>
-                <strong>Wiki:</strong> {contest.wiki_dbname}
+              <div className="font-semibold text-foreground flex items-center justify-between">
+                <span>{contest.name}</span>
+                <span className="font-mono text-[11px] text-muted-foreground">({contest.code})</span>
+              </div>
+              <div className="flex items-center gap-2 pt-1 border-t border-destructive/15 text-[11px] text-muted-foreground">
+                <span><strong>Wiki:</strong> {contest.wiki_dbname}</span>
+                <span>•</span>
+                <span><strong>Articles:</strong> {contest.total_articles ?? 0}</span>
               </div>
             </div>
           )}
@@ -2845,7 +2861,7 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
               size="sm"
               disabled={isDeletingContest}
               onClick={() => setIsDeleteDialogOpen(false)}
-              className="text-xs cursor-pointer"
+              className="text-xs cursor-pointer h-8"
             >
               {t("feather-submit-cancel")}
             </Button>
@@ -2854,9 +2870,13 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
               size="sm"
               disabled={isDeletingContest}
               onClick={handleDeleteContest}
-              className="text-xs gap-1.5 cursor-pointer shadow-xs"
+              className="text-xs gap-1.5 cursor-pointer shadow-xs h-8 px-3.5"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              {isDeletingContest ? (
+                <Clock className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
               <span>{isDeletingContest ? "Deleting..." : t("feather-admin-delete-confirm-btn")}</span>
             </Button>
           </DialogFooter>

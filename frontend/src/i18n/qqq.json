@@ -554,5 +554,7 @@
   "feather-contest-pending-approval-action": "Button on banner allowing owners to quickly approve the contest.",
   "feather-contest-create-pending-notice": "Notice displayed on contest creation page informing creators of admin review requirement.",
   "feather-contest-danger-zone": "Card heading for destructive actions such as deleting a contest.",
+  "feather-contest-danger-irreversible": "Badge label in danger zone card header indicating irreversible actions.",
+  "feather-contest-danger-permanent": "Badge tag next to delete contest action indicating permanent action.",
   "feather-contest-danger-delete-desc": "Description under danger zone explaining the consequences of deleting a contest."
 }

@@ -161,6 +161,51 @@ export default function HomePage() {
     setSortOption("ending_soon");
   };
 
+  const renderSortMenu = (isMobile: boolean = false) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={`inline-flex items-center gap-1.5 h-8 px-2 sm:px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground whitespace-nowrap shrink-0 ${
+          isMobile ? "max-w-[120px]" : ""
+        }`}
+        aria-label="Sort options"
+      >
+        <SlidersHorizontal className="h-3 w-3 text-muted-foreground shrink-0" />
+        <span className="truncate">
+          {sortOption === "ending_soon" && t("feather-sort-ending-soon")}
+          {sortOption === "newest" && t("feather-sort-newest")}
+          {sortOption === "submissions" && t("feather-sort-submissions")}
+          {sortOption === "project" && t("feather-sort-project")}
+          {sortOption === "language" && t("feather-sort-language")}
+        </span>
+        <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" className="w-44 p-1 rounded-lg shadow-md border bg-popover z-50">
+        {[
+          { id: "ending_soon", label: t("feather-sort-ending-soon") },
+          { id: "newest", label: t("feather-sort-newest") },
+          { id: "submissions", label: t("feather-sort-submissions") },
+          { id: "project", label: t("feather-sort-project") },
+          { id: "language", label: t("feather-sort-language") },
+        ].map((opt) => {
+          const isSelected = sortOption === opt.id;
+          return (
+            <DropdownMenuItem
+              key={opt.id}
+              onClick={() => setSortOption(opt.id as SortOption)}
+              className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+            >
+              <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
+                {opt.label}
+              </span>
+              {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 max-w-7xl">
       {/* 1. Page Header Block */}
@@ -223,302 +268,282 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Filters and Sorting Ribbon (Silky smooth full-bleed horizontal scroll on mobile) */}
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1 w-full md:w-auto -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth shrink-0 touch-pan-x">
-          {/* Status Segmented Control */}
-          <div className="inline-flex items-center rounded-md border border-border/70 bg-muted/30 p-0.5 text-xs font-medium shrink-0">
-            <button
-              type="button"
-              onClick={() => setStatusFilter("active")}
-              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                statusFilter === "active"
-                  ? "bg-background text-foreground shadow-2xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t("feather-home-filter-active")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatusFilter("all")}
-              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                statusFilter === "all"
-                  ? "bg-background text-foreground shadow-2xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t("feather-home-filter-all")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatusFilter("ended")}
-              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                statusFilter === "ended"
-                  ? "bg-background text-foreground shadow-2xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t("feather-home-filter-ended")}
-            </button>
+        {/* Filters and Sorting Controls (Responsive: 100% visible on mobile without horizontal scroll, clean toolbar on desktop) */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
+          {/* Mobile Top Controls: Status Segmented Control + Sort Selector */}
+          <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto shrink-0">
+            {/* Status Segmented Control */}
+            <div className="inline-flex items-center rounded-md border border-border/70 bg-muted/30 p-0.5 text-xs font-medium shrink-0">
+              <button
+                type="button"
+                onClick={() => setStatusFilter("active")}
+                className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  statusFilter === "active"
+                    ? "bg-background text-foreground shadow-2xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t("feather-home-filter-active")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("all")}
+                className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  statusFilter === "all"
+                    ? "bg-background text-foreground shadow-2xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t("feather-home-filter-all")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("ended")}
+                className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  statusFilter === "ended"
+                    ? "bg-background text-foreground shadow-2xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t("feather-home-filter-ended")}
+              </button>
+            </div>
+
+            {/* Mobile Only: Sort Selector */}
+            <div className="sm:hidden shrink-0">
+              {renderSortMenu(true)}
+            </div>
           </div>
 
-          {/* Format / Type Filter Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className={`inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer whitespace-nowrap shrink-0 ${
-                typeFilter !== "all"
-                  ? "border-primary/50 bg-primary/5 text-primary"
-                  : "border-border/70 bg-background text-foreground hover:bg-muted/80"
-              }`}
-              aria-label={t("feather-filter-type")}
-            >
-              <Layers className="h-3.5 w-3.5 opacity-75 shrink-0" />
-              <span className="whitespace-nowrap">
-                {typeFilter === "all" && t("feather-filter-all-types")}
-                {typeFilter === "campaigns" && t("feather-filter-type-campaigns")}
-                {typeFilter === "single" && t("feather-filter-type-single")}
-              </span>
-              <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="start" className="w-52 p-1 rounded-lg shadow-md border bg-popover z-50">
-              <DropdownMenuItem
-                onClick={() => setTypeFilter("all")}
-                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+          {/* Dimension Filters: Type, Project, Language */}
+          <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5 w-full sm:w-auto shrink-0">
+            {/* Format / Type Filter Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={`inline-flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 h-8 px-2 sm:px-2.5 text-xs font-medium rounded-md border transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer whitespace-nowrap w-full sm:w-auto shrink-0 ${
+                  typeFilter !== "all"
+                    ? "border-primary/50 bg-primary/5 text-primary"
+                    : "border-border/70 bg-background text-foreground hover:bg-muted/80"
+                }`}
+                aria-label={t("feather-filter-type")}
               >
-                <span className={typeFilter === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
-                  {t("feather-filter-all-types")}
-                </span>
-                {typeFilter === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator className="my-1" />
-
-              <DropdownMenuItem
-                onClick={() => setTypeFilter("campaigns")}
-                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
-              >
-                <div className="flex items-center gap-2">
-                  <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <span className={typeFilter === "campaigns" ? "font-bold text-foreground" : "text-muted-foreground"}>
-                    {t("feather-filter-type-campaigns")}
+                <div className="flex items-center gap-1 min-w-0 truncate">
+                  <Layers className="h-3.5 w-3.5 opacity-75 shrink-0" />
+                  <span className="truncate">
+                    {typeFilter === "all" && t("feather-filter-all-types")}
+                    {typeFilter === "campaigns" && t("feather-filter-type-campaigns")}
+                    {typeFilter === "single" && t("feather-filter-type-single")}
                   </span>
                 </div>
-                {typeFilter === "campaigns" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-              </DropdownMenuItem>
+                <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
+              </DropdownMenuTrigger>
 
-              <DropdownMenuItem
-                onClick={() => setTypeFilter("single")}
-                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
-              >
-                <div className="flex items-center gap-2">
-                  <span className={typeFilter === "single" ? "font-bold text-foreground" : "text-muted-foreground"}>
-                    {t("feather-filter-type-single")}
+              <DropdownMenuContent align="start" className="w-52 p-1 rounded-lg shadow-md border bg-popover z-50">
+                <DropdownMenuItem
+                  onClick={() => setTypeFilter("all")}
+                  className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                >
+                  <span className={typeFilter === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                    {t("feather-filter-all-types")}
                   </span>
-                </div>
-                {typeFilter === "single" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  {typeFilter === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                </DropdownMenuItem>
 
-          {/* Project Filter Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className={`inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer whitespace-nowrap shrink-0 ${
-                selectedProject !== "all"
-                  ? "border-primary/50 bg-primary/5 text-primary"
-                  : "border-border/70 bg-background text-foreground hover:bg-muted/80"
-              }`}
-              aria-label={t("feather-filter-project")}
-            >
-              {selectedProject === "all" ? (
-                <>
-                  <img
-                    src="/icons/projects/wikimedia.svg"
-                    alt=""
-                    className="h-3.5 w-3.5 object-contain opacity-75 shrink-0"
-                  />
-                  <span className="whitespace-nowrap">{t("feather-filter-all-projects")}</span>
-                </>
-              ) : (
-                (() => {
-                  const meta = getProjectMeta(selectedProject);
-                  const label = t(`feather-project-${meta.id}`) || (locale === "bn" ? meta.nativeName : meta.name);
-                  return (
+                <DropdownMenuSeparator className="my-1" />
+
+                <DropdownMenuItem
+                  onClick={() => setTypeFilter("campaigns")}
+                  className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                >
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className={typeFilter === "campaigns" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                      {t("feather-filter-type-campaigns")}
+                    </span>
+                  </div>
+                  {typeFilter === "campaigns" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => setTypeFilter("single")}
+                  className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={typeFilter === "single" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                      {t("feather-filter-type-single")}
+                    </span>
+                  </div>
+                  {typeFilter === "single" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Project Filter Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={`inline-flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 h-8 px-2 sm:px-2.5 text-xs font-medium rounded-md border transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer whitespace-nowrap w-full sm:w-auto shrink-0 ${
+                  selectedProject !== "all"
+                    ? "border-primary/50 bg-primary/5 text-primary"
+                    : "border-border/70 bg-background text-foreground hover:bg-muted/80"
+                }`}
+                aria-label={t("feather-filter-project")}
+              >
+                <div className="flex items-center gap-1 min-w-0 truncate">
+                  {selectedProject === "all" ? (
                     <>
                       <img
-                        src={meta.icon}
+                        src="/icons/projects/wikimedia.svg"
                         alt=""
-                        className="h-3.5 w-3.5 object-contain shrink-0"
-                        onError={(e) => {
-                          e.currentTarget.src = "/icons/projects/wikipedia.svg";
-                        }}
+                        className="h-3.5 w-3.5 object-contain opacity-75 shrink-0"
                       />
-                      <span className="font-semibold text-foreground whitespace-nowrap">{label}</span>
+                      <span className="truncate">{t("feather-filter-all-projects")}</span>
                     </>
-                  );
-                })()
-              )}
-              <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="start" className="w-48 p-1 rounded-lg shadow-md border bg-popover z-50">
-              <DropdownMenuItem
-                onClick={() => setSelectedProject("all")}
-                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
-              >
-                <div className="flex items-center gap-2">
-                  <img
-                    src="/icons/projects/wikimedia.svg"
-                    alt=""
-                    className="h-3.5 w-3.5 object-contain shrink-0"
-                  />
-                  <span className={selectedProject === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
-                    {t("feather-filter-all-projects")}
-                  </span>
+                  ) : (
+                    (() => {
+                      const meta = getProjectMeta(selectedProject);
+                      const label = t(`feather-project-${meta.id}`) || (locale === "bn" ? meta.nativeName : meta.name);
+                      return (
+                        <>
+                          <img
+                            src={meta.icon}
+                            alt=""
+                            className="h-3.5 w-3.5 object-contain shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                            }}
+                          />
+                          <span className="font-semibold text-foreground truncate">{label}</span>
+                        </>
+                      );
+                    })()
+                  )}
                 </div>
-                {selectedProject === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-              </DropdownMenuItem>
+                <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
+              </DropdownMenuTrigger>
 
-              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuContent align="start" className="w-48 p-1 rounded-lg shadow-md border bg-popover z-50">
+                <DropdownMenuItem
+                  onClick={() => setSelectedProject("all")}
+                  className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                >
+                  <div className="flex items-center gap-2">
+                    <img
+                      src="/icons/projects/wikimedia.svg"
+                      alt=""
+                      className="h-3.5 w-3.5 object-contain shrink-0"
+                    />
+                    <span className={selectedProject === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                      {t("feather-filter-all-projects")}
+                    </span>
+                  </div>
+                  {selectedProject === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                </DropdownMenuItem>
 
-              {uniqueProjects.map((p) => {
-                const meta = getProjectMeta(p);
-                const isSelected = selectedProject === p;
-                const label = t(`feather-project-${meta.id}`) || (locale === "bn" ? meta.nativeName : meta.name);
-                return (
-                  <DropdownMenuItem
-                    key={p}
-                    onClick={() => setSelectedProject(p)}
-                    className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
-                  >
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={meta.icon}
-                        alt=""
-                        className="h-3.5 w-3.5 object-contain shrink-0"
-                        onError={(e) => {
-                          e.currentTarget.src = "/icons/projects/wikipedia.svg";
-                        }}
-                      />
-                      <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
-                        {label}
-                      </span>
-                    </div>
-                    {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuSeparator className="my-1" />
 
-          {/* Language Filter Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className={`inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer whitespace-nowrap shrink-0 ${
-                selectedLanguage !== "all"
-                  ? "border-primary/50 bg-primary/5 text-primary"
-                  : "border-border/70 bg-background text-foreground hover:bg-muted/80"
-              }`}
-              aria-label={t("feather-filter-language")}
-            >
-              <CodexLanguageIcon className="h-3.5 w-3.5 opacity-75 shrink-0" />
-              {selectedLanguage === "all" ? (
-                <span className="whitespace-nowrap">{t("feather-filter-all-languages")}</span>
-              ) : (
-                (() => {
-                  const langName = getLanguageName(selectedLanguage, locale);
+                {uniqueProjects.map((p) => {
+                  const meta = getProjectMeta(p);
+                  const isSelected = selectedProject === p;
+                  const label = t(`feather-project-${meta.id}`) || (locale === "bn" ? meta.nativeName : meta.name);
                   return (
-                    <span className="font-semibold text-foreground whitespace-nowrap">
-                      {langName} ({selectedLanguage.toUpperCase()})
-                    </span>
+                    <DropdownMenuItem
+                      key={p}
+                      onClick={() => setSelectedProject(p)}
+                      className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                    >
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={meta.icon}
+                          alt=""
+                          className="h-3.5 w-3.5 object-contain shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                          }}
+                        />
+                        <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
+                          {label}
+                        </span>
+                      </div>
+                      {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                    </DropdownMenuItem>
                   );
-                })()
-              )}
-              <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
-            </DropdownMenuTrigger>
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-            <DropdownMenuContent align="start" className="w-52 p-1 rounded-lg shadow-md border bg-popover z-50">
-              <DropdownMenuItem
-                onClick={() => setSelectedLanguage("all")}
-                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+            {/* Language Filter Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={`inline-flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 h-8 px-2 sm:px-2.5 text-xs font-medium rounded-md border transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer whitespace-nowrap w-full sm:w-auto shrink-0 ${
+                  selectedLanguage !== "all"
+                    ? "border-primary/50 bg-primary/5 text-primary"
+                    : "border-border/70 bg-background text-foreground hover:bg-muted/80"
+                }`}
+                aria-label={t("feather-filter-language")}
               >
-                <div className="flex items-center gap-2">
-                  <CodexLanguageIcon className="h-3.5 w-3.5 opacity-70 shrink-0" />
-                  <span className={selectedLanguage === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
-                    {t("feather-filter-all-languages")}
-                  </span>
+                <div className="flex items-center gap-1 min-w-0 truncate">
+                  <CodexLanguageIcon className="h-3.5 w-3.5 opacity-75 shrink-0" />
+                  {selectedLanguage === "all" ? (
+                    <span className="truncate">{t("feather-filter-all-languages")}</span>
+                  ) : (
+                    (() => {
+                      const langName = getLanguageName(selectedLanguage, locale);
+                      return (
+                        <span className="font-semibold text-foreground truncate">
+                          {langName} ({selectedLanguage.toUpperCase()})
+                        </span>
+                      );
+                    })()
+                  )}
                 </div>
-                {selectedLanguage === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-              </DropdownMenuItem>
+                <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
+              </DropdownMenuTrigger>
 
-              <DropdownMenuSeparator className="my-1" />
-
-              {uniqueLanguages.map((lang) => {
-                const isSelected = selectedLanguage === lang;
-                const langName = getLanguageName(lang, locale);
-                return (
-                  <DropdownMenuItem
-                    key={lang}
-                    onClick={() => setSelectedLanguage(lang)}
-                    className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
-                        {langName}
-                      </span>
-                      <span className="text-[10px] font-mono text-muted-foreground bg-muted/70 px-1 py-0.5 rounded">
-                        {lang.toUpperCase()}
-                      </span>
-                    </div>
-                    {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Sort Selector Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground whitespace-nowrap shrink-0"
-              aria-label="Sort options"
-            >
-              <SlidersHorizontal className="h-3 w-3 text-muted-foreground shrink-0" />
-              <span className="whitespace-nowrap">
-                {sortOption === "ending_soon" && t("feather-sort-ending-soon")}
-                {sortOption === "newest" && t("feather-sort-newest")}
-                {sortOption === "submissions" && t("feather-sort-submissions")}
-                {sortOption === "project" && t("feather-sort-project")}
-                {sortOption === "language" && t("feather-sort-language")}
-              </span>
-              <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end" className="w-44 p-1 rounded-lg shadow-md border bg-popover z-50">
-              {[
-                { id: "ending_soon", label: t("feather-sort-ending-soon") },
-                { id: "newest", label: t("feather-sort-newest") },
-                { id: "submissions", label: t("feather-sort-submissions") },
-                { id: "project", label: t("feather-sort-project") },
-                { id: "language", label: t("feather-sort-language") },
-              ].map((opt) => {
-                const isSelected = sortOption === opt.id;
-                return (
-                  <DropdownMenuItem
-                    key={opt.id}
-                    onClick={() => setSortOption(opt.id as SortOption)}
-                    className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
-                  >
-                    <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
-                      {opt.label}
+              <DropdownMenuContent align="end" className="w-56 max-h-72 overflow-y-auto p-1 rounded-lg shadow-md border bg-popover z-50">
+                <DropdownMenuItem
+                  onClick={() => setSelectedLanguage("all")}
+                  className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                >
+                  <div className="flex items-center gap-2">
+                    <CodexLanguageIcon className="h-3.5 w-3.5 opacity-70 shrink-0" />
+                    <span className={selectedLanguage === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                      {t("feather-filter-all-languages")}
                     </span>
-                    {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  </div>
+                  {selectedLanguage === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator className="my-1" />
+
+                {uniqueLanguages.map((lang) => {
+                  const isSelected = selectedLanguage === lang;
+                  const langName = getLanguageName(lang, locale);
+                  return (
+                    <DropdownMenuItem
+                      key={lang}
+                      onClick={() => setSelectedLanguage(lang)}
+                      className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
+                          {langName}
+                        </span>
+                        <span className="text-[10px] font-mono text-muted-foreground bg-muted/70 px-1 py-0.5 rounded">
+                          {lang.toUpperCase()}
+                        </span>
+                      </div>
+                      {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Desktop Only: Sort Selector Dropdown */}
+            <div className="hidden sm:block shrink-0">
+              {renderSortMenu(false)}
+            </div>
+          </div>
         </div>
       </div>
 

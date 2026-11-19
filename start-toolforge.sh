@@ -32,7 +32,10 @@ fi
 echo "[Feather-Lite] Using DATABASE_URL=${DATABASE_URL}"
 
 # 2. Binary execution handling (copy to /tmp if read-only or not executable)
-EXEC_BIN="${APP_DIR}/backend/feather-server-linux"
+EXEC_BIN="${APP_DIR}/backend/feather-server-amd64"
+if [ ! -f "${EXEC_BIN}" ]; then
+    EXEC_BIN="${APP_DIR}/backend/feather-server-linux"
+fi
 chmod +x "${EXEC_BIN}" 2>/dev/null || true
 if [ ! -x "${EXEC_BIN}" ]; then
     echo "[Backend] Copying binary to /tmp for execution..."

@@ -107,8 +107,8 @@ export default function Footer() {
           </a>
         </div>
 
-        {/* Row 2: Licensing & Trademark (Single sleek compact line) */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-border/40 text-[11px] leading-relaxed text-muted-foreground/80">
+        {/* Row 2: Licensing */}
+        <div className="pt-2 border-t border-border/40 text-[11px] leading-relaxed text-muted-foreground/80">
           <p>
             {t("feather-footer-license-prefix")}{" "}
             <a
@@ -120,9 +120,6 @@ export default function Footer() {
               {t("feather-footer-license-name")}
             </a>
             {t("feather-footer-license-suffix")}
-          </p>
-          <p className="text-[10.5px] text-muted-foreground/60">
-            {t("feather-footer-trademark")}
           </p>
         </div>
       </div>

@@ -807,7 +807,7 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 			SELECT COUNT(*), 
 			       COUNT(CASE WHEN status = 'accepted' THEN 1 END),
 			       COUNT(CASE WHEN status = 'pending' THEN 1 END)
-			FROM articles WHERE contest_id = ?
+			FROM articles WHERE contest_id = ? AND status != 'validation_failed'
 		`, c.ID).Scan(&c.TotalArticles, &c.AcceptedArticles, &c.PendingArticles)
 
 		if c.ParentContestID != nil {
@@ -1523,7 +1523,7 @@ func (h *Handler) GetUserCreatedArticles(w http.ResponseWriter, r *http.Request)
 	rows, err := h.db.Query(`
 		SELECT a.title FROM articles a
 		JOIN users u ON a.submitter_id = u.id
-		WHERE a.contest_id = ? AND u.wiki_username = ?
+		WHERE a.contest_id = ? AND u.wiki_username = ? AND a.status != 'validation_failed'
 	`, contest.ID, username)
 	alreadySubmitted := make([]string, 0)
 	if err == nil {
@@ -1702,6 +1702,16 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 				status = "validation_failed"
 				validationErr = fmt.Sprintf("Submission limit reached: maximum %d articles per participant allowed", contest.MaxSubmissionsPerUser)
 			}
+		}
+
+		if status == "validation_failed" {
+			// Do NOT insert into articles table. Failed validation articles are not contest submissions.
+			results = append(results, SubmitResult{
+				Title:  cleanTitle,
+				Status: status,
+				Error:  validationErr,
+			})
+			continue
 		}
 
 		byteSize := 0
@@ -2538,7 +2548,7 @@ func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
 		FROM articles a
 		JOIN contests c ON a.contest_id = c.id
 		JOIN users u ON a.submitter_id = u.id
-		WHERE (c.id = ? OR c.parent_contest_id = ?)
+		WHERE (c.id = ? OR c.parent_contest_id = ?) AND a.status != 'validation_failed'
 	`
 	args := []any{contestID, contestID}
 	if wikiFilter != "" {
@@ -2609,7 +2619,7 @@ func (h *Handler) GetUserGlobalProfile(w http.ResponseWriter, r *http.Request) {
 		       COALESCE(a.wiki_creator, ''), a.wiki_creation_date, a.submitted_at
 		FROM articles a
 		JOIN contests c ON a.contest_id = c.id
-		WHERE a.submitter_id = ?
+		WHERE a.submitter_id = ? AND a.status != 'validation_failed'
 		ORDER BY c.start_date DESC, a.submitted_at DESC
 	`
 	rows, err := h.db.Query(partQuery, userID)
@@ -2767,7 +2777,7 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 		SELECT a.id, a.title, a.status, COALESCE(a.validation_error, ''), 
 		       a.word_count, a.byte_count, a.submitted_at
 		FROM articles a
-		WHERE a.contest_id = ? AND a.submitter_id = ?
+		WHERE a.contest_id = ? AND a.submitter_id = ? AND a.status != 'validation_failed'
 		ORDER BY a.submitted_at DESC
 	`
 	rows, err := h.db.Query(subQuery, contestID, userID)

@@ -214,9 +214,10 @@ export default function UserGlobalProfilePage() {
               <div className="space-y-3">
                 {profile.participated_contests.map((contest) => {
                   const isExpanded = expandedContest === contest.code;
-                  const acceptedCount = contest.articles.filter((a) => a.status === "accepted").length;
-                  const rejectedCount = contest.articles.filter((a) => a.status === "rejected" || a.status === "validation_failed").length;
-                  const pendingCount = contest.articles.filter((a) => a.status === "pending").length;
+                  const validArticles = contest.articles.filter((a) => a.status !== "validation_failed");
+                  const acceptedCount = validArticles.filter((a) => a.status === "accepted").length;
+                  const rejectedCount = validArticles.filter((a) => a.status === "rejected").length;
+                  const pendingCount = validArticles.filter((a) => a.status === "pending").length;
 
                   return (
                     <div
@@ -297,7 +298,7 @@ export default function UserGlobalProfilePage() {
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-border">
-                                {contest.articles.map((art) => (
+                                {validArticles.map((art) => (
                                   <tr key={art.id} className="hover:bg-muted/30 transition-colors">
                                     <td className="py-2.5 px-3 font-medium">
                                       <a

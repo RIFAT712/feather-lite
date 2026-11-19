@@ -227,12 +227,13 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
     return standings.filter((s) => s.username.toLowerCase().includes(q));
   }, [standings, standingsSearch]);
 
-  // Filtered Submissions
+  // Filtered Submissions (articles that failed validation must never appear on the list)
   const filteredArticles = useMemo(() => {
     if (!articles) return [];
-    if (!submissionsSearch.trim()) return articles;
+    const valid = articles.filter((a) => a.status !== "validation_failed");
+    if (!submissionsSearch.trim()) return valid;
     const q = submissionsSearch.toLowerCase().trim();
-    return articles.filter(
+    return valid.filter(
       (a) =>
         a.title.toLowerCase().includes(q) ||
         a.submitter_username.toLowerCase().includes(q)

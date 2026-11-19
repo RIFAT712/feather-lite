@@ -31,6 +31,9 @@ func main() {
 	}
 	defer db.Close()
 
+	// Clean up legacy validation_failed entries so only valid submissions are retained
+	_, _ = db.Exec("DELETE FROM articles WHERE status = 'validation_failed'")
+
 	seedContest(db)
 
 	ctx, cancel := context.WithCancel(context.Background())

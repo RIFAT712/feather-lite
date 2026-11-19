@@ -75,20 +75,21 @@ export default function ContestUserProfilePage() {
     );
   }
 
+  // Filter out any validation failures so they do not appear in the user submissions list
+  const validSubmissions = profile.submissions.filter((s) => s.status !== "validation_failed");
+
   // Calculate aggregates
-  const totalSubmissions = profile.submissions.length;
-  const totalAccepted = profile.submissions.filter((s) => s.status === "accepted").length;
-  const totalRejected = profile.submissions.filter(
-    (s) => s.status === "rejected" || s.status === "validation_failed"
-  ).length;
-  const totalPending = profile.submissions.filter((s) => s.status === "pending").length;
+  const totalSubmissions = validSubmissions.length;
+  const totalAccepted = validSubmissions.filter((s) => s.status === "accepted").length;
+  const totalRejected = validSubmissions.filter((s) => s.status === "rejected").length;
+  const totalPending = validSubmissions.filter((s) => s.status === "pending").length;
   const totalWords = profile.standing?.total_words ?? 
-    profile.submissions
+    validSubmissions
       .filter((s) => s.status === "accepted")
       .reduce((sum, s) => sum + s.word_count, 0);
 
   // Filter submissions
-  const filteredSubmissions = profile.submissions.filter((s) =>
+  const filteredSubmissions = validSubmissions.filter((s) =>
     s.title.toLowerCase().includes(submissionSearch.toLowerCase().trim())
   );
 

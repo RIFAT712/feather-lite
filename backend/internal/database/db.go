@@ -129,6 +129,8 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 	if status != "" {
 		baseQuery += " AND a.status = ?"
 		args = append(args, status)
+	} else {
+		baseQuery += " AND a.status != 'validation_failed'"
 	}
 	if assignedToID > 0 {
 		baseQuery += " AND a.assigned_to_id = ?"

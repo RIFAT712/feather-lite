@@ -73,12 +73,27 @@ func main() {
 		api.Get("/contests", h.ListContests)
 		api.Post("/contests", h.CreateContest)
 		api.Get("/contests/{code}", h.GetContest)
+		api.Put("/contests/{code}", h.UpdateContest)
+		api.Post("/contests/{code}/sub-contests", h.CreateSubContest)
+		api.Get("/contests/{code}/available-contests", h.GetAvailableContests)
+		api.Post("/contests/{code}/attach-contest", h.AttachContest)
+		api.Post("/contests/{code}/detach-contest", h.DetachContest)
 		api.Get("/contests/{code}/articles", h.GetContestArticles)
 		api.Get("/contests/{code}/articles/{id}/preview", h.GetArticlePreview)
 		api.Get("/contests/{code}/user-created-articles", h.GetUserCreatedArticles)
 		api.Post("/contests/{code}/submit", h.SubmitArticles)
 		api.Get("/contests/{code}/standings", h.GetStandings)
+		api.Get("/contests/{code}/jury-stats", h.GetJuryStats)
+		api.Post("/contests/{code}/redistribute", h.RedistributeQueues)
+		api.Get("/contests/{code}/users/{username}", h.GetContestUserProfile)
+		api.Get("/users/{username}/profile", h.GetUserGlobalProfile)
 		api.Post("/articles/{id}/review", h.ReviewArticle)
+		api.Post("/articles/{id}/review/undo", h.UndoReview)
+		api.Post("/articles/{id}/lock", h.AcquireArticleLock)
+		api.Delete("/articles/{id}/lock", h.ReleaseArticleLock)
+		api.Delete("/articles/{id}", h.DeleteArticle)
+		api.Post("/articles/bulk-review", h.BulkReview)
+		api.Get("/users/suggest", h.SuggestUsers)
 	})
 
 	server := &http.Server{
@@ -123,9 +138,9 @@ func seedContest(db *database.DB) {
 				code, name, description, wiki_dbname, wiki_url, wiki_lang, wiki_tz,
 				start_date, end_date, status, min_bytes, min_words
 			) VALUES (
-				'bnwiki26', 'Bengali Wiktionary Article Drive 2026',
-				'Community competition to enrich Bengali Wiktionary with comprehensive word entries and etymologies.',
-				'bnwiktionary', 'https://bn.wiktionary.org', 'bn', 'Asia/Dhaka',
+				'bnwiki26', 'Bangla Wikipedia Article Drive 2026',
+				'Community competition to enrich Bengali Wikipedia with comprehensive articles and citations.',
+				'bnwiki', 'https://bn.wikipedia.org', 'bn', 'UTC',
 				?, ?, 'active', 1000, 200
 			)
 		`, start, end)

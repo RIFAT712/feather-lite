@@ -95,7 +95,7 @@ func getOrCreateBenchmarkContest(db *database.DB, code string) (int64, error) {
 		) VALUES (
 			?, 'Feather 50K Scale Benchmark Drive',
 			'Automated high-throughput benchmark contest with 50,000+ submitted articles.',
-			'bnwiktionary', 'https://bn.wiktionary.org', 'bn', 'Asia/Dhaka',
+			'bnwiktionary', 'https://bn.wiktionary.org', 'bn', 'UTC',
 			?, ?, 'active', 1000, 200
 		)
 	`, code, now.AddDate(0, -1, 0), now.AddDate(0, 1, 0))

@@ -5,17 +5,18 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { fetchContests, Contest } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { getProjectMeta, getWikiInfo, getLanguageName } from "@/lib/wikis";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { CodexLanguageIcon } from "@/components/icons/CodexIcons";
 import {
   Trophy,
   FileText,
@@ -29,15 +30,21 @@ import {
   Send,
   Eye,
   SlidersHorizontal,
+  ChevronDown,
+  Check,
+  Layers,
+  Globe,
 } from "lucide-react";
 
-type SortOption = "ending_soon" | "newest" | "project" | "submissions";
+type SortOption = "ending_soon" | "newest" | "project" | "language" | "submissions";
 
 export default function HomePage() {
-  const { t } = useI18n();
+  const { t, n, locale, isRtl } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"active" | "all" | "ended">("active");
+  const [typeFilter, setTypeFilter] = useState<"all" | "campaigns" | "single">("all");
   const [selectedProject, setSelectedProject] = useState<string>("all");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
   const [sortOption, setSortOption] = useState<SortOption>("ending_soon");
 
   const { data: contests, isLoading, error } = useQuery<Contest[]>({
@@ -45,12 +52,23 @@ export default function HomePage() {
     queryFn: fetchContests,
   });
 
-  // Extract unique projects (wiki dbnames)
+  // Extract unique projects (normalized Wikimedia projects: wikipedia, wiktionary, wikisource, wikibooks, etc.)
   const uniqueProjects = useMemo(() => {
     if (!contests) return [];
     const set = new Set<string>();
     contests.forEach((c) => {
-      if (c.wiki_dbname) set.add(c.wiki_dbname);
+      const p = getProjectMeta(c.wiki_dbname).id;
+      set.add(p);
+    });
+    return Array.from(set).sort();
+  }, [contests]);
+
+  // Extract unique languages (wiki langs)
+  const uniqueLanguages = useMemo(() => {
+    if (!contests) return [];
+    const set = new Set<string>();
+    contests.forEach((c) => {
+      if (c.wiki_lang) set.add(c.wiki_lang);
     });
     return Array.from(set).sort();
   }, [contests]);
@@ -80,18 +98,33 @@ export default function HomePage() {
       if (statusFilter === "active" && c.status !== "active") return false;
       if (statusFilter === "ended" && c.status !== "ended") return false;
 
-      // Project
-      if (selectedProject !== "all" && c.wiki_dbname !== selectedProject) return false;
+      // Type/Format filter
+      if (typeFilter === "campaigns" && !c.is_umbrella) return false;
+      if (typeFilter === "single" && c.is_umbrella) return false;
+
+      // Project filter
+      if (selectedProject !== "all") {
+        const pMeta = getProjectMeta(c.wiki_dbname);
+        if (pMeta.id !== selectedProject && c.wiki_dbname !== selectedProject) return false;
+      }
+
+      // Language filter
+      if (selectedLanguage !== "all" && c.wiki_lang !== selectedLanguage) return false;
 
       // Search query
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
+      const pMeta = getProjectMeta(c.wiki_dbname);
       const matchName = c.name?.toLowerCase().includes(q);
       const matchCode = c.code?.toLowerCase().includes(q);
       const matchWiki = c.wiki_dbname?.toLowerCase().includes(q);
+      const matchLang = c.wiki_lang?.toLowerCase().includes(q);
       const matchDesc = c.description?.toLowerCase().includes(q);
+      const matchProject = pMeta.name.toLowerCase().includes(q) || pMeta.nativeName.toLowerCase().includes(q);
+      const langName = getLanguageName(c.wiki_lang || "", locale).toLowerCase();
+      const matchLangName = langName.includes(q);
 
-      return matchName || matchCode || matchWiki || matchDesc;
+      return matchName || matchCode || matchWiki || matchLang || matchDesc || matchProject || matchLangName;
     });
 
     return filtered.sort((a, b) => {
@@ -102,31 +135,45 @@ export default function HomePage() {
         return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
       }
       if (sortOption === "project") {
-        return (a.wiki_dbname || "").localeCompare(b.wiki_dbname || "");
+        const aMeta = getProjectMeta(a.wiki_dbname);
+        const bMeta = getProjectMeta(b.wiki_dbname);
+        return aMeta.name.localeCompare(bMeta.name);
+      }
+      if (sortOption === "language") {
+        return (a.wiki_lang || "").localeCompare(b.wiki_lang || "");
       }
       if (sortOption === "submissions") {
         return (b.total_articles || 0) - (a.total_articles || 0);
       }
       return 0;
     });
-  }, [contests, statusFilter, selectedProject, searchQuery, sortOption]);
+  }, [contests, statusFilter, typeFilter, selectedProject, selectedLanguage, searchQuery, sortOption, locale]);
 
   const resetFilters = () => {
     setSearchQuery("");
     setStatusFilter("active");
+    setTypeFilter("all");
     setSelectedProject("all");
+    setSelectedLanguage("all");
     setSortOption("ending_soon");
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 max-w-7xl">
       {/* 1. Page Header Block */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            {t("feather-contests-heading")}
-          </h1>
-          <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/70">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              {t("feather-contests-heading")}
+            </h1>
+            {contests && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-muted text-muted-foreground border border-border/60">
+                {contests.length}
+              </span>
+            )}
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {t("feather-contests-subheading")}
           </p>
         </div>
@@ -135,47 +182,47 @@ export default function HomePage() {
           href="/contests/new"
           className={buttonVariants({
             variant: "default",
-            size: "default",
-            className: "gap-1.5 font-medium shrink-0 shadow-xs cursor-pointer",
+            size: "sm",
+            className: "h-8 px-3 text-xs gap-1.5 font-medium shrink-0 cursor-pointer shadow-xs",
           })}
         >
-          <PlusCircle className="h-4 w-4" />
+          <PlusCircle className="h-3.5 w-3.5" />
           {t("feather-nav-create-contest")}
         </Link>
       </div>
 
       {/* 2. Unified Toolbar Block */}
-      <div className="mt-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="mt-3.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
         {/* Search Input */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <div className="relative flex-1 max-w-xs sm:max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
             placeholder={t("feather-search-specific-comp")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-8 h-9 text-xs sm:text-sm bg-background border-border"
+            className="pl-8 pr-7 h-8 text-xs bg-muted/20 border-border/70 focus:bg-background rounded-md transition-colors"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery("")}
               aria-label="Clear search"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3 w-3" />
             </button>
           )}
         </div>
 
         {/* Filters and Sorting */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto shrink-0">
           {/* Status Segmented Control */}
-          <div className="inline-flex items-center rounded-md border border-border bg-muted/40 p-0.5 text-xs font-medium">
+          <div className="inline-flex items-center rounded-md border border-border/70 bg-muted/30 p-0.5 text-xs font-medium">
             <button
               type="button"
               onClick={() => setStatusFilter("active")}
-              className={`px-3 py-1.5 rounded-sm transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer ${
                 statusFilter === "active"
                   ? "bg-background text-foreground shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -186,7 +233,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => setStatusFilter("all")}
-              className={`px-3 py-1.5 rounded-sm transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer ${
                 statusFilter === "all"
                   ? "bg-background text-foreground shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -197,7 +244,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => setStatusFilter("ended")}
-              className={`px-3 py-1.5 rounded-sm transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer ${
                 statusFilter === "ended"
                   ? "bg-background text-foreground shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -207,59 +254,279 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Project Filter */}
-          {uniqueProjects.length > 1 && (
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="h-9 rounded-md border border-border bg-background px-3 text-xs text-foreground font-mono cursor-pointer outline-none focus:ring-2 focus:ring-ring"
+          {/* Format / Type Filter Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground"
+              aria-label={t("feather-filter-type")}
             >
-              <option value="all">{t("feather-filter-all-projects")}</option>
-              {uniqueProjects.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          )}
+              <Layers className="h-3.5 w-3.5 opacity-75 shrink-0" />
+              <span>
+                {typeFilter === "all" && t("feather-filter-all-types")}
+                {typeFilter === "campaigns" && t("feather-filter-type-campaigns")}
+                {typeFilter === "single" && t("feather-filter-type-single")}
+              </span>
+              <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
+            </DropdownMenuTrigger>
 
-          {/* Sort Selector */}
-          <select
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value as SortOption)}
-            className="h-9 rounded-md border border-border bg-background px-3 text-xs text-foreground font-medium cursor-pointer outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="ending_soon">{t("feather-sort-ending-soon")}</option>
-            <option value="newest">{t("feather-sort-newest")}</option>
-            <option value="submissions">{t("feather-sort-submissions")}</option>
-            <option value="project">{t("feather-sort-project")}</option>
-          </select>
+            <DropdownMenuContent align="start" className="w-52 p-1 rounded-lg shadow-md border bg-popover z-50">
+              <DropdownMenuItem
+                onClick={() => setTypeFilter("all")}
+                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+              >
+                <span className={typeFilter === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                  {t("feather-filter-all-types")}
+                </span>
+                {typeFilter === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1" />
+
+              <DropdownMenuItem
+                onClick={() => setTypeFilter("campaigns")}
+                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+              >
+                <div className="flex items-center gap-2">
+                  <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className={typeFilter === "campaigns" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                    {t("feather-filter-type-campaigns")}
+                  </span>
+                </div>
+                {typeFilter === "campaigns" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => setTypeFilter("single")}
+                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+              >
+                <div className="flex items-center gap-2">
+                  <span className={typeFilter === "single" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                    {t("feather-filter-type-single")}
+                  </span>
+                </div>
+                {typeFilter === "single" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Project Filter Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground"
+              aria-label={t("feather-filter-project")}
+            >
+              {selectedProject === "all" ? (
+                <>
+                  <img
+                    src="/icons/projects/wikimedia.svg"
+                    alt=""
+                    className="h-3.5 w-3.5 object-contain opacity-75 shrink-0"
+                  />
+                  <span>{t("feather-filter-all-projects")}</span>
+                </>
+              ) : (
+                (() => {
+                  const meta = getProjectMeta(selectedProject);
+                  const label = t(`feather-project-${meta.id}`) || (locale === "bn" ? meta.nativeName : meta.name);
+                  return (
+                    <>
+                      <img
+                        src={meta.icon}
+                        alt=""
+                        className="h-3.5 w-3.5 object-contain shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                        }}
+                      />
+                      <span className="font-semibold text-foreground">{label}</span>
+                    </>
+                  );
+                })()
+              )}
+              <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="start" className="w-48 p-1 rounded-lg shadow-md border bg-popover z-50">
+              <DropdownMenuItem
+                onClick={() => setSelectedProject("all")}
+                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+              >
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/icons/projects/wikimedia.svg"
+                    alt=""
+                    className="h-3.5 w-3.5 object-contain shrink-0"
+                  />
+                  <span className={selectedProject === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                    {t("feather-filter-all-projects")}
+                  </span>
+                </div>
+                {selectedProject === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1" />
+
+              {uniqueProjects.map((p) => {
+                const meta = getProjectMeta(p);
+                const isSelected = selectedProject === p;
+                const label = t(`feather-project-${meta.id}`) || (locale === "bn" ? meta.nativeName : meta.name);
+                return (
+                  <DropdownMenuItem
+                    key={p}
+                    onClick={() => setSelectedProject(p)}
+                    className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                  >
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={meta.icon}
+                        alt=""
+                        className="h-3.5 w-3.5 object-contain shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                        }}
+                      />
+                      <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
+                        {label}
+                      </span>
+                    </div>
+                    {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Language Filter Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground"
+              aria-label={t("feather-filter-language")}
+            >
+              <CodexLanguageIcon className="h-3.5 w-3.5 opacity-75 shrink-0" />
+              {selectedLanguage === "all" ? (
+                <span>{t("feather-filter-all-languages")}</span>
+              ) : (
+                (() => {
+                  const langName = getLanguageName(selectedLanguage, locale);
+                  return (
+                    <span className="font-semibold text-foreground">
+                      {langName} ({selectedLanguage.toUpperCase()})
+                    </span>
+                  );
+                })()
+              )}
+              <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="start" className="w-52 p-1 rounded-lg shadow-md border bg-popover z-50">
+              <DropdownMenuItem
+                onClick={() => setSelectedLanguage("all")}
+                className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+              >
+                <div className="flex items-center gap-2">
+                  <CodexLanguageIcon className="h-3.5 w-3.5 opacity-70 shrink-0" />
+                  <span className={selectedLanguage === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                    {t("feather-filter-all-languages")}
+                  </span>
+                </div>
+                {selectedLanguage === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1" />
+
+              {uniqueLanguages.map((lang) => {
+                const isSelected = selectedLanguage === lang;
+                const langName = getLanguageName(lang, locale);
+                return (
+                  <DropdownMenuItem
+                    key={lang}
+                    onClick={() => setSelectedLanguage(lang)}
+                    className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
+                        {langName}
+                      </span>
+                      <span className="text-[10px] font-mono text-muted-foreground bg-muted/70 px-1 py-0.5 rounded">
+                        {lang.toUpperCase()}
+                      </span>
+                    </div>
+                    {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Sort Selector Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground"
+              aria-label="Sort options"
+            >
+              <SlidersHorizontal className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span>
+                {sortOption === "ending_soon" && t("feather-sort-ending-soon")}
+                {sortOption === "newest" && t("feather-sort-newest")}
+                {sortOption === "submissions" && t("feather-sort-submissions")}
+                {sortOption === "project" && t("feather-sort-project")}
+                {sortOption === "language" && t("feather-sort-language")}
+              </span>
+              <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="w-44 p-1 rounded-lg shadow-md border bg-popover z-50">
+              {[
+                { id: "ending_soon", label: t("feather-sort-ending-soon") },
+                { id: "newest", label: t("feather-sort-newest") },
+                { id: "submissions", label: t("feather-sort-submissions") },
+                { id: "project", label: t("feather-sort-project") },
+                { id: "language", label: t("feather-sort-language") },
+              ].map((opt) => {
+                const isSelected = sortOption === opt.id;
+                return (
+                  <DropdownMenuItem
+                    key={opt.id}
+                    onClick={() => setSortOption(opt.id as SortOption)}
+                    className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                  >
+                    <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
+                      {opt.label}
+                    </span>
+                    {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       {/* 3. Subtle Results Counter */}
-      {(searchQuery || selectedProject !== "all" || statusFilter !== "active") && (
-        <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+      {(searchQuery || selectedProject !== "all" || selectedLanguage !== "all" || statusFilter !== "active" || typeFilter !== "all") && (
+        <div className="mt-2.5 flex items-center justify-between text-xs text-muted-foreground">
           <span>
-            Showing <strong>{processedContests.length}</strong> {processedContests.length === 1 ? "competition" : "competitions"}
+            Showing <strong className="text-foreground font-medium">{processedContests.length}</strong> {processedContests.length === 1 ? "competition" : "competitions"}
           </span>
           <button
             type="button"
             onClick={resetFilters}
-            className="text-primary hover:underline cursor-pointer font-medium"
+            className="text-primary hover:underline cursor-pointer font-medium text-xs"
           >
             {t("feather-home-clear-filters")}
           </button>
         </div>
       )}
 
-      {/* 4. Shadcn Card Grid Block */}
+      {/* 4. Contest Cards Grid Block */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mt-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="animate-pulse bg-muted/20 h-48 border border-border rounded-lg" />
+            <div key={`skeleton-${i}`} className="animate-pulse bg-muted/20 h-36 border border-border rounded-lg" />
           ))}
         </div>
       ) : error ? (
-        <div className="p-8 text-center border border-dashed rounded-lg bg-destructive/5 mt-5">
+        <div className="p-8 text-center border border-dashed rounded-lg bg-destructive/5 mt-4">
           <p className="text-destructive font-medium text-xs sm:text-sm">
             Failed to connect to backend service. Ensure the Go service is listening on port 8080.
           </p>
@@ -268,7 +535,7 @@ export default function HomePage() {
           </Button>
         </div>
       ) : processedContests.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mt-4">
           {processedContests.map((c) => {
             const time = getTimeRemaining(c.start_date, c.end_date);
             const isActive = c.status === "active";
@@ -276,17 +543,17 @@ export default function HomePage() {
             const accepted = c.accepted_articles || 0;
 
             return (
-              <Card
+              <div
                 key={c.id}
-                className="flex flex-col justify-between border-border hover:border-foreground/20 transition-colors shadow-2xs"
+                className="group flex flex-col justify-between rounded-lg border border-border bg-card p-3.5 sm:p-4 hover:border-foreground/25 hover:shadow-2xs transition-colors duration-150 text-card-foreground gap-2.5"
               >
-                <CardHeader className="pb-3">
-                  {/* Meta badges row */}
-                  <div className="flex items-center justify-between gap-2 mb-2 text-xs">
-                    <div className="flex items-center gap-1.5">
+                <div className="space-y-2">
+                  {/* Meta badges & time row */}
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                       <Badge
                         variant={isActive ? "secondary" : "outline"}
-                        className="text-[11px] font-medium gap-1 px-2 py-0.5"
+                        className="text-[11px] font-medium gap-1 px-1.5 py-0.5 h-5"
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${
@@ -296,12 +563,58 @@ export default function HomePage() {
                         {isActive ? t("feather-contest-status-active") : c.status}
                       </Badge>
 
-                      <Badge variant="outline" className="font-mono text-[11px] px-2 py-0.5 text-muted-foreground">
-                        {c.wiki_dbname}
-                      </Badge>
+                      {c.is_umbrella ? (
+                        <Badge
+                          variant="outline"
+                          className="text-[11px] font-medium gap-1.5 px-2 py-0.5 h-5 text-foreground/90 bg-muted/30 border-border/70 hover:bg-muted/50 transition-colors"
+                          title={`Meta-Wiki (${t("feather-campaign-communities-count", c.sub_contest_count || 0)})`}
+                        >
+                          <img
+                            src="/icons/projects/meta.svg"
+                            alt=""
+                            className="h-3.5 w-3.5 object-contain shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.src = "/icons/projects/wikimedia.svg";
+                            }}
+                          />
+                          <span className="font-semibold text-foreground">Meta-Wiki</span>
+                          {c.sub_contest_count ? (
+                            <span className="text-[10px] font-mono text-primary bg-primary/10 px-1 py-0.2 rounded font-medium">
+                              {t("feather-campaign-communities-count", c.sub_contest_count)}
+                            </span>
+                          ) : null}
+                        </Badge>
+                      ) : (() => {
+                        const pMeta = getProjectMeta(c.wiki_dbname);
+                        const pName = t(`feather-project-${pMeta.id}`) || (locale === "bn" ? pMeta.nativeName : pMeta.name);
+                        const wikiInfo = getWikiInfo(c.wiki_dbname);
+                        return (
+                          <Badge
+                            variant="outline"
+                            className="text-[11px] font-medium gap-1.5 px-2 py-0.5 h-5 text-foreground/90 bg-muted/30 border-border/70 hover:bg-muted/50 transition-colors"
+                            title={`${wikiInfo?.englishName || pMeta.name} (${c.wiki_dbname})`}
+                          >
+                            <img
+                              src={pMeta.icon}
+                              alt=""
+                              className="h-3.5 w-3.5 object-contain shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                              }}
+                            />
+                            <span>{pName}</span>
+                            {c.wiki_lang && (
+                              <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                                {c.wiki_lang}
+                              </span>
+                            )}
+                          </Badge>
+                        );
+                      })()}
                     </div>
 
-                    <span className="text-[11px] font-medium text-muted-foreground">
+                    <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 shrink-0">
+                      <Clock className="h-3 w-3 text-muted-foreground/70" />
                       {time.isEnded
                         ? t("feather-contest-ended")
                         : time.diffDays <= 0
@@ -311,35 +624,35 @@ export default function HomePage() {
                   </div>
 
                   {/* Title & Description */}
-                  <CardTitle className="text-base font-bold tracking-tight line-clamp-1">
-                    <Link
-                      href={`/contests/${c.code}`}
-                      className="hover:underline cursor-pointer"
-                    >
-                      {c.name}
-                    </Link>
-                  </CardTitle>
+                  <div className="space-y-0.5">
+                    <h3 className="text-sm sm:text-base font-bold tracking-tight line-clamp-1">
+                      <Link
+                        href={`/contests/${c.code}`}
+                        className="hover:underline text-foreground cursor-pointer"
+                      >
+                        {c.name}
+                      </Link>
+                    </h3>
 
-                  <CardDescription className="line-clamp-2 text-xs leading-relaxed mt-1">
-                    {c.description || "No description provided."}
-                  </CardDescription>
-                </CardHeader>
+                    <p className="line-clamp-1 text-xs text-muted-foreground leading-normal">
+                      {c.description || t("feather-contest-no-desc")}
+                    </p>
+                  </div>
 
-                <CardContent className="space-y-3 pb-3">
                   {/* Timeline Tracker */}
-                  <div className="space-y-1">
+                  <div className="space-y-1 pt-0.5">
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
+                      <span className="flex items-center gap-1 text-[10.5px]">
+                        <Clock className="h-3 w-3 text-muted-foreground/70" />
                         {t("feather-time-remaining")}
                       </span>
                       <span className="font-mono text-[10px]">
                         {t("feather-time-elapsed", time.percent)}
                       </span>
                     </div>
-                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-muted/80 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-300 ${
+                        className={`h-full rounded-full ${
                           time.isEnded
                             ? "bg-muted-foreground/50"
                             : time.diffDays <= 3
@@ -352,79 +665,109 @@ export default function HomePage() {
                   </div>
 
                   {/* Clean Metrics Row */}
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1 border-t border-border/40">
-                    <span className="flex items-center gap-1">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1.5 border-t border-border/50">
+                    <span className="flex items-center gap-1" title={t("feather-contest-submitted")}>
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                      <strong className="text-foreground">{total}</strong> {t("feather-contest-submitted")}
+                      <strong className="text-foreground font-semibold font-mono">{n(total)}</strong>
+                      <span className="text-[11px]">{t("feather-contest-submitted")}</span>
                     </span>
-                    <span className="flex items-center gap-1">
+
+                    <span className="flex items-center gap-1" title={t("feather-contest-accepted")}>
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <strong className="text-foreground">{accepted}</strong> {t("feather-contest-accepted")}
+                      <strong className="text-foreground font-semibold font-mono">{n(accepted)}</strong>
+                      <span className="text-[11px]">{t("feather-contest-accepted")}</span>
                     </span>
-                    {c.total_juries ? (
-                      <span className="flex items-center gap-1">
+
+                    {c.is_umbrella ? (
+                      <span className="flex items-center gap-1 text-primary" title={t("feather-campaign-stat-communities")}>
+                        <Globe className="h-3.5 w-3.5 text-primary" />
+                        <strong className="text-foreground font-semibold font-mono">{n(c.sub_contest_count || 0)}</strong>
+                        <span className="text-[11px] font-medium">{t("feather-campaign-stat-communities")}</span>
+                      </span>
+                    ) : c.total_juries ? (
+                      <span className="flex items-center gap-1" title={t("feather-home-stats-juries")}>
                         <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                        <strong className="text-foreground">{c.total_juries}</strong> {t("feather-home-stats-juries")}
+                        <strong className="text-foreground font-semibold font-mono">{c.total_juries}</strong>
+                        <span className="text-[11px]">{t("feather-home-stats-juries")}</span>
                       </span>
                     ) : null}
                   </div>
-                </CardContent>
+                </div>
 
-                {/* Clean Footer Block */}
-                <CardFooter className="flex items-center justify-between gap-1.5 pt-3 border-t border-border bg-muted/20">
-                  <div className="flex items-center gap-1.5 shrink-0">
+                {/* Actions Footer */}
+                <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-border/60">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <Link
                       href={`/contests/${c.code}`}
                       className={buttonVariants({
                         variant: "default",
                         size: "sm",
-                        className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2.5",
+                        className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 shadow-none shrink-0",
                       })}
                     >
-                      <Eye className="h-3.5 w-3.5" />
-                      {t("feather-action-view")}
+                      <Eye className="h-3.5 w-3.5 shrink-0" />
+                      <span>{t("feather-action-view")}</span>
                     </Link>
 
-                    <Link
-                      href={`/contests/${c.code}/submit`}
-                      className={buttonVariants({
-                        variant: "outline",
-                        size: "sm",
-                        className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2.5",
-                      })}
-                    >
-                      <Send className="h-3 w-3" />
-                      {t("feather-contest-action-submit")}
-                    </Link>
+                    {c.is_umbrella ? (
+                      <Link
+                        href={`/contests/${c.code}#communities`}
+                        className={buttonVariants({
+                          variant: "outline",
+                          size: "sm",
+                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 truncate",
+                        })}
+                      >
+                        <Globe className="h-3 w-3 shrink-0" />
+                        <span className="truncate">
+                          <span className="hidden sm:inline">Participating </span>
+                          {locale === "bn" ? "কমিউনিটি" : "Communities"}
+                        </span>
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/contests/${c.code}/submit`}
+                        className={buttonVariants({
+                          variant: "outline",
+                          size: "sm",
+                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 truncate",
+                        })}
+                      >
+                        <Send className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{t("feather-contest-action-submit")}</span>
+                      </Link>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 shrink-0 ml-1">
                     <Link
                       href={`/contests/${c.code}#standings`}
                       className={buttonVariants({
                         variant: "ghost",
                         size: "sm",
-                        className: "h-7 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer",
+                        className: "h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer shrink-0",
                       })}
-                      title={t("feather-contest-action-standings")}
+                      title={c.is_umbrella ? t("feather-campaign-tab-leaderboard") : t("feather-contest-action-standings")}
                     >
                       <Trophy className="h-3.5 w-3.5" />
                     </Link>
 
-                    <Link
-                      href={`/contests/${c.code}/review`}
-                      className={buttonVariants({
-                        variant: "ghost",
-                        size: "sm",
-                        className: "h-7 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer",
-                      })}
-                      title={t("feather-contest-action-review")}
-                    >
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                    </Link>
+                    {!c.is_umbrella && (
+                      <Link
+                        href={`/contests/${c.code}/review`}
+                        className={buttonVariants({
+                          variant: "ghost",
+                          size: "sm",
+                          className: "h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer shrink-0",
+                        })}
+                        title={t("feather-contest-action-review")}
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                      </Link>
+                    )}
                   </div>
-                </CardFooter>
-              </Card>
+                </div>
+              </div>
             );
           })}
         </div>

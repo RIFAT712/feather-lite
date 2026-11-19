@@ -5,7 +5,9 @@ import (
 	_ "embed"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -39,19 +41,29 @@ func Connect(cfg *config.Config) (*DB, error) {
 		// SQLite with modernc.org/sqlite (pure Go, zero CGO)
 		dbPath := cfg.DatabaseURL
 		if !filepath.IsAbs(dbPath) {
+			if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+				backendPath := filepath.Join("backend", dbPath)
+				if _, err2 := os.Stat(backendPath); err2 == nil {
+					dbPath = backendPath
+				}
+			}
 			if abs, err := filepath.Abs(dbPath); err == nil {
 				dbPath = abs
 			}
 		}
 		dbPath = filepath.ToSlash(dbPath)
-		dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)", dbPath)
-		db, err = sql.Open("sqlite", dsn)
+		log.Printf("[DB] Connecting to sqlite dbPath: %q", dbPath)
+		db, err = sql.Open("sqlite", dbPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open sqlite: %w", err)
 		}
 		db.SetMaxOpenConns(10)
 		db.SetMaxIdleConns(5)
 		db.SetConnMaxLifetime(1 * time.Hour)
+
+		_, _ = db.Exec("PRAGMA journal_mode(WAL);")
+		_, _ = db.Exec("PRAGMA busy_timeout(5000);")
+		_, _ = db.Exec("PRAGMA synchronous(NORMAL);")
 	}
 
 	if err := db.Ping(); err != nil {
@@ -65,25 +77,43 @@ func Connect(cfg *config.Config) (*DB, error) {
 		log.Println("[DB] Schema initialized successfully with 50k keyset indexes.")
 	}
 
+	// Graceful column additions for custom creation window and multi-community campaigns
+	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN custom_creation_start_date DATETIME;")
+	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN custom_creation_end_date DATETIME;")
+	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN is_umbrella INTEGER NOT NULL DEFAULT 0;")
+	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN parent_contest_id INTEGER REFERENCES contests(id) ON DELETE SET NULL;")
+	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN distribute_jury_queue INTEGER NOT NULL DEFAULT 0;")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_contests_parent ON contests(parent_contest_id);")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_contests_is_umbrella ON contests(is_umbrella);")
+
 	return &DB{DB: db, DBType: cfg.DBType}, nil
 }
 
-// Keyset Paginated Article Fetch - O(1) time on 50,000+ entries
+// Keyset Paginated Article Fetch - O(1) time on 50,000+ entries (supports standalone & umbrella campaigns)
 func (d *DB) GetArticlesKeyset(contestID int64, beforeID int64, status string, assignedToID int64, limit int) (*models.KeysetPaginationResult, error) {
+	return d.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, "", limit)
+}
+
+func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status string, assignedToID int64, assignedToUsername string, limit int) (*models.KeysetPaginationResult, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 50
 	}
 
 	baseQuery := `
-		SELECT a.id, a.contest_id, a.title, a.submitter_id, u.wiki_username, a.status, 
-		       a.validation_error, a.wiki_creator, a.byte_count, a.word_count, a.word_count_verified,
-		       a.assigned_to_id, COALESCE(ju.wiki_username, ''), a.submitted_at
+		SELECT a.id, a.contest_id, c.code, c.wiki_dbname, c.wiki_url, c.wiki_lang, a.title, a.submitter_id, u.wiki_username, a.status, 
+		       a.validation_error, a.wiki_creator, a.wiki_creation_date, a.byte_count, a.word_count, a.word_count_verified,
+		       a.assigned_to_id, COALESCE(ju.wiki_username, ''), a.submitted_at,
+		       CASE WHEN a.locked_until IS NOT NULL AND a.locked_until > CURRENT_TIMESTAMP THEN a.locked_until ELSE NULL END,
+		       CASE WHEN a.locked_until IS NOT NULL AND a.locked_until > CURRENT_TIMESTAMP THEN a.locked_by_id ELSE NULL END,
+		       CASE WHEN a.locked_until IS NOT NULL AND a.locked_until > CURRENT_TIMESTAMP THEN COALESCE(lu.wiki_username, '') ELSE '' END
 		FROM articles a
+		JOIN contests c ON a.contest_id = c.id
 		JOIN users u ON a.submitter_id = u.id
 		LEFT JOIN users ju ON a.assigned_to_id = ju.id
-		WHERE a.contest_id = ?
+		LEFT JOIN users lu ON a.locked_by_id = lu.id
+		WHERE (a.contest_id = ? OR c.parent_contest_id = ?)
 	`
-	args := []any{contestID}
+	args := []any{contestID, contestID}
 
 	if beforeID > 0 {
 		baseQuery += " AND a.id < ?"
@@ -96,6 +126,9 @@ func (d *DB) GetArticlesKeyset(contestID int64, beforeID int64, status string, a
 	if assignedToID > 0 {
 		baseQuery += " AND a.assigned_to_id = ?"
 		args = append(args, assignedToID)
+	} else if strings.TrimSpace(assignedToUsername) != "" {
+		baseQuery += " AND ju.wiki_username = ?"
+		args = append(args, strings.TrimSpace(assignedToUsername))
 	}
 
 	baseQuery += " ORDER BY a.id DESC LIMIT ?"
@@ -111,16 +144,21 @@ func (d *DB) GetArticlesKeyset(contestID int64, beforeID int64, status string, a
 	for rows.Next() {
 		var a models.Article
 		var assignedUsername string
+		var lockedUsername string
 		err := rows.Scan(
-			&a.ID, &a.ContestID, &a.Title, &a.SubmitterID, &a.SubmitterUsername,
-			&a.Status, &a.ValidationError, &a.WikiCreator, &a.ByteCount,
+			&a.ID, &a.ContestID, &a.ContestCode, &a.WikiDbName, &a.WikiURL, &a.WikiLang, &a.Title, &a.SubmitterID, &a.SubmitterUsername,
+			&a.Status, &a.ValidationError, &a.WikiCreator, &a.WikiCreationDate, &a.ByteCount,
 			&a.WordCount, &a.WordCountVerified, &a.AssignedToID, &assignedUsername, &a.SubmittedAt,
+			&a.LockedUntil, &a.LockedByID, &lockedUsername,
 		)
 		if err != nil {
 			return nil, err
 		}
 		if assignedUsername != "" {
 			a.AssignedToUsername = assignedUsername
+		}
+		if lockedUsername != "" {
+			a.LockedByUsername = lockedUsername
 		}
 		articles = append(articles, a)
 	}
@@ -131,6 +169,38 @@ func (d *DB) GetArticlesKeyset(contestID int64, beforeID int64, status string, a
 		hasMore = true
 		articles = articles[:limit]
 		nextCursor = articles[len(articles)-1].ID
+	}
+
+	// Batch-fetch associated reviews for the returned page of articles
+	if len(articles) > 0 {
+		articleIDs := make([]any, len(articles))
+		placeholders := make([]string, len(articles))
+		articleMap := make(map[int64]*models.Article, len(articles))
+		for i := range articles {
+			articleIDs[i] = articles[i].ID
+			placeholders[i] = "?"
+			articleMap[articles[i].ID] = &articles[i]
+		}
+		reviewQuery := fmt.Sprintf(`
+			SELECT r.id, r.article_id, r.reviewer_id, u.wiki_username, r.status, r.comment, r.timestamp
+			FROM reviews r
+			JOIN users u ON r.reviewer_id = u.id
+			WHERE r.article_id IN (%s)
+			ORDER BY r.timestamp ASC
+		`, strings.Join(placeholders, ","))
+
+		if rRows, err := d.Query(reviewQuery, articleIDs...); err == nil {
+			defer rRows.Close()
+			for rRows.Next() {
+				var rev models.Review
+				if err := rRows.Scan(&rev.ID, &rev.ArticleID, &rev.ReviewerID, &rev.ReviewerUsername, &rev.Status, &rev.Comment, &rev.Timestamp); err == nil {
+					if art, ok := articleMap[rev.ArticleID]; ok {
+						art.Reviews = append(art.Reviews, rev)
+						art.ReviewCount++
+					}
+				}
+			}
+		}
 	}
 
 	return &models.KeysetPaginationResult{

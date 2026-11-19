@@ -49,6 +49,10 @@
 }
 
 :root {
+  color-scheme: light;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: oklch(0.6 0 0);
+  --scrollbar-thumb-hover: oklch(0.4 0 0);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -84,6 +88,10 @@
 }
 
 .dark {
+  color-scheme: dark;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: oklch(0.48 0 0);
+  --scrollbar-thumb-hover: oklch(0.68 0 0);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -164,6 +172,66 @@
   }
 }
 
+/* Accessible, modern custom scrollbars */
+html,
+body,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Legacy fallback for WebKit/Blink browsers without scrollbar-color */
+@supports not (scrollbar-color: auto) {
+  html,
+  body,
+  * {
+    scrollbar-width: auto;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --scrollbar-thumb: #000000;
+    --scrollbar-track: #ffffff;
+  }
+  .dark {
+    --scrollbar-thumb: #ffffff;
+    --scrollbar-track: #000000;
+  }
+}
+
+/* Custom scrollbar utility classes */
+@utility custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* MediaWiki rendered content formatting */
 .wiki-content {
   line-height: 1.7;
@@ -198,3 +266,17 @@
 .wiki-content ol {
   list-style-type: decimal;
 }
+
+/* Mobile safe area & touch optimizations */
+@utility pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+@utility pt-safe {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+
+@utility safe-bottom-fixed {
+  bottom: env(safe-area-inset-bottom, 0px);
+}
+

@@ -1,15 +1,21 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 import { Feather } from "lucide-react";
 import { useI18n } from "@/i18n/I18nContext";
 
 export default function Footer() {
+  const pathname = usePathname();
   const { t, locale } = useI18n();
+
+  if (pathname && /\/contests\/[^/]+\/review(?:\/|$)/.test(pathname)) {
+    return null;
+  }
 
   return (
     <footer className="w-full border-t border-border/60 bg-muted/20 dark:bg-card/20 text-muted-foreground mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Top Header: Brand + Modern Cloud Services Credit */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 sm:pb-6 border-b border-border/50">
           <div className="flex items-center gap-3">
@@ -47,7 +53,7 @@ export default function Footer() {
                 loading="lazy"
               />
             </div>
-            <div className="text-left">
+            <div className="text-start">
               <div className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">
                 Powered by
               </div>
@@ -69,7 +75,7 @@ export default function Footer() {
             {t("feather-footer-link-privacy")}
           </a>
           <a
-            href="https://meta.wikimedia.org/wiki/Bangla_WikiConnect"
+            href="https://github.com/RIFAT712/Feather#readme"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors cursor-pointer"
@@ -85,20 +91,12 @@ export default function Footer() {
             {t("feather-footer-link-disclaimers")}
           </a>
           <a
-            href="https://meta.wikimedia.org/wiki/Bangla_WikiConnect"
+            href="https://www.wikimedia.org"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors cursor-pointer"
           >
-            {t("feather-footer-link-bwc")}
-          </a>
-          <a
-            href="https://bn.wiktionary.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors cursor-pointer"
-          >
-            {t("feather-footer-link-wiktionary")}
+            {t("feather-footer-link-wikimedia")}
           </a>
           <a
             href="https://wikitech.wikimedia.org/wiki/Portal:Toolforge"

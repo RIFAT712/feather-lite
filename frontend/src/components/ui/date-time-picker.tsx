@@ -13,6 +13,8 @@ export interface DateTimePickerProps {
   value: string; // ISO format: YYYY-MM-DDTHH:mm
   onChange: (value: string) => void;
   label?: string;
+  placeholder?: string;
+  allowClear?: boolean;
   isEnd?: boolean;
   className?: string;
 }
@@ -28,6 +30,8 @@ export default function DateTimePicker({
   value,
   onChange,
   label,
+  placeholder,
+  allowClear = false,
   isEnd = false,
   className,
 }: DateTimePickerProps) {
@@ -260,29 +264,50 @@ export default function DateTimePicker({
           isOpen ? "border-primary ring-1 ring-primary" : "focus:border-primary focus:ring-1 focus:ring-primary"
         )}
       >
-        <CalendarIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+        <CalendarIcon className={cn("h-3.5 w-3.5 shrink-0", value ? "text-primary" : "text-muted-foreground")} />
         {label && (
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
             {label}:
           </span>
         )}
-        <span className="font-semibold text-foreground">{dateFormatted}</span>
-        <Badge
-          variant="secondary"
-          className={cn(
-            "text-[10px] font-mono px-1 py-0 h-4 border border-border/80 font-medium",
-            (parsed.hour24 === 0 && parsed.minute === 0) || (parsed.hour24 === 23 && parsed.minute === 59)
-              ? "bg-primary/10 text-primary border-primary/20"
-              : "text-muted-foreground"
-          )}
-        >
-          {timeFormatted}
-        </Badge>
+        {value ? (
+          <>
+            <span className="font-semibold text-foreground">{dateFormatted}</span>
+            <Badge
+              variant="secondary"
+              className={cn(
+                "text-[10px] font-mono px-1 py-0 h-4 border border-border/80 font-medium",
+                (parsed.hour24 === 0 && parsed.minute === 0) || (parsed.hour24 === 23 && parsed.minute === 59)
+                  ? "bg-primary/10 text-primary border-primary/20"
+                  : "text-muted-foreground"
+              )}
+            >
+              {timeFormatted}
+            </Badge>
+            {allowClear && (
+              <span
+                role="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange("");
+                }}
+                className="hover:text-destructive p-0.5 rounded cursor-pointer text-muted-foreground hover:bg-muted ml-0.5 transition-colors"
+                title="Clear date"
+              >
+                <X className="h-3 w-3" />
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="text-muted-foreground/80 font-normal italic">
+            {placeholder || "Any date (Optional)"}
+          </span>
+        )}
       </button>
 
       {/* Popover Card */}
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 mt-1.5 w-76 sm:w-80 rounded-lg border border-border bg-popover text-popover-foreground shadow-2xl p-3 animate-in fade-in-0 zoom-in-95 duration-100 select-none">
+        <div className="absolute top-full left-0 z-50 mt-1.5 w-76 sm:w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-popover text-popover-foreground shadow-2xl p-3 animate-in fade-in-0 zoom-in-95 duration-100 select-none">
           {/* Calendar Header: Month + Navigation */}
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/60">
             <span className="text-xs font-bold text-foreground">

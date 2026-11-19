@@ -34,7 +34,7 @@ export async function fetchWikiSiteinfo(wikiUrl: string): Promise<{
  * Returns today's date formatted as YYYY-MM-DD in the specified IANA timezone.
  * Uses standard Intl.DateTimeFormat to compute the date accurately without UTC shift.
  */
-export function getTodayDateString(tz: string = "Asia/Dhaka"): string {
+export function getTodayDateString(tz: string = "UTC"): string {
   try {
     const formatter = new Intl.DateTimeFormat("en-CA", {
       timeZone: tz,
@@ -54,7 +54,7 @@ export function getTodayDateString(tz: string = "Asia/Dhaka"): string {
  * Returns the beginning of the day (00:00) for a given date or today in the specified timezone.
  * Format: YYYY-MM-DDTHH:mm (e.g. "2026-11-13T00:00")
  */
-export function getBeginningOfDay(tz: string = "Asia/Dhaka", baseDateStr?: string): string {
+export function getBeginningOfDay(tz: string = "UTC", baseDateStr?: string): string {
   const dateStr = baseDateStr ? baseDateStr.slice(0, 10) : getTodayDateString(tz);
   return `${dateStr}T00:00`;
 }
@@ -78,18 +78,66 @@ export function calculateEndOfDay(startDateStr: string, days: number = 30): stri
 }
 
 /**
- * Returns the readable GMT offset for an IANA timezone (e.g. "GMT+6" for Asia/Dhaka).
+ * Returns the readable GMT offset for an IANA timezone (e.g. "GMT+6" for Asia/Dhaka, "GMT+0" for UTC).
+ * Normalizes "GMT" to "GMT+0" to eliminate SSR hydration mismatches between Node.js and browser ICU.
  */
-export function getTimezoneOffsetLabel(tz: string = "Asia/Dhaka"): string {
+export function getTimezoneOffsetLabel(tz: string = "UTC"): string {
+  const normalized = (tz || "").trim();
+  if (!normalized || normalized === "UTC" || normalized === "Etc/UTC" || normalized === "Etc/GMT") {
+    return "GMT+0";
+  }
   try {
     const formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone: tz,
+      timeZone: normalized,
       timeZoneName: "shortOffset",
     });
     const parts = formatter.formatToParts(new Date());
     const tzPart = parts.find((p) => p.type === "timeZoneName");
-    return tzPart ? tzPart.value : "";
+    if (!tzPart) return "";
+    return tzPart.value === "GMT" ? "GMT+0" : tzPart.value;
   } catch {
     return "";
   }
 }
+
+/**
+ * Formats a UTC ISO string into a readable date string in a specified timezone.
+ */
+export function formatUtcToTz(
+  isoDateStr: string | null | undefined,
+  tz: string = "UTC",
+  format: "date" | "datetime" | "MMM d, yyyy" | "MMM D, YYYY" = "MMM d, yyyy"
+): string {
+  if (!isoDateStr) return "—";
+  try {
+    const date = new Date(isoDateStr);
+    if (isNaN(date.getTime())) return "—";
+    if (format === "MMM d, yyyy") {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(date);
+    }
+    if (format === "datetime") {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(date);
+    }
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  } catch {
+    return String(isoDateStr).slice(0, 10);
+  }
+}
+

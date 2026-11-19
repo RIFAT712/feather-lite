@@ -40,6 +40,7 @@ export function getWikiIcon(project?: string): string {
     case "wikidata":
       return "/icons/projects/wikidata.svg";
     case "meta":
+      return "/icons/projects/meta.svg";
     case "wikimedia":
       return "/icons/projects/wikimedia.svg";
     case "mediawiki":
@@ -47,6 +48,148 @@ export function getWikiIcon(project?: string): string {
     default:
       return "/icons/projects/wikipedia.svg";
   }
+}
+
+export interface ProjectMeta {
+  id: string;
+  name: string;
+  nativeName: string;
+  icon: string;
+}
+
+/**
+ * Extracts friendly project identity, localized name, and icon from any dbname or project code.
+ */
+export function getProjectMeta(dbnameOrProject?: string): ProjectMeta {
+  const raw = (dbnameOrProject || "wiki").toLowerCase().trim().replace(/[^a-z0-9]/g, "");
+
+  if (raw === "wiktionary" || raw.endsWith("wiktionary")) {
+    return {
+      id: "wiktionary",
+      name: "Wiktionary",
+      nativeName: "উইকিঅভিধান",
+      icon: "/icons/projects/wiktionary.svg",
+    };
+  }
+  if (raw === "wikibooks" || raw.endsWith("wikibooks")) {
+    return {
+      id: "wikibooks",
+      name: "Wikibooks",
+      nativeName: "উইকিবই",
+      icon: "/icons/projects/wikibooks.svg",
+    };
+  }
+  if (raw === "wikisource" || raw.endsWith("wikisource")) {
+    return {
+      id: "wikisource",
+      name: "Wikisource",
+      nativeName: "উইকিসংকলন",
+      icon: "/icons/projects/wikisource.svg",
+    };
+  }
+  if (raw === "wikivoyage" || raw.endsWith("wikivoyage")) {
+    return {
+      id: "wikivoyage",
+      name: "Wikivoyage",
+      nativeName: "উইকিভ্রমণ",
+      icon: "/icons/projects/wikivoyage.svg",
+    };
+  }
+  if (raw === "wikiquote" || raw.endsWith("wikiquote")) {
+    return {
+      id: "wikiquote",
+      name: "Wikiquote",
+      nativeName: "উইকিউক্তি",
+      icon: "/icons/projects/wikiquote.svg",
+    };
+  }
+  if (raw === "wikinews" || raw.endsWith("wikinews")) {
+    return {
+      id: "wikinews",
+      name: "Wikinews",
+      nativeName: "উইকিসংবাদ",
+      icon: "/icons/projects/wikinews.svg",
+    };
+  }
+  if (raw === "wikiversity" || raw.endsWith("wikiversity")) {
+    return {
+      id: "wikiversity",
+      name: "Wikiversity",
+      nativeName: "উইকিবিশ্ববিদ্যালয়",
+      icon: "/icons/projects/wikiversity.svg",
+    };
+  }
+  if (raw === "commons" || raw === "commonswiki" || raw.endsWith("commons")) {
+    return {
+      id: "commons",
+      name: "Commons",
+      nativeName: "কমন্স",
+      icon: "/icons/projects/commons.svg",
+    };
+  }
+  if (raw === "wikidata" || raw === "wikidatawiki" || raw.endsWith("wikidata")) {
+    return {
+      id: "wikidata",
+      name: "Wikidata",
+      nativeName: "উইকিউপাত্ত",
+      icon: "/icons/projects/wikidata.svg",
+    };
+  }
+  if (raw === "meta" || raw === "metawiki" || raw === "wikimedia") {
+    return {
+      id: "meta",
+      name: "Meta-Wiki",
+      nativeName: "মেটা-উইকি",
+      icon: "/icons/projects/meta.svg",
+    };
+  }
+  if (raw === "mediawiki" || raw === "mediawikiwiki") {
+    return {
+      id: "mediawiki",
+      name: "MediaWiki",
+      nativeName: "মিডিয়াউইকি",
+      icon: "/icons/projects/mediawiki.svg",
+    };
+  }
+  return {
+    id: "wikipedia",
+    name: "Wikipedia",
+    nativeName: "উইকিপিডিয়া",
+    icon: "/icons/projects/wikipedia.svg",
+  };
+}
+
+const LANGUAGE_NAMES: Record<string, { en: string; bn: string }> = {
+  bn: { en: "Bengali", bn: "বাংলা" },
+  en: { en: "English", bn: "ইংরেজি" },
+  as: { en: "Assamese", bn: "অসমীয়া" },
+  bpy: { en: "Bishnupriya", bn: "বিষ্ণুপ্রিয়া মণিপুরী" },
+  hi: { en: "Hindi", bn: "হিন্দি" },
+  ur: { en: "Urdu", bn: "উর্দু" },
+  ta: { en: "Tamil", bn: "তামিল" },
+  te: { en: "Telugu", bn: "তেলেগু" },
+  ne: { en: "Nepali", bn: "নেপালি" },
+  or: { en: "Odia", bn: "ওড়িয়া" },
+  pa: { en: "Punjabi", bn: "পাঞ্জাবি" },
+  fr: { en: "French", bn: "ফরাসি" },
+  es: { en: "Spanish", bn: "স্প্যানিশ" },
+  de: { en: "German", bn: "জার্মান" },
+  ja: { en: "Japanese", bn: "জাপানি" },
+  ar: { en: "Arabic", bn: "আরবি" },
+  ru: { en: "Russian", bn: "রুশ" },
+  zh: { en: "Chinese", bn: "চীনা" },
+};
+
+/**
+ * Returns friendly human name for a language code (e.g. "bn" -> "Bengali" or "বাংলা").
+ */
+export function getLanguageName(code: string, locale: string = "en"): string {
+  const c = code.toLowerCase().trim();
+  const entry = LANGUAGE_NAMES[c];
+  if (entry) {
+    return locale === "bn" ? entry.bn : entry.en;
+  }
+  return c.toUpperCase();
 }
 
 // Curated priority order for initial recommendations

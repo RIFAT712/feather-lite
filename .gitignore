@@ -3,6 +3,8 @@
 backend/*.exe
 backend/server.exe
 backend/feather-server.exe
+backend/feather-server-linux
+backend/*-linux
 backend/*.db
 backend/*.db-wal
 backend/*.db-shm

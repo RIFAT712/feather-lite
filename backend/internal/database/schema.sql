@@ -13,10 +13,10 @@ CREATE TABLE IF NOT EXISTS contests (
     code TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     description TEXT DEFAULT '',
-    wiki_dbname TEXT NOT NULL DEFAULT 'bnwiktionary',
-    wiki_url TEXT NOT NULL DEFAULT 'https://bn.wiktionary.org',
+    wiki_dbname TEXT NOT NULL DEFAULT 'bnwiki',
+    wiki_url TEXT NOT NULL DEFAULT 'https://bn.wikipedia.org',
     wiki_lang TEXT NOT NULL DEFAULT 'bn',
-    wiki_tz TEXT NOT NULL DEFAULT 'Asia/Dhaka',
+    wiki_tz TEXT NOT NULL DEFAULT 'UTC',
     start_date DATETIME NOT NULL,
     end_date DATETIME NOT NULL,
     status TEXT NOT NULL DEFAULT 'active', -- 'draft', 'active', 'ended'
@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS contests (
     rule_no_disambig INTEGER NOT NULL DEFAULT 1,
     rule_mainspace_only INTEGER NOT NULL DEFAULT 1,
     rule_created_in_window INTEGER NOT NULL DEFAULT 1,
+    custom_creation_start_date DATETIME,
+    custom_creation_end_date DATETIME,
     min_bytes INTEGER NOT NULL DEFAULT 0,
     min_words INTEGER NOT NULL DEFAULT 0,
     min_refs INTEGER NOT NULL DEFAULT 0,
@@ -34,6 +36,9 @@ CREATE TABLE IF NOT EXISTS contests (
     results_published_at DATETIME,
     add_talk_template INTEGER NOT NULL DEFAULT 0,
     talk_template_name TEXT DEFAULT '',
+    distribute_jury_queue INTEGER NOT NULL DEFAULT 0,
+    is_umbrella INTEGER NOT NULL DEFAULT 0,
+    parent_contest_id INTEGER REFERENCES contests(id) ON DELETE SET NULL,
     created_by_id INTEGER REFERENCES users(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -101,3 +106,5 @@ CREATE INDEX IF NOT EXISTS idx_articles_submitter ON articles(contest_id, submit
 CREATE INDEX IF NOT EXISTS idx_reviews_article ON reviews(article_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_id);
 CREATE INDEX IF NOT EXISTS idx_talk_jobs_status ON talk_page_jobs(status, id);
+CREATE INDEX IF NOT EXISTS idx_contests_parent ON contests(parent_contest_id);
+CREATE INDEX IF NOT EXISTS idx_contests_is_umbrella ON contests(is_umbrella);

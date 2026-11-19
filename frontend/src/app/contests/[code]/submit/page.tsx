@@ -14,6 +14,7 @@ import {
   AUTH_BASE,
 } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
+import { getProjectMeta } from "@/lib/wikis";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ import {
   Edit3,
 } from "lucide-react";
 import { WikimediaLogoIcon } from "@/components/icons/CodexIcons";
+import { UserAutocompleteInput } from "@/components/contests/UserAutocompleteInput";
 
 export default function SubmitArticlesPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
@@ -60,6 +62,17 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
   const [isOnBehalf, setIsOnBehalf] = useState(false);
   const [onBehalfUsername, setOnBehalfUsername] = useState("");
   const [activeTab, setActiveTab] = useState<"auto" | "manual">("auto");
+  const [selectedSubCode, setSelectedSubCode] = useState<string>("");
+
+  // Target contest resolution for umbrella multi-community campaigns
+  const activeSubContest = useMemo(() => {
+    if (!contest?.is_umbrella || !contest.sub_contests || contest.sub_contests.length === 0) return null;
+    return contest.sub_contests.find((s) => s.code === selectedSubCode) || contest.sub_contests[0];
+  }, [contest, selectedSubCode]);
+
+  const effectiveCode = activeSubContest ? activeSubContest.code : code;
+  const effectiveWikiUrl = (activeSubContest?.wiki_url || contest?.wiki_url || "https://bn.wikipedia.org").replace(/\/+$/, "");
+  const effectiveDbName = activeSubContest?.wiki_dbname || contest?.wiki_dbname || "bnwiki";
 
   const targetUsername = useMemo(() => {
     if (isOnBehalf && onBehalfUsername.trim()) {
@@ -106,15 +119,15 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
     setFetchError(null);
 
     try {
-      // 1. Try server-side endpoint first
-      const data = await fetchUserCreatedArticles(code, targetUsername);
+      // 1. Try server-side endpoint first using effective contest code
+      const data = await fetchUserCreatedArticles(effectiveCode, targetUsername);
       setFetchedArticles(data.articles || []);
       setAlreadySubmitted(data.already_submitted || []);
       setSelectedArticles([]);
     } catch (err: any) {
       // 2. Client-side fallback directly to MediaWiki Action API via CORS
       try {
-        const wikiEndpoint = (contest.wiki_url || "https://bn.wiktionary.org").replace(/\/+$/, "");
+        const wikiEndpoint = effectiveWikiUrl;
         const startISO = new Date(contest.start_date).toISOString();
         const endISO = new Date(contest.end_date).toISOString();
 
@@ -255,7 +268,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
     for (let i = 0; i < titlesToSubmit.length; i += chunkSize) {
       const chunk = titlesToSubmit.slice(i, i + chunkSize);
       try {
-        const res = await submitArticles(code, chunk, targetUsername);
+        const res = await submitArticles(effectiveCode, chunk, targetUsername);
         if (res.results) {
           allResults.push(...res.results);
         } else {
@@ -294,7 +307,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
         href={`/contests/${code}`}
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
       >
-        <ArrowLeft className="h-3.5 w-3.5" />
+        <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
         {t("feather-nav-back-contests")}
       </Link>
 
@@ -320,9 +333,28 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
               {t("feather-submit-page-title")}
             </h1>
-            <Badge variant="outline" className="font-mono text-xs">
-              {contest?.wiki_dbname || "bnwiktionary"}
-            </Badge>
+            {(() => {
+              const dbname = contest?.wiki_dbname || "bnwiki";
+              const pMeta = getProjectMeta(dbname);
+              return (
+                <Badge variant="outline" className="text-xs gap-1.5 px-2 py-0.5">
+                  <img
+                    src={pMeta.icon}
+                    alt=""
+                    className="h-3 w-3 object-contain shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                    }}
+                  />
+                  <span>{pMeta.name}</span>
+                  {contest?.wiki_lang && (
+                    <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                      ({contest.wiki_lang})
+                    </span>
+                  )}
+                </Badge>
+              );
+            })()}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
             {t("feather-submit-page-subtitle")}
@@ -345,6 +377,40 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
         )}
       </div>
 
+      {/* Campaign Community Selector (for Multi-Community Umbrella Contests) */}
+      {contest?.is_umbrella && contest.sub_contests && contest.sub_contests.length > 0 && (
+        <Card className="border-primary/30 bg-primary/5 shadow-2xs">
+          <CardContent className="p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary shrink-0" />
+              <div>
+                <div className="text-xs font-semibold text-foreground">
+                  Multi-Community Campaign Submission
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  Select which participating community edition you are submitting articles for
+                </div>
+              </div>
+            </div>
+            <select
+              value={selectedSubCode || contest.sub_contests[0]?.code}
+              onChange={(e) => {
+                setSelectedSubCode(e.target.value);
+                setFetchedArticles([]);
+                setSelectedArticles([]);
+              }}
+              className="h-9 px-3 text-xs font-semibold bg-background text-foreground border border-border rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-primary w-full sm:w-auto"
+            >
+              {contest.sub_contests.map((sub) => (
+                <option key={sub.code} value={sub.code}>
+                  {sub.name} ({sub.wiki_dbname})
+                </option>
+              ))}
+            </select>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Jury: Submit on Behalf of Another User Banner */}
       <Card className="border-border shadow-2xs">
         <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -366,13 +432,17 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
 
           {isOnBehalf ? (
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Input
-                type="text"
-                placeholder={t("feather-submit-behalf-placeholder")}
-                value={onBehalfUsername}
-                onChange={(e) => setOnBehalfUsername(e.target.value)}
-                className="h-8 text-xs font-mono w-full sm:w-48"
-              />
+              <div className="w-full sm:w-56">
+                <UserAutocompleteInput
+                  value={onBehalfUsername}
+                  onChange={setOnBehalfUsername}
+                  wikiUrl={contest?.wiki_url}
+                  placeholder={t("feather-submit-behalf-placeholder")}
+                  className="w-full"
+                  inputClassName="h-8 text-xs font-mono"
+                  labelBg="bg-card"
+                />
+              </div>
               <Button
                 size="sm"
                 variant="secondary"
@@ -496,7 +566,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
                   {isAvailableOpen ? (
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground rtl:rotate-180" />
                   )}
                   <span className="text-xs sm:text-sm font-bold text-foreground">
                     {t("feather-submit-can-submit-section", filteredAvailable.length)}
@@ -572,7 +642,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
                       return (
                         <label
                           key={article.title}
-                          className={`flex items-center justify-between gap-3 p-3 text-xs cursor-pointer transition-colors ${
+                          className={`flex items-center justify-between gap-3 p-3 min-h-[44px] text-xs cursor-pointer transition-colors ${
                             isChecked ? "bg-primary/5 font-semibold" : "hover:bg-muted/30"
                           }`}
                         >
@@ -581,7 +651,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => toggleSelectArticle(article.title)}
-                              className="h-4 w-4 rounded border-border accent-primary cursor-pointer shrink-0"
+                              className="h-5 w-5 rounded border-border accent-primary cursor-pointer shrink-0"
                             />
                             <span className="truncate text-foreground text-xs sm:text-sm">
                               {article.title}
@@ -627,7 +697,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
                     {isSubmittedOpen ? (
                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground rtl:rotate-180" />
                     )}
                     <span className="text-xs font-semibold text-muted-foreground">
                       {t("feather-submit-already-submitted-section", filteredSubmitted.length)}
@@ -648,7 +718,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
                         </div>
 
                         <Badge variant="outline" className="text-[10px] shrink-0 font-normal">
-                          Already submitted
+                          {t("feather-submit-status-submitted")}
                         </Badge>
                       </div>
                     ))}
@@ -774,7 +844,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {res.error || "Submitted successfully"}
+                        {res.error || t("feather-submit-status-submitted")}
                       </TableCell>
                     </TableRow>
                   );

@@ -16,9 +16,9 @@ export interface TimezoneItem {
 
 // Popular Wikimedia community timezones placed at top of list
 const POPULAR_TIMEZONES = [
+  "UTC",
   "Asia/Dhaka",
   "Asia/Kolkata",
-  "UTC",
   "Asia/Kathmandu",
   "Asia/Karachi",
   "Asia/Colombo",
@@ -182,6 +182,7 @@ export default function TimezoneSelector({
             <Badge
               variant="secondary"
               className="text-[10px] font-mono px-1.5 py-0 h-4 border border-border/80 shrink-0 font-semibold text-muted-foreground"
+              suppressHydrationWarning
             >
               {activeOffset}
             </Badge>

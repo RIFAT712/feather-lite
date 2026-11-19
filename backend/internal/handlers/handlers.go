@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -260,11 +261,11 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 
 	wikiDbName := strings.TrimSpace(req.WikiDbName)
 	if wikiDbName == "" {
-		wikiDbName = "bnwiktionary"
+		wikiDbName = "bnwiki"
 	}
 	wikiURL := strings.TrimSpace(req.WikiURL)
 	if wikiURL == "" {
-		wikiURL = "https://bn.wiktionary.org"
+		wikiURL = "https://bn.wikipedia.org"
 	}
 	wikiLang := strings.TrimSpace(req.WikiLang)
 	if wikiLang == "" {
@@ -272,7 +273,7 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 	}
 	wikiTZ := strings.TrimSpace(req.WikiTZ)
 	if wikiTZ == "" {
-		wikiTZ = "Asia/Dhaka"
+		wikiTZ = "UTC"
 	}
 
 	now := time.Now().UTC()
@@ -292,19 +293,26 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 		createdByID = &currentUser.UserID
 	}
 
+	isUmbrellaInt := 0
+	if req.IsUmbrella {
+		isUmbrellaInt = 1
+	}
+
 	insertContestQuery := `
 		INSERT INTO contests (
 			code, name, description, wiki_dbname, wiki_url, wiki_lang, wiki_tz,
 			start_date, end_date, status, is_draft,
 			rule_must_be_creator, rule_no_redirect, rule_no_disambig, rule_mainspace_only, rule_created_in_window,
+			custom_creation_start_date, custom_creation_end_date,
 			min_bytes, min_words, min_refs, max_submissions_per_user, rank_by_words,
-			add_talk_template, talk_template_name, created_by_id
+			add_talk_template, talk_template_name, distribute_jury_queue, is_umbrella, parent_contest_id, created_by_id
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?,
 			?, ?, ?, ?, ?,
+			?, ?,
 			?, ?, ?, ?, ?,
-			?, ?, ?
+			?, ?, ?, ?, NULL, ?
 		)
 	`
 	status := "active"
@@ -329,6 +337,23 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 	if req.RuleCreatedInWindow {
 		createdInWindow = 1
 	}
+	distributeJuryQueue := 0
+	if req.DistributeJuryQueue {
+		distributeJuryQueue = 1
+	}
+	var customCreationStart, customCreationEnd *time.Time
+	if !req.RuleCreatedInWindow {
+		if req.CustomCreationStartDate != "" {
+			if t, err := time.Parse(time.RFC3339, req.CustomCreationStartDate); err == nil {
+				customCreationStart = &t
+			}
+		}
+		if req.CustomCreationEndDate != "" {
+			if t, err := time.Parse(time.RFC3339, req.CustomCreationEndDate); err == nil {
+				customCreationEnd = &t
+			}
+		}
+	}
 	rankByWords := 0
 	if req.RankByWords {
 		rankByWords = 1
@@ -343,8 +368,9 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 		code, req.Name, req.Description, wikiDbName, wikiURL, wikiLang, wikiTZ,
 		startDate, endDate, status, isDraft,
 		mustBeCreator, noRedirect, noDisambig, mainspaceOnly, createdInWindow,
+		customCreationStart, customCreationEnd,
 		req.MinBytes, req.MinWords, req.MinRefs, req.MaxSubmissionsPerUser, rankByWords,
-		addTalkTemplate, req.TalkTemplateName, createdByID,
+		addTalkTemplate, req.TalkTemplateName, distributeJuryQueue, isUmbrellaInt, createdByID,
 	)
 	if err != nil {
 		log.Printf("[CreateContest] Error inserting contest: %v", err)
@@ -392,6 +418,112 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// If this is a Multi-Community Campaign, spawn initial sub-contests for each participating community
+	if req.IsUmbrella && len(req.ParticipatingWikis) > 0 {
+		for _, p := range req.ParticipatingWikis {
+			pDbName := strings.TrimSpace(p.DbName)
+			if pDbName == "" {
+				continue
+			}
+			pURL := strings.TrimSpace(p.URL)
+			if pURL == "" {
+				pURL = fmt.Sprintf("https://%s.org", pDbName)
+			}
+			pLang := strings.TrimSpace(p.Lang)
+			if pLang == "" {
+				pLang = "en"
+			}
+			pTZ := strings.TrimSpace(p.Timezone)
+			if pTZ == "" {
+				pTZ = wikiTZ
+			}
+			pName := strings.TrimSpace(p.Name)
+			if pName == "" {
+				pName = fmt.Sprintf("%s (%s)", req.Name, pDbName)
+			} else if !strings.Contains(strings.ToLower(pName), strings.ToLower(req.Name)) {
+				pName = fmt.Sprintf("%s - %s", req.Name, pName)
+			}
+
+			subCode := generateContestCode()
+			pMinWords := p.MinWords
+			if pMinWords == 0 && req.MinWords > 0 {
+				pMinWords = req.MinWords
+			}
+			pMinBytes := p.MinBytes
+			if pMinBytes == 0 && req.MinBytes > 0 {
+				pMinBytes = req.MinBytes
+			}
+			pMinRefs := p.MinRefs
+			if pMinRefs == 0 && req.MinRefs > 0 {
+				pMinRefs = req.MinRefs
+			}
+			pMustBeCreator := mustBeCreator
+			if p.RuleMustBeCreator {
+				pMustBeCreator = 1
+			}
+			pAddTalk := 0
+			pTalkTemplate := strings.TrimSpace(p.TalkTemplateName)
+			if pTalkTemplate != "" {
+				pAddTalk = 1
+			} else if addTalkTemplate == 1 && req.TalkTemplateName != "" {
+				pAddTalk = 1
+				pTalkTemplate = req.TalkTemplateName
+			}
+
+			subRes, subErr := tx.Exec(`
+				INSERT INTO contests (
+					code, name, description, wiki_dbname, wiki_url, wiki_lang, wiki_tz,
+					start_date, end_date, status, is_draft,
+					rule_must_be_creator, rule_no_redirect, rule_no_disambig, rule_mainspace_only, rule_created_in_window,
+					custom_creation_start_date, custom_creation_end_date,
+					min_bytes, min_words, min_refs, max_submissions_per_user, rank_by_words,
+					add_talk_template, talk_template_name, is_umbrella, parent_contest_id, created_by_id
+				) VALUES (
+					?, ?, ?, ?, ?, ?, ?,
+					?, ?, ?, ?,
+					?, ?, ?, ?, ?,
+					?, ?,
+					?, ?, ?, ?, ?,
+					?, ?, 0, ?, ?
+				)
+			`,
+				subCode, pName, req.Description, pDbName, pURL, pLang, pTZ,
+				startDate, endDate, status, isDraft,
+				pMustBeCreator, noRedirect, noDisambig, mainspaceOnly, createdInWindow,
+				customCreationStart, customCreationEnd,
+				pMinBytes, pMinWords, pMinRefs, req.MaxSubmissionsPerUser, rankByWords,
+				pAddTalk, pTalkTemplate, contestID, createdByID,
+			)
+			if subErr != nil {
+				log.Printf("[CreateContest] Error inserting sub-contest %s: %v", pDbName, subErr)
+				continue
+			}
+			subID, _ := subRes.LastInsertId()
+
+			// Local juries for this sub-contest
+			localJuries := make(map[string]bool)
+			if currentUser != nil && currentUser.WikiUsername != "" {
+				localJuries[currentUser.WikiUsername] = true
+			}
+			for _, lj := range p.Juries {
+				if trimmed := strings.TrimSpace(lj); trimmed != "" {
+					localJuries[trimmed] = true
+				}
+			}
+			for ljName := range localJuries {
+				var uID int64
+				err := tx.QueryRow("SELECT id FROM users WHERE wiki_username = ?", ljName).Scan(&uID)
+				if err == sql.ErrNoRows {
+					uRes, _ := tx.Exec("INSERT INTO users (wiki_username, role) VALUES (?, 'jury')", ljName)
+					uID, _ = uRes.LastInsertId()
+				}
+				if uID > 0 {
+					_, _ = tx.Exec("INSERT INTO contest_juries (contest_id, user_id) VALUES (?, ?)", subID, uID)
+				}
+			}
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		jsonError(w, http.StatusInternalServerError, "Failed to commit contest transaction")
 		return
@@ -416,12 +548,17 @@ func (h *Handler) ListContests(w http.ResponseWriter, r *http.Request) {
 	query := `
 		SELECT c.id, c.code, c.name, c.description, c.wiki_dbname, c.wiki_url, c.wiki_lang, 
 		       c.start_date, c.end_date, c.status, c.is_draft,
+		       COALESCE(c.is_umbrella, 0) as is_umbrella,
+		       c.parent_contest_id,
+		       (SELECT COUNT(*) FROM contests sub WHERE sub.parent_contest_id = c.id) as sub_contest_count,
 		       COUNT(DISTINCT a.id) as total_articles,
 		       COUNT(DISTINCT CASE WHEN a.status = 'accepted' THEN a.id END) as accepted_articles,
-		       COUNT(DISTINCT cj.user_id) as total_juries
+		       COUNT(DISTINCT cj.user_id) as total_juries,
+		       COALESCE(GROUP_CONCAT(DISTINCT u.wiki_username), '') as jury_names
 		FROM contests c
-		LEFT JOIN articles a ON c.id = a.contest_id
+		LEFT JOIN articles a ON (c.id = a.contest_id OR (c.is_umbrella = 1 AND a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = c.id)))
 		LEFT JOIN contest_juries cj ON c.id = cj.contest_id
+		LEFT JOIN users u ON cj.user_id = u.id
 		WHERE c.is_draft = 0
 		GROUP BY c.id
 		ORDER BY c.start_date DESC
@@ -436,14 +573,21 @@ func (h *Handler) ListContests(w http.ResponseWriter, r *http.Request) {
 	var contests []models.Contest
 	for rows.Next() {
 		var c models.Contest
+		var juryNames string
+		var isUmbrellaInt int
 		err := rows.Scan(
 			&c.ID, &c.Code, &c.Name, &c.Description, &c.WikiDbName, &c.WikiURL, &c.WikiLang,
 			&c.StartDate, &c.EndDate, &c.Status, &c.IsDraft,
-			&c.TotalArticles, &c.AcceptedArticles, &c.TotalJuries,
+			&isUmbrellaInt, &c.ParentContestID, &c.SubContestCount,
+			&c.TotalArticles, &c.AcceptedArticles, &c.TotalJuries, &juryNames,
 		)
 		if err != nil {
 			jsonError(w, http.StatusInternalServerError, "Failed to parse contest row")
 			return
+		}
+		c.IsUmbrella = isUmbrellaInt == 1
+		if juryNames != "" {
+			c.Juries = strings.Split(juryNames, ",")
 		}
 		contests = append(contests, c)
 	}
@@ -460,19 +604,22 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 	query := `
 		SELECT id, code, name, description, wiki_dbname, wiki_url, wiki_lang, wiki_tz,
 		       start_date, end_date, status, is_draft, rule_must_be_creator, rule_no_redirect,
-		       rule_no_disambig, rule_mainspace_only, rule_created_in_window, min_bytes,
+		       rule_no_disambig, rule_mainspace_only, rule_created_in_window,
+		       custom_creation_start_date, custom_creation_end_date, min_bytes,
 		       min_words, min_refs, max_submissions_per_user, rank_by_words, add_talk_template,
-		       talk_template_name, created_at
+		       talk_template_name, COALESCE(distribute_jury_queue, 0), COALESCE(is_umbrella, 0), parent_contest_id, created_at
 		FROM contests
 		WHERE code = ?
 	`
 	var c models.Contest
+	var isUmbrellaInt, distributeJuryQueueInt int
 	err := h.db.QueryRow(query, code).Scan(
 		&c.ID, &c.Code, &c.Name, &c.Description, &c.WikiDbName, &c.WikiURL, &c.WikiLang, &c.WikiTZ,
 		&c.StartDate, &c.EndDate, &c.Status, &c.IsDraft, &c.RuleMustBeCreator, &c.RuleNoRedirect,
-		&c.RuleNoDisambig, &c.RuleMainspaceOnly, &c.RuleCreatedInWindow, &c.MinBytes,
+		&c.RuleNoDisambig, &c.RuleMainspaceOnly, &c.RuleCreatedInWindow,
+		&c.CustomCreationStartDate, &c.CustomCreationEndDate, &c.MinBytes,
 		&c.MinWords, &c.MinRefs, &c.MaxSubmissionsPerUser, &c.RankByWords, &c.AddTalkTemplate,
-		&c.TalkTemplateName, &c.CreatedAt,
+		&c.TalkTemplateName, &distributeJuryQueueInt, &isUmbrellaInt, &c.ParentContestID, &c.CreatedAt,
 	)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Contest not found")
@@ -481,13 +628,86 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusInternalServerError, "Database query error")
 		return
 	}
+	c.IsUmbrella = isUmbrellaInt == 1
+	c.DistributeJuryQueue = distributeJuryQueueInt == 1
 
-	_ = h.db.QueryRow(`
-		SELECT COUNT(*), 
-		       COUNT(CASE WHEN status = 'accepted' THEN 1 END),
-		       COUNT(CASE WHEN status = 'pending' THEN 1 END)
-		FROM articles WHERE contest_id = ?
-	`, c.ID).Scan(&c.TotalArticles, &c.AcceptedArticles, &c.PendingArticles)
+	if c.IsUmbrella {
+		// Campaign: aggregate metrics across all sub-contests & load sub-contests
+		subRows, err := h.db.Query(`
+			SELECT s.id, s.code, s.name, s.wiki_dbname, s.wiki_url, s.wiki_lang, s.wiki_tz,
+			       s.start_date, s.end_date, s.status, s.min_words, s.min_bytes,
+			       COUNT(DISTINCT a.id) as total_articles,
+			       COUNT(DISTINCT CASE WHEN a.status = 'accepted' THEN a.id END) as accepted_articles,
+			       COUNT(DISTINCT CASE WHEN a.status = 'pending' THEN a.id END) as pending_articles,
+			       COUNT(DISTINCT cj.user_id) as total_juries,
+			       COUNT(DISTINCT a.submitter_id) as total_submitters
+			FROM contests s
+			LEFT JOIN articles a ON s.id = a.contest_id
+			LEFT JOIN contest_juries cj ON s.id = cj.contest_id
+			WHERE s.parent_contest_id = ?
+			GROUP BY s.id
+			ORDER BY s.name ASC
+		`, c.ID)
+		if err == nil {
+			defer subRows.Close()
+			c.SubContests = []models.SubContestSummary{}
+			c.TotalArticles = 0
+			c.AcceptedArticles = 0
+			c.PendingArticles = 0
+			for subRows.Next() {
+				var sc models.SubContestSummary
+				if sErr := subRows.Scan(
+					&sc.ID, &sc.Code, &sc.Name, &sc.WikiDbName, &sc.WikiURL, &sc.WikiLang, &sc.WikiTZ,
+					&sc.StartDate, &sc.EndDate, &sc.Status, &sc.MinWords, &sc.MinBytes,
+					&sc.TotalArticles, &sc.AcceptedArticles, &sc.PendingArticles,
+					&sc.TotalJuries, &sc.TotalSubmitters,
+				); sErr == nil {
+					c.SubContests = append(c.SubContests, sc)
+					c.TotalArticles += sc.TotalArticles
+					c.AcceptedArticles += sc.AcceptedArticles
+					c.PendingArticles += sc.PendingArticles
+				}
+			}
+			c.SubContestCount = len(c.SubContests)
+		}
+	} else {
+		// Local sub-contest or single contest
+		_ = h.db.QueryRow(`
+			SELECT COUNT(*), 
+			       COUNT(CASE WHEN status = 'accepted' THEN 1 END),
+			       COUNT(CASE WHEN status = 'pending' THEN 1 END)
+			FROM articles WHERE contest_id = ?
+		`, c.ID).Scan(&c.TotalArticles, &c.AcceptedArticles, &c.PendingArticles)
+
+		if c.ParentContestID != nil {
+			// Fetch parent campaign details
+			_ = h.db.QueryRow("SELECT code, name FROM contests WHERE id = ?", *c.ParentContestID).Scan(&c.ParentContestCode, &c.ParentContestName)
+			// Fetch sibling sub-contests for "Switch Community" menu
+			sibRows, err := h.db.Query(`
+				SELECT s.id, s.code, s.name, s.wiki_dbname, s.wiki_url, s.wiki_lang, s.wiki_tz, s.status,
+				       s.min_words, s.min_bytes, 0, 0, 0, 0, 0
+				FROM contests s
+				WHERE s.parent_contest_id = ? AND s.id != ?
+				ORDER BY s.name ASC
+			`, *c.ParentContestID, c.ID)
+			if err == nil {
+				defer sibRows.Close()
+				c.SubContests = []models.SubContestSummary{}
+				for sibRows.Next() {
+					var sc models.SubContestSummary
+					if sErr := sibRows.Scan(
+						&sc.ID, &sc.Code, &sc.Name, &sc.WikiDbName, &sc.WikiURL, &sc.WikiLang, &sc.WikiTZ, &sc.Status,
+						&sc.MinWords, &sc.MinBytes,
+						&sc.TotalArticles, &sc.AcceptedArticles, &sc.PendingArticles,
+						&sc.TotalJuries, &sc.TotalSubmitters,
+					); sErr == nil {
+						c.SubContests = append(c.SubContests, sc)
+					}
+				}
+				c.SubContestCount = len(c.SubContests)
+			}
+		}
+	}
 
 	juryRows, jErr := h.db.Query(`
 		SELECT u.wiki_username
@@ -508,6 +728,529 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 	c.TotalJuries = len(c.Juries)
 
 	jsonResponse(w, http.StatusOK, c)
+}
+
+func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+
+	var contestID int64
+	var currentCreatedByID sql.NullInt64
+	var currentTZ string
+	var currentStart, currentEnd time.Time
+	err := h.db.QueryRow(`
+		SELECT id, created_by_id, wiki_tz, start_date, end_date 
+		FROM contests WHERE code = ?
+	`, code).Scan(&contestID, &currentCreatedByID, &currentTZ, &currentStart, &currentEnd)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database query error")
+		return
+	}
+
+	// Enforce authentication & organizer authorization
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required to update contest settings")
+		return
+	}
+	if !h.isUserOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+		jsonError(w, http.StatusForbidden, "Only contest organizers or platform administrators can modify settings")
+		return
+	}
+
+	var req models.UpdateContestRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" {
+		jsonError(w, http.StatusBadRequest, "Contest name cannot be empty")
+		return
+	}
+
+	tz := strings.TrimSpace(req.WikiTZ)
+	if tz == "" {
+		tz = currentTZ
+	}
+
+	startDate := parseFlexibleDate(req.StartDate, tz, currentStart)
+	endDate := parseFlexibleDate(req.EndDate, tz, currentEnd)
+	if endDate.Before(startDate) {
+		jsonError(w, http.StatusBadRequest, "End date cannot be earlier than start date")
+		return
+	}
+
+	status := strings.ToLower(strings.TrimSpace(req.Status))
+	if status != "active" && status != "ended" && status != "draft" {
+		status = "active"
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Transaction failed")
+		return
+	}
+	defer tx.Rollback()
+
+	mustBeCreator := 0
+	if req.RuleMustBeCreator {
+		mustBeCreator = 1
+	}
+	noRedirect := 0
+	if req.RuleNoRedirect {
+		noRedirect = 1
+	}
+	noDisambig := 0
+	if req.RuleNoDisambig {
+		noDisambig = 1
+	}
+	mainspaceOnly := 0
+	if req.RuleMainspaceOnly {
+		mainspaceOnly = 1
+	}
+	createdInWindow := 0
+	if req.RuleCreatedInWindow {
+		createdInWindow = 1
+	}
+	rankByWords := 0
+	if req.RankByWords {
+		rankByWords = 1
+	}
+	addTalkTemplate := 0
+	if req.AddTalkTemplate {
+		addTalkTemplate = 1
+	}
+	distributeJuryQueue := 0
+	if req.DistributeJuryQueue {
+		distributeJuryQueue = 1
+	}
+
+	_, err = tx.Exec(`
+		UPDATE contests SET
+			name = ?,
+			description = ?,
+			start_date = ?,
+			end_date = ?,
+			status = ?,
+			wiki_tz = ?,
+			rule_must_be_creator = ?,
+			rule_no_redirect = ?,
+			rule_no_disambig = ?,
+			rule_mainspace_only = ?,
+			rule_created_in_window = ?,
+			min_bytes = ?,
+			min_words = ?,
+			min_refs = ?,
+			max_submissions_per_user = ?,
+			rank_by_words = ?,
+			add_talk_template = ?,
+			talk_template_name = ?,
+			distribute_jury_queue = ?
+		WHERE id = ?
+	`,
+		req.Name, strings.TrimSpace(req.Description), startDate, endDate, status, tz,
+		mustBeCreator, noRedirect, noDisambig, mainspaceOnly, createdInWindow,
+		req.MinBytes, req.MinWords, req.MinRefs, req.MaxSubmissionsPerUser, rankByWords,
+		addTalkTemplate, strings.TrimSpace(req.TalkTemplateName), distributeJuryQueue,
+		contestID,
+	)
+	if err != nil {
+		log.Printf("[UpdateContest] Update error: %v", err)
+		jsonError(w, http.StatusInternalServerError, "Failed to update contest")
+		return
+	}
+
+	// Update juries if specified
+	if req.Juries != nil {
+		desiredJuries := make(map[string]bool)
+		for _, j := range req.Juries {
+			if t := strings.TrimSpace(j); t != "" {
+				desiredJuries[t] = true
+			}
+		}
+
+		// Clear existing juries for this contest
+		_, _ = tx.Exec("DELETE FROM contest_juries WHERE contest_id = ?", contestID)
+
+		// Re-insert desired juries
+		for jName := range desiredJuries {
+			var uID int64
+			err := tx.QueryRow("SELECT id FROM users WHERE wiki_username = ?", jName).Scan(&uID)
+			if err == sql.ErrNoRows {
+				res, insErr := tx.Exec("INSERT INTO users (wiki_username, role) VALUES (?, 'jury')", jName)
+				if insErr == nil {
+					uID, _ = res.LastInsertId()
+				}
+			}
+			if uID > 0 {
+				_, _ = tx.Exec("INSERT INTO contest_juries (contest_id, user_id) VALUES (?, ?)", contestID, uID)
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to commit changes")
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"message": "Contest configuration updated successfully",
+		"code":    code,
+		"name":    req.Name,
+		"status":  status,
+	})
+}
+
+func (h *Handler) CreateSubContest(w http.ResponseWriter, r *http.Request) {
+	parentCode := chi.URLParam(r, "code")
+	var parentID int64
+	var parentName, parentTZ string
+	var parentStart, parentEnd time.Time
+	var isUmbrella int
+	err := h.db.QueryRow(`
+		SELECT id, name, wiki_tz, start_date, end_date, is_umbrella 
+		FROM contests WHERE code = ?
+	`, parentCode).Scan(&parentID, &parentName, &parentTZ, &parentStart, &parentEnd, &isUmbrella)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Parent campaign not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+	if isUmbrella != 1 {
+		jsonError(w, http.StatusBadRequest, "Contest is not a multi-community campaign")
+		return
+	}
+
+	var req models.CreateSubContestRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	wikiDbName := strings.TrimSpace(req.WikiDbName)
+	if wikiDbName == "" {
+		jsonError(w, http.StatusBadRequest, "Wiki database name is required")
+		return
+	}
+	wikiURL := strings.TrimSpace(req.WikiURL)
+	if wikiURL == "" {
+		wikiURL = fmt.Sprintf("https://%s.org", wikiDbName)
+	}
+	wikiLang := strings.TrimSpace(req.WikiLang)
+	if wikiLang == "" {
+		wikiLang = "en"
+	}
+	wikiTZ := strings.TrimSpace(req.WikiTZ)
+	if wikiTZ == "" {
+		wikiTZ = parentTZ
+	}
+
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		name = fmt.Sprintf("%s (%s)", parentName, wikiDbName)
+	} else if !strings.Contains(strings.ToLower(name), strings.ToLower(parentName)) {
+		name = fmt.Sprintf("%s - %s", parentName, name)
+	}
+
+	subCode := generateContestCode()
+	mustBeCreator := 0
+	if req.RuleMustBeCreator {
+		mustBeCreator = 1
+	}
+	addTalkTemplate := 0
+	talkTemplate := strings.TrimSpace(req.TalkTemplateName)
+	if talkTemplate != "" {
+		addTalkTemplate = 1
+	}
+
+	var createdByID *int64
+	currentUser := auth.GetUser(r.Context())
+	if currentUser != nil && currentUser.UserID > 0 {
+		createdByID = &currentUser.UserID
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(`
+		INSERT INTO contests (
+			code, name, description, wiki_dbname, wiki_url, wiki_lang, wiki_tz,
+			start_date, end_date, status, is_draft,
+			rule_must_be_creator, rule_no_redirect, rule_no_disambig, rule_mainspace_only, rule_created_in_window,
+			min_bytes, min_words, min_refs, max_submissions_per_user, rank_by_words,
+			add_talk_template, talk_template_name, is_umbrella, parent_contest_id, created_by_id
+		) VALUES (
+			?, ?, '', ?, ?, ?, ?,
+			?, ?, 'active', 0,
+			?, 1, 1, 1, 1,
+			?, ?, ?, 0, 0,
+			?, ?, 0, ?, ?
+		)
+	`,
+		subCode, name, wikiDbName, wikiURL, wikiLang, wikiTZ,
+		parentStart, parentEnd,
+		mustBeCreator,
+		req.MinBytes, req.MinWords, req.MinRefs,
+		addTalkTemplate, talkTemplate, parentID, createdByID,
+	)
+	if err != nil {
+		log.Printf("[CreateSubContest] Insert error: %v", err)
+		jsonError(w, http.StatusInternalServerError, "Failed to create sub-contest")
+		return
+	}
+	subID, _ := res.LastInsertId()
+
+	localJuries := make(map[string]bool)
+	if currentUser != nil && currentUser.WikiUsername != "" {
+		localJuries[currentUser.WikiUsername] = true
+	}
+	for _, j := range req.Juries {
+		if trimmed := strings.TrimSpace(j); trimmed != "" {
+			localJuries[trimmed] = true
+		}
+	}
+	for jName := range localJuries {
+		var uID int64
+		_ = tx.QueryRow("SELECT id FROM users WHERE wiki_username = ?", jName).Scan(&uID)
+		if uID == 0 {
+			uRes, _ := tx.Exec("INSERT INTO users (wiki_username, role) VALUES (?, 'jury')", jName)
+			uID, _ = uRes.LastInsertId()
+		}
+		if uID > 0 {
+			_, _ = tx.Exec("INSERT INTO contest_juries (contest_id, user_id) VALUES (?, ?)", subID, uID)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to commit transaction")
+		return
+	}
+
+	jsonResponse(w, http.StatusCreated, map[string]any{
+		"message": "Sub-contest created successfully",
+		"code":    subCode,
+		"id":      subID,
+		"name":    name,
+	})
+}
+
+func (h *Handler) GetAvailableContests(w http.ResponseWriter, r *http.Request) {
+	parentCode := chi.URLParam(r, "code")
+	var parentID int64
+	var isUmbrella int
+	err := h.db.QueryRow("SELECT id, is_umbrella FROM contests WHERE code = ?", parentCode).Scan(&parentID, &isUmbrella)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Parent campaign not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+	if isUmbrella != 1 {
+		jsonError(w, http.StatusBadRequest, "Contest is not a multi-community campaign")
+		return
+	}
+
+	search := strings.TrimSpace(r.URL.Query().Get("q"))
+	var query string
+	var args []any
+
+	if search != "" {
+		likePattern := "%" + search + "%"
+		query = `
+			SELECT c.id, c.code, c.name, c.wiki_dbname, c.wiki_url, c.wiki_lang, c.start_date, c.end_date, c.status,
+			       COUNT(a.id) as total_articles
+			FROM contests c
+			LEFT JOIN articles a ON a.contest_id = c.id
+			WHERE c.is_umbrella = 0
+			  AND (c.parent_contest_id IS NULL OR c.parent_contest_id = 0)
+			  AND c.id != ?
+			  AND (c.name LIKE ? OR c.code LIKE ? OR c.wiki_dbname LIKE ?)
+			GROUP BY c.id
+			ORDER BY c.id DESC LIMIT 30
+		`
+		args = []any{parentID, likePattern, likePattern, likePattern}
+	} else {
+		query = `
+			SELECT c.id, c.code, c.name, c.wiki_dbname, c.wiki_url, c.wiki_lang, c.start_date, c.end_date, c.status,
+			       COUNT(a.id) as total_articles
+			FROM contests c
+			LEFT JOIN articles a ON a.contest_id = c.id
+			WHERE c.is_umbrella = 0
+			  AND (c.parent_contest_id IS NULL OR c.parent_contest_id = 0)
+			  AND c.id != ?
+			GROUP BY c.id
+			ORDER BY c.id DESC LIMIT 30
+		`
+		args = []any{parentID}
+	}
+
+	rows, err := h.db.Query(query, args...)
+	if err != nil {
+		log.Printf("[GetAvailableContests] Query error: %v", err)
+		jsonError(w, http.StatusInternalServerError, "Failed to query available contests")
+		return
+	}
+	defer rows.Close()
+
+	list := make([]models.AvailableContestSummary, 0)
+	for rows.Next() {
+		var item models.AvailableContestSummary
+		var start, end time.Time
+		if err := rows.Scan(
+			&item.ID, &item.Code, &item.Name, &item.WikiDbName, &item.WikiURL, &item.WikiLang,
+			&start, &end, &item.Status, &item.TotalArticles,
+		); err != nil {
+			continue
+		}
+		item.StartDate = start.Format(time.RFC3339)
+		item.EndDate = end.Format(time.RFC3339)
+		list = append(list, item)
+	}
+
+	jsonResponse(w, http.StatusOK, list)
+}
+
+func (h *Handler) AttachContest(w http.ResponseWriter, r *http.Request) {
+	parentCode := chi.URLParam(r, "code")
+	var parentID int64
+	var parentName string
+	var isUmbrella int
+	err := h.db.QueryRow("SELECT id, name, is_umbrella FROM contests WHERE code = ?", parentCode).Scan(&parentID, &parentName, &isUmbrella)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Parent campaign not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+	if isUmbrella != 1 {
+		jsonError(w, http.StatusBadRequest, "Target contest is not a multi-community campaign")
+		return
+	}
+
+	var req models.AttachContestRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	var targetID int64
+	var targetCode, targetName, targetWiki string
+	var targetIsUmbrella int
+	var currentParentID sql.NullInt64
+
+	if req.ContestID > 0 {
+		err = h.db.QueryRow(`
+			SELECT id, code, name, wiki_dbname, is_umbrella, parent_contest_id 
+			FROM contests WHERE id = ?
+		`, req.ContestID).Scan(&targetID, &targetCode, &targetName, &targetWiki, &targetIsUmbrella, &currentParentID)
+	} else if req.ContestCode != "" {
+		err = h.db.QueryRow(`
+			SELECT id, code, name, wiki_dbname, is_umbrella, parent_contest_id 
+			FROM contests WHERE code = ?
+		`, strings.TrimSpace(req.ContestCode)).Scan(&targetID, &targetCode, &targetName, &targetWiki, &targetIsUmbrella, &currentParentID)
+	} else {
+		jsonError(w, http.StatusBadRequest, "contest_id or contest_code is required")
+		return
+	}
+
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest to attach not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	if targetID == parentID {
+		jsonError(w, http.StatusBadRequest, "Cannot attach a campaign to itself")
+		return
+	}
+	if targetIsUmbrella == 1 {
+		jsonError(w, http.StatusBadRequest, "Cannot attach another multi-community campaign")
+		return
+	}
+	if currentParentID.Valid && currentParentID.Int64 == parentID {
+		jsonError(w, http.StatusBadRequest, "Contest is already attached to this campaign")
+		return
+	}
+
+	_, err = h.db.Exec("UPDATE contests SET parent_contest_id = ? WHERE id = ?", parentID, targetID)
+	if err != nil {
+		log.Printf("[AttachContest] Update error: %v", err)
+		jsonError(w, http.StatusInternalServerError, "Failed to attach contest")
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"message": "Contest successfully attached as community edition",
+		"id": targetID,
+		"code": targetCode,
+		"name": targetName,
+		"wiki_dbname": targetWiki,
+		"parent_contest_id": parentID,
+		"parent_contest_name": parentName,
+	})
+}
+
+func (h *Handler) DetachContest(w http.ResponseWriter, r *http.Request) {
+	parentCode := chi.URLParam(r, "code")
+	var parentID int64
+	var isUmbrella int
+	err := h.db.QueryRow("SELECT id, is_umbrella FROM contests WHERE code = ?", parentCode).Scan(&parentID, &isUmbrella)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Parent campaign not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	var req models.DetachContestRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	var targetID int64
+	if req.ContestID > 0 {
+		targetID = req.ContestID
+	} else if req.ContestCode != "" {
+		_ = h.db.QueryRow("SELECT id FROM contests WHERE code = ?", strings.TrimSpace(req.ContestCode)).Scan(&targetID)
+	}
+
+	if targetID == 0 {
+		jsonError(w, http.StatusBadRequest, "Valid contest_id or contest_code required")
+		return
+	}
+
+	res, err := h.db.Exec("UPDATE contests SET parent_contest_id = NULL WHERE id = ? AND parent_contest_id = ?", targetID, parentID)
+	if err != nil {
+		log.Printf("[DetachContest] Update error: %v", err)
+		jsonError(w, http.StatusInternalServerError, "Failed to detach contest")
+		return
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		jsonError(w, http.StatusNotFound, "Contest was not attached to this campaign")
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"message": "Contest successfully detached from campaign",
+		"id": targetID,
+	})
 }
 
 func (h *Handler) GetContestArticles(w http.ResponseWriter, r *http.Request) {
@@ -537,8 +1280,9 @@ func (h *Handler) GetContestArticles(w http.ResponseWriter, r *http.Request) {
 	if a := r.URL.Query().Get("assigned_to_id"); a != "" {
 		assignedToID, _ = strconv.ParseInt(a, 10, 64)
 	}
+	assignedToUsername := strings.TrimSpace(r.URL.Query().Get("assigned_to"))
 
-	res, err := h.db.GetArticlesKeyset(contestID, beforeID, status, assignedToID, limit)
+	res, err := h.db.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, assignedToUsername, limit)
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, "Failed to query articles")
 		return
@@ -617,17 +1361,25 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 
 	var contest models.Contest
+	var distributeJuryQueueInt int
 	err := h.db.QueryRow(`
-		SELECT id, name, status, wiki_url, min_bytes, min_words, rule_must_be_creator, rule_no_redirect
+		SELECT id, name, status, wiki_url, min_bytes, min_words, min_refs, max_submissions_per_user,
+		       rule_must_be_creator, rule_no_redirect, rule_created_in_window,
+		       custom_creation_start_date, custom_creation_end_date, start_date, end_date,
+		       COALESCE(distribute_jury_queue, 0)
 		FROM contests WHERE code = ?
 	`, code).Scan(
 		&contest.ID, &contest.Name, &contest.Status, &contest.WikiURL, &contest.MinBytes,
-		&contest.MinWords, &contest.RuleMustBeCreator, &contest.RuleNoRedirect,
+		&contest.MinWords, &contest.MinRefs, &contest.MaxSubmissionsPerUser,
+		&contest.RuleMustBeCreator, &contest.RuleNoRedirect, &contest.RuleCreatedInWindow,
+		&contest.CustomCreationStartDate, &contest.CustomCreationEndDate,
+		&contest.StartDate, &contest.EndDate, &distributeJuryQueueInt,
 	)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Contest not found")
 		return
 	}
+	contest.DistributeJuryQueue = distributeJuryQueueInt == 1
 
 	var req BulkSubmitRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -716,12 +1468,36 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 		} else if contest.RuleMustBeCreator && !strings.EqualFold(pageInfo.Creator, submitter) {
 			status = "validation_failed"
 			validationErr = fmt.Sprintf("Author mismatch: creator is '%s', submitted by '%s'", pageInfo.Creator, submitter)
-		} else if pageInfo.WordCount < contest.MinWords {
+		} else if contest.RuleCreatedInWindow && !pageInfo.CreationDate.IsZero() && (pageInfo.CreationDate.Before(contest.StartDate) || pageInfo.CreationDate.After(contest.EndDate)) {
 			status = "validation_failed"
-			validationErr = fmt.Sprintf("Word count too low: %d words (min: %d)", pageInfo.WordCount, contest.MinWords)
-		} else if pageInfo.ByteSize < contest.MinBytes {
+			validationErr = fmt.Sprintf("Article created outside contest timeframe: created on %s (window: %s to %s)",
+				pageInfo.CreationDate.Format("2006-01-02"), contest.StartDate.Format("2006-01-02"), contest.EndDate.Format("2006-01-02"))
+		} else if !contest.RuleCreatedInWindow {
+			if contest.CustomCreationStartDate != nil && !pageInfo.CreationDate.IsZero() && pageInfo.CreationDate.Before(*contest.CustomCreationStartDate) {
+				status = "validation_failed"
+				validationErr = fmt.Sprintf("Article created before required start date: created on %s (minimum creation date: %s)",
+					pageInfo.CreationDate.Format("2006-01-02"), contest.CustomCreationStartDate.Format("2006-01-02"))
+			} else if contest.CustomCreationEndDate != nil && !pageInfo.CreationDate.IsZero() && pageInfo.CreationDate.After(*contest.CustomCreationEndDate) {
+				status = "validation_failed"
+				validationErr = fmt.Sprintf("Article created after required end date: created on %s (maximum creation date: %s)",
+					pageInfo.CreationDate.Format("2006-01-02"), contest.CustomCreationEndDate.Format("2006-01-02"))
+			}
+		} else if contest.MinWords > 0 && pageInfo.WordCount < contest.MinWords {
 			status = "validation_failed"
-			validationErr = fmt.Sprintf("Byte size too low: %d bytes (min: %d)", pageInfo.ByteSize, contest.MinBytes)
+			validationErr = fmt.Sprintf("Word count too low: %d words (min: %d required)", pageInfo.WordCount, contest.MinWords)
+		} else if contest.MinBytes > 0 && pageInfo.ByteSize < contest.MinBytes {
+			status = "validation_failed"
+			validationErr = fmt.Sprintf("Byte size too low: %d bytes (min: %d required)", pageInfo.ByteSize, contest.MinBytes)
+		} else if contest.MinRefs > 0 && pageInfo.RefCount < contest.MinRefs {
+			status = "validation_failed"
+			validationErr = fmt.Sprintf("Too few references: %d found (min: %d required)", pageInfo.RefCount, contest.MinRefs)
+		} else if contest.MaxSubmissionsPerUser > 0 {
+			var userSubCount int
+			_ = h.db.QueryRow("SELECT COUNT(*) FROM articles WHERE contest_id = ? AND submitter_id = ?", contest.ID, submitterID).Scan(&userSubCount)
+			if userSubCount >= contest.MaxSubmissionsPerUser {
+				status = "validation_failed"
+				validationErr = fmt.Sprintf("Submission limit reached: maximum %d articles per participant allowed", contest.MaxSubmissionsPerUser)
+			}
 		}
 
 		byteSize := 0
@@ -761,8 +1537,8 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// 3. Scarcity-First Water-Filling Queue Balancing on newly pending articles
-	if len(newPendingArticles) > 0 {
+	// If contest has distributed queue enabled, partition pending articles across juries
+	if contest.DistributeJuryQueue && len(newPendingArticles) > 0 {
 		h.balanceArticles(contest.ID, newPendingArticles)
 	}
 
@@ -771,6 +1547,54 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 		"results":   results,
 		"message":   fmt.Sprintf("Processed %d articles (%d accepted to queue)", len(results), submittedCount),
 	})
+}
+
+// isUserJuryOrOrganizer verifies if a user has jury, contest creator, or platform owner rights for a contest (including via parent umbrella campaign).
+func (h *Handler) isUserJuryOrOrganizer(contestID int64, userID int64, role string) bool {
+	if role == "owner" || role == "admin" {
+		return true
+	}
+	var count int
+	_ = h.db.QueryRow(`
+		SELECT COUNT(1) FROM (
+			SELECT 1 FROM contests WHERE id = ? AND created_by_id = ?
+			UNION
+			SELECT 1 FROM contests parent
+			JOIN contests sub ON sub.parent_contest_id = parent.id
+			WHERE sub.id = ? AND parent.created_by_id = ?
+			UNION
+			SELECT 1 FROM contest_juries WHERE contest_id = ? AND user_id = ?
+			UNION
+			SELECT 1 FROM contest_juries cj
+			JOIN contests sub ON sub.parent_contest_id = cj.contest_id
+			WHERE sub.id = ? AND cj.user_id = ?
+		)
+	`, contestID, userID, contestID, userID, contestID, userID, contestID, userID).Scan(&count)
+	return count > 0
+}
+
+// isUserOrganizer verifies if a user has contest creator, organizer, or platform owner rights for a contest (including via parent umbrella campaign).
+func (h *Handler) isUserOrganizer(contestID int64, userID int64, role string) bool {
+	if role == "owner" || role == "admin" {
+		return true
+	}
+	var count int
+	_ = h.db.QueryRow(`
+		SELECT COUNT(1) FROM (
+			SELECT 1 FROM contests WHERE id = ? AND created_by_id = ?
+			UNION
+			SELECT 1 FROM contests parent
+			JOIN contests sub ON sub.parent_contest_id = parent.id
+			WHERE sub.id = ? AND parent.created_by_id = ?
+			UNION
+			SELECT 1 FROM contest_juries WHERE contest_id = ? AND user_id = ?
+			UNION
+			SELECT 1 FROM contest_juries cj
+			JOIN contests sub ON sub.parent_contest_id = cj.contest_id
+			WHERE sub.id = ? AND cj.user_id = ?
+		)
+	`, contestID, userID, contestID, userID, contestID, userID, contestID, userID).Scan(&count)
+	return count > 0
 }
 
 // balanceArticles distributes pending articles using the scarcity-first water-filling algorithm
@@ -850,16 +1674,17 @@ func (h *Handler) GetArticlePreview(w http.ResponseWriter, r *http.Request) {
 		SELECT c.wiki_url, a.title, a.word_count, a.byte_count
 		FROM articles a
 		JOIN contests c ON a.contest_id = c.id
-		WHERE c.code = ? AND a.id = ?
-	`, code, articleID).Scan(&wikiURL, &title, &wordCount, &byteCount)
+		LEFT JOIN contests parent ON c.parent_contest_id = parent.id
+		WHERE (c.code = ? OR parent.code = ?) AND a.id = ?
+	`, code, code, articleID).Scan(&wikiURL, &title, &wordCount, &byteCount)
 
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Article not found")
 		return
 	}
 
-	// Fetch real rendered HTML from MediaWiki action=parse
-	htmlContent, err := mwclient.FetchRenderedHTML(wikiURL, title)
+	// Fetch real rendered HTML and raw wikitext from MediaWiki action=parse
+	htmlContent, wikitextContent, err := mwclient.FetchRenderedContent(wikiURL, title)
 	if err != nil {
 		htmlContent = fmt.Sprintf("<div class='p-4 text-destructive'>Failed to load preview from %s: %v</div>", wikiURL, err)
 	}
@@ -870,6 +1695,7 @@ func (h *Handler) GetArticlePreview(w http.ResponseWriter, r *http.Request) {
 		"word_count": wordCount,
 		"byte_count": byteCount,
 		"html":       htmlContent,
+		"wikitext":   wikitextContent,
 		"wiki_url":   fmt.Sprintf("%s/wiki/%s", wikiURL, title),
 	})
 }
@@ -879,7 +1705,7 @@ func (h *Handler) GetArticlePreview(w http.ResponseWriter, r *http.Request) {
 // -------------------------------------------------------------
 
 type ReviewDecisionRequest struct {
-	Status  string `json:"status"` // "accepted", "rejected", "skipped"
+	Status  string `json:"status"` // "accepted", "rejected", "skipped", "pending" (undo)
 	Comment string `json:"comment"`
 }
 
@@ -898,22 +1724,62 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req.Status = strings.ToLower(strings.TrimSpace(req.Status))
-	if req.Status != "accepted" && req.Status != "rejected" && req.Status != "skipped" {
-		jsonError(w, http.StatusBadRequest, "Status must be 'accepted', 'rejected', or 'skipped'")
+	if req.Status != "accepted" && req.Status != "rejected" && req.Status != "skipped" && req.Status != "pending" {
+		jsonError(w, http.StatusBadRequest, "Status must be 'accepted', 'rejected', 'skipped', or 'pending'")
 		return
 	}
 
-	// Read authenticated reviewer from session
-	reviewer := "JuryMember"
-	if currentUser := auth.GetUser(r.Context()); currentUser != nil {
-		reviewer = currentUser.WikiUsername
+	// 1. Enforce authentication
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required to review articles")
+		return
 	}
 
-	var reviewerID int64
-	_ = h.db.QueryRow("SELECT id FROM users WHERE wiki_username = ?", reviewer).Scan(&reviewerID)
+	// 2. Fetch article's contest ID and submitter ID
+	var contestID int64
+	var submitterID int64
+	err = h.db.QueryRow("SELECT contest_id, submitter_id FROM articles WHERE id = ?", articleID).Scan(&contestID, &submitterID)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Article not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database query error")
+		return
+	}
+
+	// 3. Conflict of Interest (COI) check: Jury cannot review their own article
+	if currentUser.UserID == submitterID && currentUser.Role != "owner" {
+		jsonError(w, http.StatusForbidden, "Conflict of interest: You cannot review your own submitted article")
+		return
+	}
+
+	// 4. Role Authorization: must be assigned jury, contest creator, or platform owner
+	if !h.isUserJuryOrOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+		jsonError(w, http.StatusForbidden, "You do not have jury permissions for this contest")
+		return
+	}
+
+	reviewer := currentUser.WikiUsername
+	reviewerID := currentUser.UserID
 	if reviewerID == 0 {
-		res, _ := h.db.Exec("INSERT INTO users(wiki_username, role) VALUES(?, 'jury')", reviewer)
-		reviewerID, _ = res.LastInsertId()
+		_ = h.db.QueryRow("SELECT id FROM users WHERE wiki_username = ?", reviewer).Scan(&reviewerID)
+		if reviewerID == 0 {
+			res, _ := h.db.Exec("INSERT INTO users(wiki_username, role) VALUES(?, 'jury')", reviewer)
+			reviewerID, _ = res.LastInsertId()
+		}
+	}
+
+	// Handle Undo / rollback to pending
+	if req.Status == "pending" {
+		_, _ = h.db.Exec("UPDATE articles SET status = 'pending' WHERE id = ?", articleID)
+		_, _ = h.db.Exec("DELETE FROM reviews WHERE article_id = ? AND reviewer_id = ?", articleID, reviewerID)
+		jsonResponse(w, http.StatusOK, map[string]string{
+			"message":  "Decision undone successfully",
+			"status":   "pending",
+			"reviewer": reviewer,
+		})
+		return
 	}
 
 	_, err = h.db.Exec(`
@@ -940,17 +1806,768 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
-	code := chi.URLParam(r, "code")
+func (h *Handler) AcquireArticleLock(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	articleID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid article ID")
+		return
+	}
+
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
 
 	var contestID int64
-	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	var lockedByID sql.NullInt64
+	var lockedUntil sql.NullTime
+	var lockedByUsername sql.NullString
+	err = h.db.QueryRow(`
+		SELECT a.contest_id, a.locked_by_id, a.locked_until, u.wiki_username
+		FROM articles a
+		LEFT JOIN users u ON a.locked_by_id = u.id
+		WHERE a.id = ?
+	`, articleID).Scan(&contestID, &lockedByID, &lockedUntil, &lockedByUsername)
 	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Article not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	if !h.isUserJuryOrOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+		jsonError(w, http.StatusForbidden, "You do not have jury permissions for this contest")
+		return
+	}
+
+	// Check if already actively locked by someone else
+	if lockedByID.Valid && lockedUntil.Valid && lockedUntil.Time.After(time.Now()) && lockedByID.Int64 != currentUser.UserID {
+		// Owner can override; others get 409
+		if !h.isUserOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+			jsonResponse(w, http.StatusConflict, map[string]any{
+				"error":        fmt.Sprintf("Article is currently being reviewed by %s", lockedByUsername.String),
+				"locked_by":    lockedByUsername.String,
+				"locked_until": lockedUntil.Time,
+			})
+			return
+		}
+	}
+
+	// Acquire or refresh 5-minute lock
+	expiry := time.Now().Add(5 * time.Minute)
+	_, err = h.db.Exec("UPDATE articles SET locked_until = ?, locked_by_id = ? WHERE id = ?", expiry, currentUser.UserID, articleID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to acquire lock")
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"success":      true,
+		"locked_by":    currentUser.WikiUsername,
+		"locked_until": expiry,
+	})
+}
+
+func (h *Handler) ReleaseArticleLock(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	articleID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid article ID")
+		return
+	}
+
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	if currentUser.Role == "owner" {
+		_, _ = h.db.Exec("UPDATE articles SET locked_until = NULL, locked_by_id = NULL WHERE id = ?", articleID)
+	} else {
+		_, _ = h.db.Exec("UPDATE articles SET locked_until = NULL, locked_by_id = NULL WHERE id = ? AND locked_by_id = ?", articleID, currentUser.UserID)
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"success": true,
+		"message": "Lock released",
+	})
+}
+
+func (h *Handler) UndoReview(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	articleID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid article ID")
+		return
+	}
+
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	var contestID int64
+	var title string
+	err = h.db.QueryRow("SELECT contest_id, title FROM articles WHERE id = ?", articleID).Scan(&contestID, &title)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Article not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	if !h.isUserJuryOrOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+		jsonError(w, http.StatusForbidden, "You do not have jury permissions for this contest")
+		return
+	}
+
+	_, _ = h.db.Exec("UPDATE articles SET status = 'pending' WHERE id = ?", articleID)
+	_, _ = h.db.Exec("DELETE FROM reviews WHERE article_id = ? AND (reviewer_id = ? OR ? = 'owner')", articleID, currentUser.UserID, currentUser.Role)
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"success": true,
+		"message": "Decision undone successfully",
+		"status":  "pending",
+		"article": title,
+	})
+}
+
+func (h *Handler) DeleteArticle(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	articleID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid article ID")
+		return
+	}
+
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	var contestID int64
+	var title string
+	err = h.db.QueryRow("SELECT contest_id, title FROM articles WHERE id = ?", articleID).Scan(&contestID, &title)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Article not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	if !h.isUserJuryOrOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+		jsonError(w, http.StatusForbidden, "You do not have permission to delete articles from this contest")
+		return
+	}
+
+	// Delete article and dependent records
+	_, _ = h.db.Exec("DELETE FROM talk_page_jobs WHERE article_id = ?", articleID)
+	_, _ = h.db.Exec("DELETE FROM reviews WHERE article_id = ?", articleID)
+	_, err = h.db.Exec("DELETE FROM articles WHERE id = ?", articleID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to delete article")
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"success": true,
+		"message": fmt.Sprintf("Article '%s' deleted successfully", title),
+	})
+}
+
+type BulkReviewRequest struct {
+	ArticleIDs []int64 `json:"article_ids"`
+	Status     string  `json:"status"` // "accepted" or "rejected"
+	Comment    string  `json:"comment"`
+}
+
+func (h *Handler) BulkReview(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	var req BulkReviewRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	req.Status = strings.ToLower(strings.TrimSpace(req.Status))
+	if req.Status != "accepted" && req.Status != "rejected" {
+		jsonError(w, http.StatusBadRequest, "Bulk review status must be 'accepted' or 'rejected'")
+		return
+	}
+
+	if len(req.ArticleIDs) == 0 {
+		jsonError(w, http.StatusBadRequest, "No article IDs provided")
+		return
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to start transaction")
+		return
+	}
+	defer tx.Rollback()
+
+	reviewedCount := 0
+	for _, articleID := range req.ArticleIDs {
+		var contestID int64
+		var submitterID int64
+		err := tx.QueryRow("SELECT contest_id, submitter_id FROM articles WHERE id = ?", articleID).Scan(&contestID, &submitterID)
+		if err != nil {
+			continue
+		}
+
+		// Authorization check
+		if !h.isUserJuryOrOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+			continue
+		}
+
+		// COI Check: Jury cannot review their own article unless owner
+		if submitterID == currentUser.UserID && currentUser.Role != "owner" {
+			continue
+		}
+
+		_, err = tx.Exec(`
+			INSERT INTO reviews(article_id, reviewer_id, status, comment, timestamp)
+			VALUES(?, ?, ?, ?, CURRENT_TIMESTAMP)
+			ON CONFLICT(article_id, reviewer_id) DO UPDATE SET
+				status = excluded.status,
+				comment = excluded.comment,
+				timestamp = CURRENT_TIMESTAMP
+		`, articleID, currentUser.UserID, req.Status, req.Comment)
+		if err != nil {
+			continue
+		}
+
+		_, err = tx.Exec("UPDATE articles SET status = ? WHERE id = ?", req.Status, articleID)
+		if err != nil {
+			continue
+		}
+
+		reviewedCount++
+	}
+
+	if err := tx.Commit(); err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to commit reviews")
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"success":        true,
+		"reviewed_count": reviewedCount,
+		"status":         req.Status,
+	})
+}
+
+// -------------------------------------------------------------
+// Jury Hub Statistics & Queue Redistribution
+// -------------------------------------------------------------
+
+type JuryMemberProgress struct {
+	Username        string  `json:"username"`
+	Assigned        int     `json:"assigned"`
+	Judged          int     `json:"judged"`
+	Remaining       int     `json:"remaining"`
+	Accepted        int     `json:"accepted"`
+	Rejected        int     `json:"rejected"`
+	Skipped         int     `json:"skipped"`
+	AcceptanceRate  float64 `json:"acceptance_rate"`
+	ProgressPercent int     `json:"progress_percent"`
+}
+
+type JuryStatsResponse struct {
+	TotalArticles    int                  `json:"total_articles"`
+	AcceptedArticles int                  `json:"accepted_articles"`
+	RejectedArticles int                  `json:"rejected_articles"`
+	PendingArticles  int                  `json:"pending_articles"`
+	ReviewedArticles int                  `json:"reviewed_articles"`
+	ProgressPercent  int                  `json:"progress_percent"`
+	Juries           []JuryMemberProgress `json:"juries"`
+}
+
+func (h *Handler) GetJuryStats(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+	var contestID int64
+	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	if err != nil {
 		jsonError(w, http.StatusNotFound, "Contest not found")
 		return
 	}
 
+	// Enforce authentication & jury/organizer authorization
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required to view jury statistics")
+		return
+	}
+	if !h.isUserJuryOrOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+		jsonError(w, http.StatusForbidden, "You do not have jury permissions for this contest")
+		return
+	}
+
+	var resp JuryStatsResponse
+	_ = h.db.QueryRow(`
+		SELECT 
+			COUNT(id),
+			COUNT(CASE WHEN status = 'accepted' THEN 1 END),
+			COUNT(CASE WHEN status = 'rejected' THEN 1 END),
+			COUNT(CASE WHEN status = 'pending' THEN 1 END)
+		FROM articles WHERE contest_id = ?
+	`, contestID).Scan(&resp.TotalArticles, &resp.AcceptedArticles, &resp.RejectedArticles, &resp.PendingArticles)
+
+	resp.ReviewedArticles = resp.AcceptedArticles + resp.RejectedArticles
+	if resp.TotalArticles > 0 {
+		resp.ProgressPercent = int(math.Round(float64(resp.ReviewedArticles) / float64(resp.TotalArticles) * 100))
+	}
+
+	juryQuery := `
+		SELECT DISTINCT u.id, u.wiki_username
+		FROM users u
+		LEFT JOIN contest_juries cj ON u.id = cj.user_id AND cj.contest_id = ?
+		WHERE cj.contest_id IS NOT NULL 
+		   OR u.id IN (SELECT DISTINCT assigned_to_id FROM articles WHERE contest_id = ? AND assigned_to_id IS NOT NULL)
+		   OR u.id IN (SELECT DISTINCT r.reviewer_id FROM reviews r JOIN articles a ON r.article_id = a.id WHERE a.contest_id = ?)
+	`
+	jRows, err := h.db.Query(juryQuery, contestID, contestID, contestID)
+	if err == nil {
+		defer jRows.Close()
+		for jRows.Next() {
+			var jid int64
+			var username string
+			if err := jRows.Scan(&jid, &username); err != nil {
+				continue
+			}
+
+			var jp JuryMemberProgress
+			jp.Username = username
+
+			_ = h.db.QueryRow(`
+				SELECT COUNT(*) FROM articles 
+				WHERE contest_id = ? AND assigned_to_id = ? AND status = 'pending'
+			`, contestID, jid).Scan(&jp.Remaining)
+
+			_ = h.db.QueryRow(`
+				SELECT COUNT(*) FROM articles 
+				WHERE contest_id = ? AND assigned_to_id = ?
+			`, contestID, jid).Scan(&jp.Assigned)
+
+			_ = h.db.QueryRow(`
+				SELECT 
+					COUNT(r.id),
+					COUNT(CASE WHEN r.status = 'accepted' THEN 1 END),
+					COUNT(CASE WHEN r.status = 'rejected' THEN 1 END),
+					COUNT(CASE WHEN r.status = 'skipped' THEN 1 END)
+				FROM reviews r
+				JOIN articles a ON r.article_id = a.id
+				WHERE a.contest_id = ? AND r.reviewer_id = ?
+			`, contestID, jid).Scan(&jp.Judged, &jp.Accepted, &jp.Rejected, &jp.Skipped)
+
+			if jp.Judged > 0 {
+				jp.AcceptanceRate = math.Round((float64(jp.Accepted)/float64(jp.Judged))*1000) / 10
+			}
+
+			totalWork := jp.Judged + jp.Remaining
+			if totalWork > 0 {
+				jp.ProgressPercent = int(math.Round(float64(jp.Judged) / float64(totalWork) * 100))
+			}
+
+			resp.Juries = append(resp.Juries, jp)
+		}
+	}
+
+	if resp.Juries == nil {
+		resp.Juries = []JuryMemberProgress{}
+	}
+
+	jsonResponse(w, http.StatusOK, resp)
+}
+
+func (h *Handler) RedistributeQueues(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+	var contestID int64
+	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	if err != nil {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	}
+
+	// Enforce authentication & jury/organizer authorization
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required to redistribute queues")
+		return
+	}
+	if !h.isUserJuryOrOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+		jsonError(w, http.StatusForbidden, "You do not have permissions to rebalance queues for this contest")
+		return
+	}
+
+	rows, err := h.db.Query("SELECT id, submitter_id FROM articles WHERE contest_id = ? AND status = 'pending'", contestID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to query pending articles")
+		return
+	}
+	defer rows.Close()
+
+	var items []balancer.ArticleItem
+	for rows.Next() {
+		var it balancer.ArticleItem
+		if err := rows.Scan(&it.ArticleID, &it.SubmitterID); err == nil {
+			items = append(items, it)
+		}
+	}
+
+	var distributeJuryQueue int
+	_ = h.db.QueryRow("SELECT COALESCE(distribute_jury_queue, 0) FROM contests WHERE id = ?", contestID).Scan(&distributeJuryQueue)
+
+	if distributeJuryQueue == 1 {
+		h.balanceArticles(contestID, items)
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"message": "Queues redistributed equally among jury members",
+			"moved":   len(items),
+		})
+	} else {
+		_, _ = h.db.Exec("UPDATE articles SET assigned_to_id = NULL WHERE contest_id = ?", contestID)
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"message": "Queues shared successfully across all juries",
+			"moved":   len(items),
+		})
+	}
+}
+
+func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+
+	var contestID int64
+	var isUmbrella int
+	err := h.db.QueryRow("SELECT id, COALESCE(is_umbrella, 0) FROM contests WHERE code = ?", code).Scan(&contestID, &isUmbrella)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database query error")
+		return
+	}
+
+	wikiFilter := strings.TrimSpace(r.URL.Query().Get("wiki"))
+
 	query := `
+		SELECT u.wiki_username,
+		       COUNT(CASE WHEN a.status = 'accepted' THEN 1 END) as accepted_count,
+		       COALESCE(SUM(CASE WHEN a.status = 'accepted' THEN a.word_count ELSE 0 END), 0) as total_words,
+		       COALESCE(SUM(CASE WHEN a.status = 'accepted' THEN a.byte_count ELSE 0 END), 0) as total_bytes,
+		       COUNT(a.id) as submitted_count,
+		       COALESCE(GROUP_CONCAT(DISTINCT c.wiki_dbname), '') as wikis_contributed
+		FROM articles a
+		JOIN contests c ON a.contest_id = c.id
+		JOIN users u ON a.submitter_id = u.id
+		WHERE (c.id = ? OR c.parent_contest_id = ?)
+	`
+	args := []any{contestID, contestID}
+	if wikiFilter != "" {
+		query += " AND c.wiki_dbname = ?"
+		args = append(args, wikiFilter)
+	}
+	query += `
+		GROUP BY u.id
+		ORDER BY accepted_count DESC, total_words DESC
+	`
+	rows, err := h.db.Query(query, args...)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to calculate standings")
+		return
+	}
+	defer rows.Close()
+
+	var standings []models.StandingEntry
+	rank := 1
+	for rows.Next() {
+		var s models.StandingEntry
+		var wikisStr string
+		s.Rank = rank
+		err := rows.Scan(&s.Username, &s.AcceptedCount, &s.TotalWords, &s.TotalBytes, &s.SubmittedCount, &wikisStr)
+		if err != nil {
+			continue
+		}
+		if wikisStr != "" {
+			s.WikisContributed = strings.Split(wikisStr, ",")
+		}
+		standings = append(standings, s)
+		rank++
+	}
+
+	if standings == nil {
+		standings = []models.StandingEntry{}
+	}
+	jsonResponse(w, http.StatusOK, standings)
+}
+
+// -------------------------------------------------------------
+// User Profiles (Global & Contest-Based)
+// -------------------------------------------------------------
+
+func (h *Handler) GetUserGlobalProfile(w http.ResponseWriter, r *http.Request) {
+	username := chi.URLParam(r, "username")
+
+	var userID int64
+	var role string
+	var dbUsername string
+	err := h.db.QueryRow(`
+		SELECT id, wiki_username, role 
+		FROM users 
+		WHERE wiki_username = ? COLLATE NOCASE
+	`, username).Scan(&userID, &dbUsername, &role)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "User not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to query user")
+		return
+	}
+
+	// 1. Participated Contests & Articles
+	partQuery := `
+		SELECT c.code, c.name, c.start_date, c.end_date, c.wiki_url, c.wiki_dbname,
+		       a.id, a.title, a.status, COALESCE(a.validation_error, ''), a.word_count, a.byte_count,
+		       COALESCE(a.wiki_creator, ''), a.wiki_creation_date, a.submitted_at
+		FROM articles a
+		JOIN contests c ON a.contest_id = c.id
+		WHERE a.submitter_id = ?
+		ORDER BY c.start_date DESC, a.submitted_at DESC
+	`
+	rows, err := h.db.Query(partQuery, userID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to query user participations")
+		return
+	}
+	defer rows.Close()
+
+	contestMap := make(map[string]*models.GlobalProfileParticipatedContest)
+	var contestOrder []string
+
+	for rows.Next() {
+		var code, name, wikiURL, wikiDbName string
+		var startDate, endDate *time.Time
+		var art models.GlobalProfileContestArticle
+		if err := rows.Scan(
+			&code, &name, &startDate, &endDate, &wikiURL, &wikiDbName,
+			&art.ID, &art.Title, &art.Status, &art.ValidationError,
+			&art.WordCount, &art.ByteCount, &art.WikiCreator,
+			&art.WikiCreationDate, &art.SubmittedAt,
+		); err != nil {
+			continue
+		}
+
+		if _, exists := contestMap[code]; !exists {
+			contestMap[code] = &models.GlobalProfileParticipatedContest{
+				Code:       code,
+				Name:       name,
+				StartDate:  startDate,
+				EndDate:    endDate,
+				WikiURL:    wikiURL,
+				WikiDbName: wikiDbName,
+				Articles:   []models.GlobalProfileContestArticle{},
+			}
+			contestOrder = append(contestOrder, code)
+		}
+		contestMap[code].Articles = append(contestMap[code].Articles, art)
+	}
+
+	participated := make([]models.GlobalProfileParticipatedContest, 0, len(contestOrder))
+	for _, code := range contestOrder {
+		participated = append(participated, *contestMap[code])
+	}
+
+	// 2. Judged Contests & Reviews
+	judgedQuery := `
+		SELECT c.id, c.code, c.name, c.start_date, c.end_date, c.wiki_url,
+		       CASE 
+		         WHEN c.created_by_id = ? THEN 'owner'
+		         ELSE 'jury'
+		       END as role_in_contest
+		FROM contests c
+		WHERE c.created_by_id = ?
+		   OR c.id IN (SELECT contest_id FROM contest_juries WHERE user_id = ?)
+		   OR c.id IN (SELECT a.contest_id FROM articles a JOIN reviews r ON a.id = r.article_id WHERE r.reviewer_id = ?)
+		ORDER BY c.start_date DESC
+	`
+	jRows, err := h.db.Query(judgedQuery, userID, userID, userID, userID)
+	if err != nil {
+		log.Printf("[GetUserGlobalProfile] judged query error: %v", err)
+		jsonError(w, http.StatusInternalServerError, "Failed to query judged contests")
+		return
+	}
+	defer jRows.Close()
+
+	judged := make([]models.GlobalProfileJudgedContest, 0)
+	for jRows.Next() {
+		var cID int64
+		var entry models.GlobalProfileJudgedContest
+		if err := jRows.Scan(&cID, &entry.Code, &entry.Name, &entry.StartDate, &entry.EndDate, &entry.WikiURL, &entry.RoleInContest); err != nil {
+			continue
+		}
+
+		// Fetch reviews given by this user in this contest
+		rRows, err := h.db.Query(`
+			SELECT a.title, COALESCE(su.wiki_username, ''), r.status, COALESCE(r.comment, ''), r.timestamp
+			FROM reviews r
+			JOIN articles a ON r.article_id = a.id
+			LEFT JOIN users su ON a.submitter_id = su.id
+			WHERE a.contest_id = ? AND r.reviewer_id = ?
+			ORDER BY r.timestamp DESC
+		`, cID, userID)
+		if err == nil {
+			stats := map[string]int{"total": 0, "accepted": 0, "rejected": 0, "skipped": 0}
+			reviews := make([]models.GlobalProfileReview, 0)
+			for rRows.Next() {
+				var rev models.GlobalProfileReview
+				if err := rRows.Scan(&rev.ArticleTitle, &rev.Submitter, &rev.Decision, &rev.Comment, &rev.ReviewedAt); err == nil {
+					reviews = append(reviews, rev)
+					stats["total"]++
+					if _, ok := stats[rev.Decision]; ok {
+						stats[rev.Decision]++
+					}
+				}
+			}
+			rRows.Close()
+			entry.Reviews = reviews
+			entry.Stats = stats
+		} else {
+			entry.Reviews = []models.GlobalProfileReview{}
+			entry.Stats = map[string]int{"total": 0, "accepted": 0, "rejected": 0, "skipped": 0}
+		}
+
+		judged = append(judged, entry)
+	}
+
+	profile := models.GlobalUserProfile{
+		Username:             dbUsername,
+		Role:                 role,
+		ParticipatedContests: participated,
+		JudgedContests:       judged,
+	}
+
+	jsonResponse(w, http.StatusOK, profile)
+}
+
+func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+	username := chi.URLParam(r, "username")
+
+	var contestID int64
+	var contestName, wikiURL string
+	err := h.db.QueryRow(`
+		SELECT id, name, wiki_url 
+		FROM contests 
+		WHERE code = ?
+	`, code).Scan(&contestID, &contestName, &wikiURL)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to query contest")
+		return
+	}
+
+	var userID int64
+	var role string
+	var dbUsername string
+	err = h.db.QueryRow(`
+		SELECT id, wiki_username, role 
+		FROM users 
+		WHERE wiki_username = ? COLLATE NOCASE
+	`, username).Scan(&userID, &dbUsername, &role)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "User not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to query user")
+		return
+	}
+
+	// 1. Fetch user submissions in this contest
+	subQuery := `
+		SELECT a.id, a.title, a.status, COALESCE(a.validation_error, ''), 
+		       a.word_count, a.byte_count, a.submitted_at
+		FROM articles a
+		WHERE a.contest_id = ? AND a.submitter_id = ?
+		ORDER BY a.submitted_at DESC
+	`
+	rows, err := h.db.Query(subQuery, contestID, userID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Failed to query submissions")
+		return
+	}
+	defer rows.Close()
+
+	submissions := make([]models.ContestUserSubmission, 0)
+	for rows.Next() {
+		var sub models.ContestUserSubmission
+		if err := rows.Scan(
+			&sub.ID, &sub.Title, &sub.Status, &sub.ValidationError,
+			&sub.WordCount, &sub.ByteCount, &sub.SubmittedAt,
+		); err != nil {
+			continue
+		}
+
+		// Query reviews for this submission
+		rRows, err := h.db.Query(`
+			SELECT COALESCE(ju.wiki_username, 'Jury'), r.status, COALESCE(r.comment, ''), r.timestamp
+			FROM reviews r
+			LEFT JOIN users ju ON r.reviewer_id = ju.id
+			WHERE r.article_id = ?
+			ORDER BY r.timestamp DESC
+		`, sub.ID)
+		sub.Reviews = make([]models.ContestUserSubmissionReview, 0)
+		if err == nil {
+			for rRows.Next() {
+				var rev models.ContestUserSubmissionReview
+				if err := rRows.Scan(&rev.Jury, &rev.Decision, &rev.Comment, &rev.ReviewedAt); err == nil {
+					sub.Reviews = append(sub.Reviews, rev)
+				}
+			}
+			rRows.Close()
+		}
+
+		submissions = append(submissions, sub)
+	}
+
+	// 2. Fetch reviews conducted by this user in this contest
+	revQuery := `
+		SELECT a.title, COALESCE(su.wiki_username, ''), r.status, COALESCE(r.comment, ''), r.timestamp
+		FROM reviews r
+		JOIN articles a ON r.article_id = a.id
+		LEFT JOIN users su ON a.submitter_id = su.id
+		WHERE a.contest_id = ? AND r.reviewer_id = ?
+		ORDER BY r.timestamp DESC
+	`
+	revRows, err := h.db.Query(revQuery, contestID, userID)
+	reviews := make([]models.GlobalProfileReview, 0)
+	if err == nil {
+		for revRows.Next() {
+			var rev models.GlobalProfileReview
+			if err := revRows.Scan(&rev.ArticleTitle, &rev.Submitter, &rev.Decision, &rev.Comment, &rev.ReviewedAt); err == nil {
+				reviews = append(reviews, rev)
+			}
+		}
+		revRows.Close()
+	}
+
+	// 3. Calculate standing for this user in this contest
+	var standing *models.StandingEntry
+	standingsQuery := `
 		SELECT u.wiki_username,
 		       COUNT(CASE WHEN a.status = 'accepted' THEN 1 END) as accepted_count,
 		       COALESCE(SUM(CASE WHEN a.status = 'accepted' THEN a.word_count ELSE 0 END), 0) as total_words,
@@ -962,30 +2579,81 @@ func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
 		GROUP BY u.id
 		ORDER BY accepted_count DESC, total_words DESC
 	`
-	rows, err := h.db.Query(query, contestID)
-	if err != nil {
-		jsonError(w, http.StatusInternalServerError, "Failed to calculate standings")
+	stRows, err := h.db.Query(standingsQuery, contestID)
+	if err == nil {
+		rank := 1
+		for stRows.Next() {
+			var s models.StandingEntry
+			s.Rank = rank
+			if err := stRows.Scan(&s.Username, &s.AcceptedCount, &s.TotalWords, &s.TotalBytes, &s.SubmittedCount); err == nil {
+				if strings.EqualFold(s.Username, dbUsername) {
+					standing = &s
+					break
+				}
+			}
+			rank++
+		}
+		stRows.Close()
+	}
+
+	profile := models.ContestUserProfile{
+		Username:    dbUsername,
+		Role:        role,
+		ContestCode: code,
+		ContestName: contestName,
+		WikiURL:     wikiURL,
+		Standing:    standing,
+		Submissions: submissions,
+		Reviews:     reviews,
+	}
+
+	jsonResponse(w, http.StatusOK, profile)
+}
+
+// SuggestUsers returns Wikimedia username suggestions for autocomplete.
+func (h *Handler) SuggestUsers(w http.ResponseWriter, r *http.Request) {
+	prefix := strings.TrimSpace(r.URL.Query().Get("q"))
+	if prefix == "" {
+		jsonResponse(w, http.StatusOK, []string{})
 		return
 	}
-	defer rows.Close()
 
-	var standings []models.StandingEntry
-	rank := 1
-	for rows.Next() {
-		var s models.StandingEntry
-		s.Rank = rank
-		err := rows.Scan(&s.Username, &s.AcceptedCount, &s.TotalWords, &s.TotalBytes, &s.SubmittedCount)
-		if err != nil {
-			continue
+	wikiURL := strings.TrimSpace(r.URL.Query().Get("wiki"))
+	if wikiURL == "" {
+		wikiURL = "https://meta.wikimedia.org"
+	}
+
+	seen := make(map[string]bool)
+	var result []string
+
+	// 1. Local users from database
+	rows, err := h.db.Query("SELECT wiki_username FROM users WHERE wiki_username LIKE ? LIMIT 8", prefix+"%")
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var u string
+			if err := rows.Scan(&u); err == nil && !seen[u] {
+				seen[u] = true
+				result = append(result, u)
+			}
 		}
-		standings = append(standings, s)
-		rank++
 	}
 
-	if standings == nil {
-		standings = []models.StandingEntry{}
+	// 2. Remote users from MediaWiki Action API
+	remote, err := mwclient.FetchUserSuggestions(wikiURL, prefix)
+	if err == nil {
+		for _, u := range remote {
+			if !seen[u] {
+				seen[u] = true
+				result = append(result, u)
+			}
+		}
 	}
-	jsonResponse(w, http.StatusOK, standings)
+
+	if result == nil {
+		result = []string{}
+	}
+	jsonResponse(w, http.StatusOK, result)
 }
 
 func jsonResponse(w http.ResponseWriter, status int, data any) {

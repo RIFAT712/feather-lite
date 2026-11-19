@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Feather, Trophy, UserCheck, LogOut, Loader2, PlusCircle, Menu, X } from "lucide-react";
 import { WikimediaLogoIcon } from "@/components/icons/CodexIcons";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import { toast } from "sonner";
 
 export default function Navbar() {
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   const { t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -22,6 +24,10 @@ export default function Navbar() {
     queryFn: fetchMe,
     staleTime: 60 * 1000,
   });
+
+  if (pathname && /\/contests\/[^/]+\/review(?:\/|$)/.test(pathname)) {
+    return null;
+  }
 
   const handleLogout = async () => {
     try {
@@ -35,8 +41,8 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/90 backdrop-blur-md">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full border-b bg-background md:bg-background/90 md:backdrop-blur-md transform-gpu will-change-transform [backface-visibility:hidden]">
+      <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 shrink-0">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-2xs">
@@ -89,22 +95,26 @@ export default function Navbar() {
             </div>
           ) : me?.is_authenticated ? (
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-2.5 py-1 text-xs">
+              <Link
+                href={`/users/${encodeURIComponent(me.wiki_username || "")}`}
+                className="flex items-center gap-2 rounded-md border border-border/80 bg-muted/40 hover:bg-muted/70 hover:border-primary/40 px-2.5 py-1 text-xs transition-colors cursor-pointer group shadow-2xs"
+                title="View user profile"
+              >
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <UserCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="font-medium text-foreground">{me.wiki_username}</span>
+                <UserCheck className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="font-semibold text-foreground group-hover:text-primary transition-colors">{me.wiki_username}</span>
                 <Badge
                   variant="outline"
                   className="text-[10px] uppercase font-bold py-0 h-4 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
                 >
                   {me.role}
                 </Badge>
-              </div>
+              </Link>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full cursor-pointer"
                 title={t("feather-nav-logout")}
               >
                 <LogOut className="h-3.5 w-3.5" />
@@ -173,11 +183,15 @@ export default function Navbar() {
             ) : me?.is_authenticated ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between px-3 py-2 rounded-md bg-muted/40 border border-border/60">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <Link
+                    href={`/users/${encodeURIComponent(me.wiki_username || "")}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 min-w-0 hover:text-primary transition-colors cursor-pointer"
+                  >
                     <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
                     <UserCheck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-sm text-foreground truncate">{me.wiki_username}</span>
-                  </div>
+                    <span className="font-semibold text-sm text-foreground truncate">{me.wiki_username}</span>
+                  </Link>
                   <Badge
                     variant="outline"
                     className="text-[10px] uppercase font-bold py-0 h-4 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shrink-0"

@@ -262,33 +262,34 @@ func FetchPagesBatch(wikiURL string, titles []string) (map[string]*PageInfo, err
 	return results, nil
 }
 
-// FetchRenderedHTML retrieves real HTML parsing from MediaWiki action=parse
-func FetchRenderedHTML(wikiURL string, title string) (string, error) {
+// FetchRenderedContent retrieves both real HTML parsing and raw wikitext from MediaWiki action=parse
+func FetchRenderedContent(wikiURL string, title string) (html string, wikitext string, err error) {
 	apiEndpoint := strings.TrimRight(wikiURL, "/") + "/w/api.php"
 	params := url.Values{}
 	params.Set("action", "parse")
 	params.Set("page", title)
-	params.Set("prop", "text")
+	params.Set("prop", "text|wikitext")
 	params.Set("disableeditsection", "1")
 	params.Set("format", "json")
 	params.Set("formatversion", "2")
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", apiEndpoint, params.Encode()), nil)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	req.Header.Set("User-Agent", DefaultUserAgent)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("parse request failed: %w", err)
+		return "", "", fmt.Errorf("parse request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var res struct {
 		Parse struct {
-			Title string `json:"title"`
-			Text  string `json:"text"`
+			Title    string `json:"title"`
+			Text     string `json:"text"`
+			Wikitext string `json:"wikitext"`
 		} `json:"parse"`
 		Error struct {
 			Code string `json:"code"`
@@ -297,14 +298,20 @@ func FetchRenderedHTML(wikiURL string, title string) (string, error) {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return "", fmt.Errorf("failed to decode parse response: %w", err)
+		return "", "", fmt.Errorf("failed to decode parse response: %w", err)
 	}
 
 	if res.Error.Code != "" {
-		return "", fmt.Errorf("mediawiki parse error: %s", res.Error.Info)
+		return "", "", fmt.Errorf("mediawiki parse error: %s", res.Error.Info)
 	}
 
-	return res.Parse.Text, nil
+	return res.Parse.Text, res.Parse.Wikitext, nil
+}
+
+// FetchRenderedHTML retrieves real HTML parsing from MediaWiki action=parse
+func FetchRenderedHTML(wikiURL string, title string) (string, error) {
+	html, _, err := FetchRenderedContent(wikiURL, title)
+	return html, err
 }
 
 type UserCreation struct {
@@ -381,5 +388,53 @@ func FetchUserCreatedArticles(wikiURL, username, startTS, endTS string) ([]UserC
 		out = []UserCreation{}
 	}
 	return out, nil
+}
+
+// FetchUserSuggestions queries MediaWiki action=query&list=allusers for username autocomplete.
+func FetchUserSuggestions(wikiURL, prefix string) ([]string, error) {
+	if strings.TrimSpace(wikiURL) == "" {
+		wikiURL = "https://meta.wikimedia.org"
+	}
+	apiURL := fmt.Sprintf("%s/w/api.php?action=query&list=allusers&auprefix=%s&aulimit=10&format=json",
+		strings.TrimRight(wikiURL, "/"),
+		url.QueryEscape(prefix),
+	)
+
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", DefaultUserAgent)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("mediawiki api error: %d", resp.StatusCode)
+	}
+
+	var res struct {
+		Query struct {
+			AllUsers []struct {
+				Name string `json:"name"`
+			} `json:"allusers"`
+		} `json:"query"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return nil, err
+	}
+
+	var users []string
+	for _, u := range res.Query.AllUsers {
+		users = append(users, u.Name)
+	}
+	if users == nil {
+		users = []string{}
+	}
+	return users, nil
 }
 

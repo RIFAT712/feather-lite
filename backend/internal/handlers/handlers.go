@@ -396,37 +396,39 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build jury list - include current user as default jury if authenticated
-	juryUsernames := make(map[string]bool)
-	if currentUser != nil && currentUser.WikiUsername != "" {
-		juryUsernames[currentUser.WikiUsername] = true
-	}
-	for _, j := range req.Juries {
-		trimmed := strings.TrimSpace(j)
-		if trimmed != "" {
-			juryUsernames[trimmed] = true
+	// Build jury list - include current user as default jury if authenticated (Standard single-wiki contests only)
+	if !req.IsUmbrella {
+		juryUsernames := make(map[string]bool)
+		if currentUser != nil && currentUser.WikiUsername != "" {
+			juryUsernames[currentUser.WikiUsername] = true
 		}
-	}
+		for _, j := range req.Juries {
+			trimmed := strings.TrimSpace(j)
+			if trimmed != "" {
+				juryUsernames[trimmed] = true
+			}
+		}
 
-	for juryName := range juryUsernames {
-		var userID int64
-		err := tx.QueryRow("SELECT id FROM users WHERE wiki_username = ?", juryName).Scan(&userID)
-		if err == sql.ErrNoRows {
-			userRes, userInsErr := tx.Exec("INSERT INTO users (wiki_username, role) VALUES (?, 'jury')", juryName)
-			if userInsErr != nil {
-				log.Printf("[CreateContest] Error inserting jury user %s: %v", juryName, userInsErr)
+		for juryName := range juryUsernames {
+			var userID int64
+			err := tx.QueryRow("SELECT id FROM users WHERE wiki_username = ?", juryName).Scan(&userID)
+			if err == sql.ErrNoRows {
+				userRes, userInsErr := tx.Exec("INSERT INTO users (wiki_username, role) VALUES (?, 'jury')", juryName)
+				if userInsErr != nil {
+					log.Printf("[CreateContest] Error inserting jury user %s: %v", juryName, userInsErr)
+					continue
+				}
+				userID, _ = userRes.LastInsertId()
+			} else if err != nil {
+				log.Printf("[CreateContest] Error checking user %s: %v", juryName, err)
 				continue
 			}
-			userID, _ = userRes.LastInsertId()
-		} else if err != nil {
-			log.Printf("[CreateContest] Error checking user %s: %v", juryName, err)
-			continue
-		}
 
-		var count int
-		_ = tx.QueryRow("SELECT COUNT(*) FROM contest_juries WHERE contest_id = ? AND user_id = ?", contestID, userID).Scan(&count)
-		if count == 0 {
-			_, _ = tx.Exec("INSERT INTO contest_juries (contest_id, user_id) VALUES (?, ?)", contestID, userID)
+			var count int
+			_ = tx.QueryRow("SELECT COUNT(*) FROM contest_juries WHERE contest_id = ? AND user_id = ?", contestID, userID).Scan(&count)
+			if count == 0 {
+				_, _ = tx.Exec("INSERT INTO contest_juries (contest_id, user_id) VALUES (?, ?)", contestID, userID)
+			}
 		}
 	}
 

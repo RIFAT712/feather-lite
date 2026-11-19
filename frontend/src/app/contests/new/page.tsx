@@ -212,8 +212,8 @@ export default function NewContestPage() {
       rank_by_words: rankByWords,
       add_talk_template: isUmbrella ? false : addTalkTemplate,
       talk_template_name: isUmbrella ? "" : (addTalkTemplate ? talkTemplateName.trim() : ""),
-      distribute_jury_queue: distributeJuryQueue,
-      juries: juries.filter(Boolean),
+      distribute_jury_queue: isUmbrella ? false : distributeJuryQueue,
+      juries: isUmbrella ? [] : juries.filter(Boolean),
     };
 
     try {
@@ -1216,7 +1216,8 @@ export default function NewContestPage() {
         </Card>
       )}
 
-      {/* Section 3: Jury Administration & Automation */}
+      {/* Section 3: Jury Administration & Automation (Standard single-wiki contests only) */}
+      {contestType === "standard" && (
         <Card className="border-border shadow-2xs relative z-10">
           <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
             <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
@@ -1284,39 +1285,38 @@ export default function NewContestPage() {
               </div>
             </div>
 
-            {/* Part C: Talk-Page Automation (Standard single-wiki contests only) */}
-            {contestType === "standard" && (
-              <div className="pt-3 border-t border-border/60 space-y-3">
-                <label className="flex items-start gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={addTalkTemplate}
-                    onChange={(e) => setAddTalkTemplate(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                  />
-                  <div className="space-y-0.5">
-                    <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                      <Layers className="h-3.5 w-3.5 text-primary" />
-                      <span>{t("feather-create-add-template")}</span>
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {t("feather-create-add-template-hint")}
-                    </div>
+            {/* Part C: Talk-Page Automation */}
+            <div className="pt-3 border-t border-border/60 space-y-3">
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={addTalkTemplate}
+                  onChange={(e) => setAddTalkTemplate(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                />
+                <div className="space-y-0.5">
+                  <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Layers className="h-3.5 w-3.5 text-primary" />
+                    <span>{t("feather-create-add-template")}</span>
                   </div>
-                </label>
+                  <div className="text-[11px] text-muted-foreground">
+                    {t("feather-create-add-template-hint")}
+                  </div>
+                </div>
+              </label>
 
-                {addTalkTemplate && (
-                  <div className="pt-2 animate-in fade-in-0 duration-150">
-                    <TalkTemplateBuilder
-                      value={talkTemplateName}
-                      onChange={setTalkTemplateName}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+              {addTalkTemplate && (
+                <div className="pt-2 animate-in fade-in-0 duration-150">
+                  <TalkTemplateBuilder
+                    value={talkTemplateName}
+                    onChange={setTalkTemplateName}
+                  />
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
+      )}
 
         {/* Form Action Controls */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">

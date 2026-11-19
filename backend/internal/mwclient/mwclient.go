@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -402,70 +403,104 @@ type UserCreation struct {
 }
 
 // FetchUserCreatedArticles queries MediaWiki list=usercontribs to list all articles created by the user within the date range.
+// It automatically follows continuation tokens (uccontinue) to fetch all creations without a 500-article ceiling.
 func FetchUserCreatedArticles(wikiURL, username, startTS, endTS string) ([]UserCreation, error) {
 	apiEndpoint := strings.TrimRight(wikiURL, "/") + "/w/api.php"
-	params := url.Values{}
-	params.Set("action", "query")
-	params.Set("list", "usercontribs")
-	params.Set("ucuser", username)
-	if startTS != "" {
-		params.Set("ucstart", startTS)
-	}
-	if endTS != "" {
-		params.Set("ucend", endTS)
-	}
-	params.Set("ucdir", "newer")
-	params.Set("ucnamespace", "0")
-	params.Set("ucprop", "title|timestamp")
-	params.Set("ucshow", "new")
-	params.Set("uclimit", "500")
-	params.Set("format", "json")
-	params.Set("formatversion", "2")
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", apiEndpoint, params.Encode()), nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", DefaultUserAgent)
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("usercontribs request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	var res struct {
-		Query struct {
-			Usercontribs []struct {
-				Title     string `json:"title"`
-				Timestamp string `json:"timestamp"`
-			} `json:"usercontribs"`
-		} `json:"query"`
-		Error struct {
-			Code string `json:"code"`
-			Info string `json:"info"`
-		} `json:"error"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, fmt.Errorf("failed to decode usercontribs response: %w", err)
-	}
-
-	if res.Error.Code != "" {
-		return nil, fmt.Errorf("mediawiki usercontribs error: %s", res.Error.Info)
-	}
-
 	var out []UserCreation
 	seen := make(map[string]bool)
-	for _, c := range res.Query.Usercontribs {
-		if !seen[c.Title] {
-			seen[c.Title] = true
-			out = append(out, UserCreation{
-				Title:     c.Title,
-				CreatedAt: c.Timestamp,
-			})
+	uccontinue := ""
+	const maxPages = 100 // up to 50,000 creations
+
+	for page := 0; page < maxPages; page++ {
+		params := url.Values{}
+		params.Set("action", "query")
+		params.Set("list", "usercontribs")
+		params.Set("ucuser", username)
+		if startTS != "" {
+			params.Set("ucstart", startTS)
 		}
+		if endTS != "" {
+			params.Set("ucend", endTS)
+		}
+		params.Set("ucdir", "newer")
+		params.Set("ucnamespace", "0")
+		params.Set("ucprop", "title|timestamp")
+		params.Set("ucshow", "new")
+		params.Set("uclimit", "500")
+		params.Set("format", "json")
+		params.Set("formatversion", "2")
+		if uccontinue != "" {
+			params.Set("uccontinue", uccontinue)
+			params.Set("continue", "-||")
+		}
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", apiEndpoint, params.Encode()), nil)
+		if err != nil {
+			if len(out) > 0 {
+				return out, nil
+			}
+			return nil, err
+		}
+		req.Header.Set("User-Agent", DefaultUserAgent)
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			if len(out) > 0 {
+				log.Printf("[FetchUserCreatedArticles] page %d failed for %s: %v; returning %d articles fetched so far", page, username, err, len(out))
+				return out, nil
+			}
+			return nil, fmt.Errorf("usercontribs request failed: %w", err)
+		}
+
+		var res struct {
+			Continue struct {
+				Uccontinue string `json:"uccontinue"`
+				Continue   string `json:"continue"`
+			} `json:"continue"`
+			Query struct {
+				Usercontribs []struct {
+					Title     string `json:"title"`
+					Timestamp string `json:"timestamp"`
+				} `json:"usercontribs"`
+			} `json:"query"`
+			Error struct {
+				Code string `json:"code"`
+				Info string `json:"info"`
+			} `json:"error"`
+		}
+
+		decodeErr := json.NewDecoder(resp.Body).Decode(&res)
+		resp.Body.Close()
+		if decodeErr != nil {
+			if len(out) > 0 {
+				return out, nil
+			}
+			return nil, fmt.Errorf("failed to decode usercontribs response: %w", decodeErr)
+		}
+
+		if res.Error.Code != "" {
+			if len(out) > 0 {
+				return out, nil
+			}
+			return nil, fmt.Errorf("mediawiki usercontribs error: %s", res.Error.Info)
+		}
+
+		for _, c := range res.Query.Usercontribs {
+			if !seen[c.Title] {
+				seen[c.Title] = true
+				out = append(out, UserCreation{
+					Title:     c.Title,
+					CreatedAt: c.Timestamp,
+				})
+			}
+		}
+
+		if res.Continue.Uccontinue == "" {
+			break
+		}
+		uccontinue = res.Continue.Uccontinue
 	}
+
 	if out == nil {
 		out = []UserCreation{}
 	}

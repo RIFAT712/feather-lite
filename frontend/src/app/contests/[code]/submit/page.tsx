@@ -128,35 +128,46 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
       setAlreadySubmitted(data.already_submitted || []);
       setSelectedArticles([]);
     } catch (err: any) {
-      // 2. Client-side fallback directly to MediaWiki Action API via CORS
+      // 2. Client-side fallback directly to MediaWiki Action API via CORS with pagination continuation
       try {
         const wikiEndpoint = effectiveWikiUrl;
         const startISO = new Date(contest.start_date).toISOString();
         const endISO = new Date(contest.end_date).toISOString();
 
-        const url = `${wikiEndpoint}/w/api.php?action=query&list=usercontribs&ucuser=${encodeURIComponent(
-          targetUsername
-        )}&ucstart=${encodeURIComponent(startISO)}&ucend=${encodeURIComponent(
-          endISO
-        )}&ucdir=newer&ucnamespace=0&ucprop=title|timestamp&ucshow=new&uclimit=500&format=json&origin=*`;
+        const seen = new Set<string>();
+        const list: UserArticleItem[] = [];
+        let uccontinue: string | null = null;
+        let pages = 0;
 
-        const resp = await fetch(url);
-        const json = await resp.json();
+        do {
+          pages++;
+          let url = `${wikiEndpoint}/w/api.php?action=query&list=usercontribs&ucuser=${encodeURIComponent(
+            targetUsername
+          )}&ucstart=${encodeURIComponent(startISO)}&ucend=${encodeURIComponent(
+            endISO
+          )}&ucdir=newer&ucnamespace=0&ucprop=title|timestamp&ucshow=new&uclimit=500&format=json&origin=*`;
 
-        if (json.query && json.query.usercontribs) {
-          const seen = new Set<string>();
-          const list: UserArticleItem[] = [];
-          for (const item of json.query.usercontribs) {
-            if (!seen.has(item.title)) {
-              seen.add(item.title);
-              list.push({ title: item.title, created_at: item.timestamp });
+          if (uccontinue) {
+            url += `&uccontinue=${encodeURIComponent(uccontinue)}&continue=-||`;
+          }
+
+          const resp = await fetch(url);
+          const json = await resp.json();
+
+          if (json.query && json.query.usercontribs) {
+            for (const item of json.query.usercontribs) {
+              if (!seen.has(item.title)) {
+                seen.add(item.title);
+                list.push({ title: item.title, created_at: item.timestamp });
+              }
             }
           }
-          setFetchedArticles(list);
-          setSelectedArticles([]);
-        } else {
-          setFetchedArticles([]);
-        }
+
+          uccontinue = json.continue?.uccontinue || null;
+        } while (uccontinue && pages < 100);
+
+        setFetchedArticles(list);
+        setSelectedArticles([]);
       } catch (fallbackErr: any) {
         setFetchError("Failed to fetch user created articles. Please check username or try manual entry.");
       }

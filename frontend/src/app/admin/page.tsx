@@ -65,6 +65,7 @@ export default function AdminPage() {
   });
 
   const isOwner = me?.role === "owner" || Boolean((me as any)?.is_owner);
+  const isAdmin = isOwner || me?.role === "admin" || Boolean((me as any)?.is_admin);
 
   // Admin Overview Stats
   const {
@@ -74,7 +75,7 @@ export default function AdminPage() {
   } = useQuery<AdminOverview>({
     queryKey: ["adminOverview"],
     queryFn: fetchAdminOverview,
-    enabled: isOwner,
+    enabled: isOwner || isAdmin,
   });
 
   // Admin Contests List
@@ -85,7 +86,7 @@ export default function AdminPage() {
   } = useQuery<Contest[]>({
     queryKey: ["adminContests"],
     queryFn: () => fetchAdminContests("all"),
-    enabled: isOwner,
+    enabled: isOwner || isAdmin,
   });
 
   // Approve Mutation
@@ -169,8 +170,8 @@ export default function AdminPage() {
     );
   }
 
-  // Access Denied state
-  if (!isOwner) {
+  // Access Denied state (Requires Owner or Admin role)
+  if (!isOwner && !isAdmin) {
     return (
       <div className="container mx-auto max-w-xl py-20 px-4">
         <Card className="border-destructive/40 shadow-sm text-center p-6">
@@ -479,15 +480,17 @@ export default function AdminPage() {
                           <span>{t("feather-admin-reject")}</span>
                         </Button>
 
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setContestToDelete(contest)}
-                          className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer rounded-md"
-                          title={t("feather-admin-delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {isOwner && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setContestToDelete(contest)}
+                            className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer rounded-md"
+                            title={t("feather-admin-delete")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -610,15 +613,17 @@ export default function AdminPage() {
                       </Button>
                     )}
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setContestToDelete(contest)}
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer rounded-md"
-                      title={t("feather-admin-delete")}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setContestToDelete(contest)}
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer rounded-md"
+                        title={t("feather-admin-delete")}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}

@@ -5,8 +5,9 @@ export interface UserSession {
   is_authenticated: boolean;
   user_id?: number;
   wiki_username?: string;
-  role: "owner" | "jury" | "participant" | "anonymous";
+  role: "owner" | "admin" | "jury" | "participant" | "anonymous";
   is_owner?: boolean;
+  is_admin?: boolean;
 }
 
 export interface SubContestSummary {
@@ -876,6 +877,16 @@ export async function enqueueMissingTalkQueue(code: string): Promise<{ message: 
     throw new Error(err.error || "Failed to enqueue missing talk page jobs");
   }
   return res.json();
+}
+
+export async function fetchElevatedUsers(): Promise<Record<string, "owner" | "admin">> {
+  const res = await fetch(`${API_BASE}/users/elevated`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    return {};
+  }
+  return res.json().catch(() => ({}));
 }
 
 

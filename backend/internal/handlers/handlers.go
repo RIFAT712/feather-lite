@@ -77,13 +77,40 @@ func (h *Handler) DevLogin(w http.ResponseWriter, r *http.Request) {
 		username = h.cfg.OwnerUsername
 	}
 
+	requestedRole := r.URL.Query().Get("role")
+
 	var user models.User
 	err := h.db.QueryRow("SELECT id, wiki_username, role FROM users WHERE wiki_username = ?", username).Scan(
 		&user.ID, &user.WikiUsername, &user.Role,
 	)
-	if err != nil {
-		jsonError(w, http.StatusNotFound, "User not found")
+	if err == sql.ErrNoRows {
+		// Auto-provision dev user
+		role := "participant"
+		if strings.EqualFold(username, h.cfg.OwnerUsername) || requestedRole == "owner" {
+			role = "owner"
+		} else if requestedRole == "admin" || strings.Contains(strings.ToLower(username), "admin") {
+			role = "admin"
+		}
+		res, insErr := h.db.Exec("INSERT INTO users (wiki_username, role) VALUES (?, ?)", username, role)
+		if insErr != nil {
+			jsonError(w, http.StatusInternalServerError, "Failed to create dev user")
+			return
+		}
+		user.ID, _ = res.LastInsertId()
+		user.WikiUsername = username
+		user.Role = role
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
 		return
+	} else {
+		// Update role if requested or owner
+		if strings.EqualFold(username, h.cfg.OwnerUsername) && user.Role != "owner" {
+			user.Role = "owner"
+			_, _ = h.db.Exec("UPDATE users SET role = 'owner' WHERE id = ?", user.ID)
+		} else if requestedRole != "" && user.Role != requestedRole {
+			user.Role = requestedRole
+			_, _ = h.db.Exec("UPDATE users SET role = ? WHERE id = ?", requestedRole, user.ID)
+		}
 	}
 
 	tokenString, err := auth.GenerateToken(h.cfg, &user)
@@ -128,6 +155,19 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user has admin/sysop or higher rights on ANY Wikimedia wiki
+	isAdmin := false
+	if !strings.EqualFold(profile.Username, h.cfg.OwnerUsername) {
+		if hasAdminRights, checkErr := mwclient.CheckIsAdminOnAnyWiki(profile.Username); checkErr == nil {
+			isAdmin = hasAdminRights
+			if isAdmin {
+				log.Printf("[OAuth] User %s verified as MediaWiki admin/elevated user", profile.Username)
+			}
+		} else {
+			log.Printf("[OAuth] Warning: Failed to check admin rights for %s: %v", profile.Username, checkErr)
+		}
+	}
+
 	// Upsert User
 	var user models.User
 	err = h.db.QueryRow("SELECT id, wiki_username, role FROM users WHERE wiki_username = ?", profile.Username).Scan(
@@ -136,8 +176,10 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	if err == sql.ErrNoRows {
 		role := "participant"
-		if profile.Username == h.cfg.OwnerUsername {
+		if strings.EqualFold(profile.Username, h.cfg.OwnerUsername) {
 			role = "owner"
+		} else if isAdmin {
+			role = "admin"
 		}
 		res, insErr := h.db.Exec(
 			"INSERT INTO users (wiki_username, role, oauth_access_token) VALUES (?, ?, ?)",
@@ -152,9 +194,11 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		user.WikiUsername = profile.Username
 		user.Role = role
 	} else {
-		// Update access token
-		if profile.Username == h.cfg.OwnerUsername && user.Role != "owner" {
+		// Update access token and auto-promote/refresh role
+		if strings.EqualFold(profile.Username, h.cfg.OwnerUsername) {
 			user.Role = "owner"
+		} else if isAdmin && user.Role != "owner" {
+			user.Role = "admin"
 		}
 		_, _ = h.db.Exec("UPDATE users SET oauth_access_token = ?, role = ? WHERE id = ?", accessToken, user.Role, user.ID)
 	}
@@ -183,14 +227,25 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 			"is_authenticated": false,
 			"role":             "anonymous",
 			"is_owner":         false,
+			"is_admin":         false,
 		})
 		return
+	}
+
+	var dbRole string
+	err := h.db.QueryRow("SELECT role FROM users WHERE id = ?", user.UserID).Scan(&dbRole)
+	if err == nil && dbRole != "" {
+		user.Role = dbRole
 	}
 
 	role := user.Role
 	isOwner := h.isPlatformOwner(user)
 	if isOwner {
 		role = "owner"
+	}
+	isAdmin := h.isPlatformAdminOrOwner(user)
+	if !isOwner && isAdmin {
+		role = "admin"
 	}
 
 	jsonResponse(w, http.StatusOK, map[string]any{
@@ -199,7 +254,33 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		"wiki_username":    user.WikiUsername,
 		"role":             role,
 		"is_owner":         isOwner,
+		"is_admin":         isAdmin,
 	})
+}
+
+// GetElevatedUsers returns a dictionary of usernames mapped to their elevated role ("owner" | "admin").
+func (h *Handler) GetElevatedUsers(w http.ResponseWriter, r *http.Request) {
+	rolesMap := make(map[string]string)
+	if h.cfg.OwnerUsername != "" {
+		rolesMap[h.cfg.OwnerUsername] = "owner"
+	}
+
+	rows, err := h.db.Query("SELECT wiki_username, role FROM users WHERE role IN ('owner', 'admin')")
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var uname, role string
+			if err := rows.Scan(&uname, &role); err == nil {
+				if h.cfg.OwnerUsername != "" && strings.EqualFold(uname, h.cfg.OwnerUsername) {
+					rolesMap[uname] = "owner"
+				} else {
+					rolesMap[uname] = role
+				}
+			}
+		}
+	}
+
+	jsonResponse(w, http.StatusOK, rolesMap)
 }
 
 // -------------------------------------------------------------
@@ -1674,12 +1755,12 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// isPlatformOwner verifies if a user has platform owner or administrator privileges.
+// isPlatformOwner verifies if a user has platform owner privileges.
 func (h *Handler) isPlatformOwner(user *auth.Claims) bool {
 	if user == nil {
 		return false
 	}
-	if user.Role == "owner" || user.Role == "admin" {
+	if user.Role == "owner" {
 		return true
 	}
 	if h.cfg.OwnerUsername != "" && strings.EqualFold(user.WikiUsername, h.cfg.OwnerUsername) {
@@ -1688,7 +1769,26 @@ func (h *Handler) isPlatformOwner(user *auth.Claims) bool {
 	// Fallback DB check in case role in claims was before promotion
 	var dbRole string
 	err := h.db.QueryRow("SELECT role FROM users WHERE id = ?", user.UserID).Scan(&dbRole)
-	if err == nil && (dbRole == "owner" || dbRole == "admin") {
+	if err == nil && dbRole == "owner" {
+		return true
+	}
+	return false
+}
+
+// isPlatformAdminOrOwner verifies if a user has platform administrator or owner privileges.
+func (h *Handler) isPlatformAdminOrOwner(user *auth.Claims) bool {
+	if user == nil {
+		return false
+	}
+	if h.isPlatformOwner(user) {
+		return true
+	}
+	if user.Role == "admin" {
+		return true
+	}
+	var dbRole string
+	err := h.db.QueryRow("SELECT role FROM users WHERE id = ?", user.UserID).Scan(&dbRole)
+	if err == nil && (dbRole == "admin" || dbRole == "owner") {
 		return true
 	}
 	return false
@@ -2827,8 +2927,8 @@ func (h *Handler) SuggestUsers(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetAdminOverview(w http.ResponseWriter, r *http.Request) {
 	currentUser := auth.GetUser(r.Context())
-	if !h.isPlatformOwner(currentUser) {
-		jsonError(w, http.StatusForbidden, "Access denied: Owner privileges required")
+	if !h.isPlatformAdminOrOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Admin or Owner privileges required")
 		return
 	}
 
@@ -2845,8 +2945,8 @@ func (h *Handler) GetAdminOverview(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetAdminContests(w http.ResponseWriter, r *http.Request) {
 	currentUser := auth.GetUser(r.Context())
-	if !h.isPlatformOwner(currentUser) {
-		jsonError(w, http.StatusForbidden, "Access denied: Owner privileges required")
+	if !h.isPlatformAdminOrOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Admin or Owner privileges required")
 		return
 	}
 
@@ -2913,8 +3013,8 @@ func (h *Handler) GetAdminContests(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ApproveContest(w http.ResponseWriter, r *http.Request) {
 	currentUser := auth.GetUser(r.Context())
-	if !h.isPlatformOwner(currentUser) {
-		jsonError(w, http.StatusForbidden, "Access denied: Owner privileges required")
+	if !h.isPlatformAdminOrOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Admin or Owner privileges required")
 		return
 	}
 
@@ -2962,8 +3062,8 @@ func (h *Handler) ApproveContest(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) RejectContest(w http.ResponseWriter, r *http.Request) {
 	currentUser := auth.GetUser(r.Context())
-	if !h.isPlatformOwner(currentUser) {
-		jsonError(w, http.StatusForbidden, "Access denied: Owner privileges required")
+	if !h.isPlatformAdminOrOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Admin or Owner privileges required")
 		return
 	}
 

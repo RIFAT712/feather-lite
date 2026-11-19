@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -30,7 +30,7 @@ import DateTimePicker from "@/components/ui/date-time-picker";
 import { 
   ArrowLeft, ArrowRight, Shield, ShieldAlert, Globe, BookOpen, CheckCircle, 
   Clock, UserCheck, Layers, Loader2, Calendar, X, Users, Search,
-  ChevronDown, Check
+  ChevronDown, Check, Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -160,6 +160,202 @@ export default function NewContestPage() {
   const [addTalkTemplate, setAddTalkTemplate] = useState(false);
   const [talkTemplateName, setTalkTemplateName] = useState("");
 
+  // Autosave Draft State & Lifecycle
+  const DRAFT_STORAGE_KEY = "feather_contest_create_draft_v1";
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftLastSaved, setDraftLastSaved] = useState<string | null>(null);
+  const [isLoadedFromDraft, setIsLoadedFromDraft] = useState(false);
+
+  // 1. Restore draft on initial mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft && typeof draft === "object") {
+          const hasContent =
+            Boolean(draft.name?.trim()) ||
+            Boolean(draft.description?.trim()) ||
+            (Array.isArray(draft.selectedExistingContests) && draft.selectedExistingContests.length > 0) ||
+            (Array.isArray(draft.juries) && draft.juries.length > 0);
+
+          if (hasContent) {
+            if (typeof draft.name === "string") setName(draft.name);
+            if (typeof draft.description === "string") setDescription(draft.description);
+            if (draft.contestType === "standard" || draft.contestType === "umbrella") {
+              setContestType(draft.contestType);
+            }
+            if (Array.isArray(draft.selectedExistingContests)) {
+              setSelectedExistingContests(draft.selectedExistingContests);
+            }
+            if (typeof draft.wikiDbName === "string") setWikiDbName(draft.wikiDbName);
+            if (typeof draft.wikiURL === "string") setWikiURL(draft.wikiURL);
+            if (typeof draft.wikiLang === "string") setWikiLang(draft.wikiLang);
+            if (typeof draft.wikiTZ === "string") setWikiTZ(draft.wikiTZ);
+            if (typeof draft.startDate === "string") setStartDate(draft.startDate);
+            if (typeof draft.endDate === "string") setEndDate(draft.endDate);
+            if (typeof draft.hasMinWords === "boolean") setHasMinWords(draft.hasMinWords);
+            if (typeof draft.minWords === "number") setMinWords(draft.minWords);
+            if (typeof draft.hasMinBytes === "boolean") setHasMinBytes(draft.hasMinBytes);
+            if (typeof draft.minBytes === "number") setMinBytes(draft.minBytes);
+            if (typeof draft.hasMinRefs === "boolean") setHasMinRefs(draft.hasMinRefs);
+            if (typeof draft.minRefs === "number") setMinRefs(draft.minRefs);
+            if (typeof draft.mustBeCreator === "boolean") setMustBeCreator(draft.mustBeCreator);
+            if (typeof draft.noRedirect === "boolean") setNoRedirect(draft.noRedirect);
+            if (typeof draft.noDisambig === "boolean") setNoDisambig(draft.noDisambig);
+            if (typeof draft.mainspaceOnly === "boolean") setMainspaceOnly(draft.mainspaceOnly);
+            if (typeof draft.createdInWindow === "boolean") setCreatedInWindow(draft.createdInWindow);
+            if (typeof draft.customCreationStart === "string") setCustomCreationStart(draft.customCreationStart);
+            if (typeof draft.customCreationEnd === "string") setCustomCreationEnd(draft.customCreationEnd);
+            if (typeof draft.rankByWords === "boolean") setRankByWords(draft.rankByWords);
+            if (Array.isArray(draft.juries)) setJuries(draft.juries);
+            if (typeof draft.distributeJuryQueue === "boolean") setDistributeJuryQueue(draft.distributeJuryQueue);
+            if (typeof draft.addTalkTemplate === "boolean") setAddTalkTemplate(draft.addTalkTemplate);
+            if (typeof draft.talkTemplateName === "string") setTalkTemplateName(draft.talkTemplateName);
+
+            setHasDraft(true);
+            setDraftLastSaved(draft.savedAt || new Date().toISOString());
+            toast.info(t("feather-draft-restored"));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load draft from localStorage", e);
+    } finally {
+      setIsLoadedFromDraft(true);
+    }
+  }, [t]);
+
+  // 2. Autosave draft on form input changes (debounced 400ms)
+  useEffect(() => {
+    if (!isLoadedFromDraft) return;
+
+    const hasContent =
+      name.trim().length > 0 ||
+      description.trim().length > 0 ||
+      selectedExistingContests.length > 0 ||
+      juries.length > 0 ||
+      hasMinWords ||
+      hasMinBytes ||
+      hasMinRefs ||
+      addTalkTemplate;
+
+    if (!hasContent) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      try {
+        const payload = {
+          name,
+          description,
+          contestType,
+          selectedExistingContests,
+          wikiDbName,
+          wikiURL,
+          wikiLang,
+          wikiTZ,
+          startDate,
+          endDate,
+          hasMinWords,
+          minWords,
+          hasMinBytes,
+          minBytes,
+          hasMinRefs,
+          minRefs,
+          mustBeCreator,
+          noRedirect,
+          noDisambig,
+          mainspaceOnly,
+          createdInWindow,
+          customCreationStart,
+          customCreationEnd,
+          rankByWords,
+          juries,
+          distributeJuryQueue,
+          addTalkTemplate,
+          talkTemplateName,
+          savedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
+        setHasDraft(true);
+        setDraftLastSaved(payload.savedAt);
+      } catch (e) {
+        // Ignore storage quota limits
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [
+    isLoadedFromDraft,
+    name,
+    description,
+    contestType,
+    selectedExistingContests,
+    wikiDbName,
+    wikiURL,
+    wikiLang,
+    wikiTZ,
+    startDate,
+    endDate,
+    hasMinWords,
+    minWords,
+    hasMinBytes,
+    minBytes,
+    hasMinRefs,
+    minRefs,
+    mustBeCreator,
+    noRedirect,
+    noDisambig,
+    mainspaceOnly,
+    createdInWindow,
+    customCreationStart,
+    customCreationEnd,
+    rankByWords,
+    juries,
+    distributeJuryQueue,
+    addTalkTemplate,
+    talkTemplateName,
+  ]);
+
+  // 3. Discard draft handler
+  const handleDiscardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch (e) {}
+    setName("");
+    setDescription("");
+    setContestType("standard");
+    setSelectedExistingContests([]);
+    setWikiDbName("bnwiki");
+    setWikiURL("https://bn.wikipedia.org");
+    setWikiLang("bn");
+    setWikiTZ("UTC");
+    setStartDate(getBeginningOfDay("UTC"));
+    setEndDate(calculateEndOfDay(getBeginningOfDay("UTC"), 30));
+    setHasMinWords(false);
+    setMinWords(300);
+    setHasMinBytes(false);
+    setMinBytes(3000);
+    setHasMinRefs(false);
+    setMinRefs(1);
+    setMustBeCreator(true);
+    setNoRedirect(true);
+    setNoDisambig(true);
+    setMainspaceOnly(true);
+    setCreatedInWindow(true);
+    setCustomCreationStart("");
+    setCustomCreationEnd("");
+    setRankByWords(false);
+    setJuries([]);
+    setDistributeJuryQueue(false);
+    setAddTalkTemplate(false);
+    setTalkTemplateName("");
+    setHasDraft(false);
+    setDraftLastSaved(null);
+    toast.success(t("feather-draft-discarded"));
+  };
+
   const applyDuration = (days: number) => {
     setEndDate(calculateEndOfDay(startDate, days));
   };
@@ -191,7 +387,7 @@ export default function NewContestPage() {
       name: name.trim(),
       description: description.trim(),
       wiki_dbname: isUmbrella ? (selectedExistingContests[0]?.wiki_dbname || "meta") : (wikiDbName.trim() || "bnwiki"),
-      wiki_url: isUmbrella ? (selectedExistingContests[0]?.wiki_url || "https://meta.wikimedia.org") : (wikiURL.trim() || "https://bn.wikipedia.org"),
+      wiki_url: isUmbrella ? (selectedExistingContests[0]?.wiki_url || "") : (wikiURL.trim() || "https://bn.wikipedia.org"),
       wiki_lang: isUmbrella ? (selectedExistingContests[0]?.wiki_lang || "en") : (wikiLang.trim() || "bn"),
       wiki_tz: wikiTZ.trim() || "UTC",
       start_date: new Date(startDate).toISOString(),
@@ -225,6 +421,10 @@ export default function NewContestPage() {
 
     try {
       const res = await createContest(payload);
+      try {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      } catch (e) {}
+      setHasDraft(false);
       if (res.status === "pending_approval") {
         toast.info(t("feather-create-pending-success", name));
       } else {
@@ -275,6 +475,34 @@ export default function NewContestPage() {
             <strong className="font-semibold block mb-0.5">Admin Review Notice:</strong>
             {t("feather-contest-create-pending-notice")}
           </div>
+        </div>
+      )}
+
+      {/* Autosaved Draft Status Banner (Mobile Compatible) */}
+      {hasDraft && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2.5 p-2.5 sm:px-3.5 sm:py-2 rounded-lg bg-muted/40 border border-border/70 text-xs shadow-2xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="font-medium text-foreground truncate">
+              {t("feather-draft-autosaved")}
+            </span>
+            {draftLastSaved && (
+              <span className="text-[11px] text-muted-foreground/80 font-mono hidden sm:inline">
+                • {new Date(draftLastSaved).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleDiscardDraft}
+            className="text-xs text-destructive hover:underline cursor-pointer flex items-center gap-1 font-medium shrink-0 ml-auto"
+          >
+            <Trash2 className="h-3 w-3" />
+            <span>{t("feather-draft-discard")}</span>
+          </button>
         </div>
       )}
 
@@ -1331,35 +1559,50 @@ export default function NewContestPage() {
         </Card>
       )}
 
-        {/* Form Action Controls */}
+        {/* Form Action Controls (Mobile Compatible) */}
         <div className="pt-4 border-t border-border">
           {error && (
             <p className="text-xs text-destructive font-medium mb-3 text-right animate-in fade-in-0">
               {error}
             </p>
           )}
-          <div className="flex items-center justify-end gap-3">
-            <Link
-              href="/"
-              className="px-4 py-2 text-xs font-medium rounded-md border border-border hover:bg-muted transition-colors cursor-pointer"
-            >
-              {t("feather-create-cancel")}
-            </Link>
-
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="text-xs font-semibold cursor-pointer shadow-xs min-w-[130px]"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin me-1.5" />
-                  {t("feather-create-creating-btn")}
-                </>
-              ) : (
-                t("feather-create-submit-btn")
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div>
+              {hasDraft && (
+                <button
+                  type="button"
+                  onClick={handleDiscardDraft}
+                  className="text-xs text-destructive hover:underline cursor-pointer flex items-center gap-1 font-medium justify-center sm:justify-start py-1"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  <span>{t("feather-draft-discard")}</span>
+                </button>
               )}
-            </Button>
+            </div>
+
+            <div className="flex items-center gap-3 justify-end">
+              <Link
+                href="/"
+                className="flex-1 sm:flex-initial text-center px-4 py-2 text-xs font-medium rounded-md border border-border hover:bg-muted transition-colors cursor-pointer"
+              >
+                {t("feather-create-cancel")}
+              </Link>
+
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 sm:flex-initial text-xs font-semibold cursor-pointer shadow-xs min-w-[130px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin me-1.5" />
+                    {t("feather-create-creating-btn")}
+                  </>
+                ) : (
+                  t("feather-create-submit-btn")
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </form>

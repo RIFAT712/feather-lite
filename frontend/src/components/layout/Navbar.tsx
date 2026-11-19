@@ -12,6 +12,7 @@ import { fetchMe, fetchAdminOverview, logout, AUTH_BASE } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import ThemeToggle from "@/components/layout/ThemeToggle";
+import UserBadge from "@/components/users/UserBadge";
 import { toast } from "sonner";
 
 export default function Navbar() {
@@ -27,11 +28,12 @@ export default function Navbar() {
   });
 
   const isOwner = me?.role === "owner" || Boolean((me as any)?.is_owner);
+  const isAdmin = isOwner || me?.role === "admin" || Boolean((me as any)?.is_admin);
 
   const { data: adminOverview } = useQuery({
     queryKey: ["adminOverview"],
     queryFn: fetchAdminOverview,
-    enabled: isOwner,
+    enabled: isAdmin,
     staleTime: 30 * 1000,
   });
 
@@ -92,8 +94,8 @@ export default function Navbar() {
             <span>{t("feather-nav-create-contest")}</span>
           </Link>
 
-          {/* Admin Dashboard (Owner only) */}
-          {isOwner && (
+          {/* Admin Dashboard (Owner & Admin) */}
+          {(isOwner || isAdmin) && (
             <Link
               href="/admin"
               className="flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors"
@@ -132,12 +134,7 @@ export default function Navbar() {
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <UserCheck className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                 <span className="font-semibold text-foreground group-hover:text-primary transition-colors">{me.wiki_username}</span>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] uppercase font-bold py-0 h-4 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                >
-                  {me.role}
-                </Badge>
+                <UserBadge username={me.wiki_username} role={me.role} />
               </Link>
               <Button
                 variant="ghost"
@@ -203,7 +200,7 @@ export default function Navbar() {
               <span>{t("feather-nav-create-contest")}</span>
             </Link>
 
-            {isOwner && (
+            {(isOwner || isAdmin) && (
               <Link
                 href="/admin"
                 onClick={() => setMobileMenuOpen(false)}
@@ -240,12 +237,7 @@ export default function Navbar() {
                     <UserCheck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="font-semibold text-sm text-foreground truncate">{me.wiki_username}</span>
                   </Link>
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] uppercase font-bold py-0 h-4 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shrink-0"
-                  >
-                    {me.role}
-                  </Badge>
+                  <UserBadge username={me.wiki_username} role={me.role} />
                 </div>
 
                 <Button

@@ -47,6 +47,7 @@ import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
 import TalkQueueMonitor from "@/components/contests/TalkQueueMonitor";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { calculateEndOfDay } from "@/lib/time";
+import UserBadge from "@/components/users/UserBadge";
 
 export default function ContestDashboardPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
@@ -701,40 +702,65 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <Badge
-                  variant={isActive ? "secondary" : "outline"}
-                  className="text-xs font-medium gap-1.5 px-2.5 py-0.5"
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      isActive ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"
-                    }`}
-                  />
-                  {isActive ? t("feather-contest-status-active") : contest.status}
-                </Badge>
+                {/* Status Indicator Badge */}
+                {(() => {
+                  const isPending = contest.status === "pending_approval";
+                  const isDraft = contest.status === "draft";
+                  const isEnded = contest.status === "ended";
+
+                  let label = contest.status;
+                  if (isActive) label = t("feather-contest-status-active");
+                  else if (isPending) label = t("feather-contest-status-pending-approval");
+                  else if (isDraft) label = t("feather-contest-status-draft");
+                  else if (isEnded) label = t("feather-contest-status-ended");
+
+                  let badgeClass = "bg-muted/40 text-muted-foreground border-border/60";
+                  let dotEl = <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 shrink-0" />;
+
+                  if (isActive) {
+                    badgeClass = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25";
+                    dotEl = (
+                      <span className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                      </span>
+                    );
+                  } else if (isPending) {
+                    badgeClass = "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25";
+                    dotEl = (
+                      <span className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                      </span>
+                    );
+                  } else if (isDraft) {
+                    badgeClass = "bg-muted/60 text-muted-foreground border-border/70";
+                    dotEl = <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground shrink-0" />;
+                  }
+
+                  return (
+                    <div
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium border shrink-0 whitespace-nowrap ${badgeClass}`}
+                    >
+                      {dotEl}
+                      <span>{label}</span>
+                    </div>
+                  );
+                })()}
 
                 {contest.is_umbrella ? (
-                  <a
-                    href={contest.wiki_url || "https://meta.wikimedia.org"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 cursor-pointer transition-colors px-2 py-0.5 rounded-md border border-border/70 bg-muted/30 hover:bg-muted/60"
-                    title={`Meta-Wiki (${t("feather-campaign-communities-count", contest.sub_contest_count || contest.sub_contests?.length || 0)})`}
+                  <div
+                    className="text-xs text-foreground/90 flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-border/70 bg-muted/30 shrink-0 whitespace-nowrap font-medium"
+                    title={t("feather-campaign-badge")}
                   >
-                    <img
-                      src="/icons/projects/meta.svg"
-                      alt=""
-                      className="h-3.5 w-3.5 object-contain shrink-0"
-                      onError={(e) => {
-                        e.currentTarget.src = "/icons/projects/wikimedia.svg";
-                      }}
-                    />
-                    <span className="font-semibold text-foreground">Meta-Wiki</span>
-                    <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.2 rounded font-mono">
-                      {t("feather-campaign-communities-count", contest.sub_contest_count || contest.sub_contests?.length || 0)}
-                    </span>
-                    <ExternalLink className="h-2.5 w-2.5 opacity-60" />
-                  </a>
+                    <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span>{t("feather-campaign-badge")}</span>
+                    {(contest.sub_contest_count || contest.sub_contests?.length) ? (
+                      <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.2 rounded font-mono">
+                        {t("feather-campaign-communities-count", contest.sub_contest_count || contest.sub_contests?.length || 0)}
+                      </span>
+                    ) : null}
+                  </div>
                 ) : (
                   (() => {
                     const pMeta = getProjectMeta(contest.wiki_dbname);
@@ -1384,12 +1410,20 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                                 </div>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
-                                <Badge
-                                  variant={isSubActive ? "secondary" : "outline"}
-                                  className="text-[10px] font-medium"
+                                <div
+                                  className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium border shrink-0 whitespace-nowrap ${
+                                    isSubActive
+                                      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25"
+                                      : "bg-muted/40 text-muted-foreground border-border/60"
+                                  }`}
                                 >
-                                  {isSubActive ? "Active" : sub.status}
-                                </Badge>
+                                  <span
+                                    className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                                      isSubActive ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/60"
+                                    }`}
+                                  />
+                                  <span>{isSubActive ? t("feather-contest-status-active") : sub.status}</span>
+                                </div>
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -1648,6 +1682,7 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                                 >
                                   {s.username}
                                 </Link>
+                                <UserBadge username={s.username} />
                                 <a
                                   href={`${contest.wiki_url || "https://bn.wikipedia.org"}/wiki/Special:Contributions/${encodeURIComponent(
                                     s.username
@@ -1719,6 +1754,7 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                             >
                               {s.username}
                             </Link>
+                            <UserBadge username={s.username} />
                           </div>
 
                           <div className="flex items-center gap-1.5 shrink-0">
@@ -1898,7 +1934,10 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                               </a>
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
-                              {art.submitter_username}
+                              <span className="inline-flex items-center gap-1.5 flex-wrap">
+                                <span>{art.submitter_username}</span>
+                                <UserBadge username={art.submitter_username} />
+                              </span>
                             </TableCell>
                             <TableCell className="text-center">
                               <Badge
@@ -1958,8 +1997,9 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                               <span className="truncate">{art.title}</span>
                               <ExternalLink className="h-2.5 w-2.5 opacity-40 shrink-0" />
                             </a>
-                            <div className="text-[11px] text-muted-foreground mt-0.5">
-                              by <span className="font-medium text-foreground">{art.submitter_username}</span>
+                            <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+                              <span>by <span className="font-medium text-foreground">{art.submitter_username}</span></span>
+                              <UserBadge username={art.submitter_username} />
                             </div>
                           </div>
 
@@ -2196,12 +2236,15 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                           {juryName.charAt(0)}
                         </div>
                         <div>
-                          <Link
-                            href={`/contests/${code}/users/${encodeURIComponent(juryName)}`}
-                            className="text-xs font-semibold text-foreground hover:text-primary hover:underline transition-colors block"
-                          >
-                            {juryName}
-                          </Link>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link
+                              href={`/contests/${code}/users/${encodeURIComponent(juryName)}`}
+                              className="text-xs font-semibold text-foreground hover:text-primary hover:underline transition-colors"
+                            >
+                              {juryName}
+                            </Link>
+                            <UserBadge username={juryName} />
+                          </div>
                           <div className="text-[11px] text-muted-foreground">
                             {contest.is_umbrella ? t("feather-contest-jury-role-organizer") : t("feather-contest-jury-role-member")}
                           </div>

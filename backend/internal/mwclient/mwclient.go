@@ -133,6 +133,88 @@ func FetchUserProfile(accessToken string) (*UserProfile, error) {
 	return &profile, nil
 }
 
+// CheckIsAdminOnAnyWiki checks MediaWiki CentralAuth to verify if a user has sysop or higher rights on ANY Wikimedia wiki.
+func CheckIsAdminOnAnyWiki(username string) (bool, error) {
+	if strings.TrimSpace(username) == "" {
+		return false, nil
+	}
+
+	apiEndpoint := "https://meta.wikimedia.org/w/api.php"
+	params := url.Values{}
+	params.Set("action", "query")
+	params.Set("meta", "globaluserinfo")
+	params.Set("guiuser", username)
+	params.Set("guiprop", "groups|merged")
+	params.Set("format", "json")
+	params.Set("formatversion", "2")
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", apiEndpoint, params.Encode()), nil)
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("User-Agent", DefaultUserAgent)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("globaluserinfo query failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("meta api returned HTTP %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Query struct {
+			GlobalUserInfo struct {
+				ID     int64    `json:"id"`
+				Name   string   `json:"name"`
+				Groups []string `json:"groups"`
+				Merged []struct {
+					Wiki   string   `json:"wiki"`
+					Groups []string `json:"groups"`
+				} `json:"merged"`
+			} `json:"globaluserinfo"`
+		} `json:"query"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return false, fmt.Errorf("failed to decode globaluserinfo response: %w", err)
+	}
+
+	elevatedGroups := map[string]bool{
+		"sysop":                   true,
+		"bureaucrat":              true,
+		"steward":                 true,
+		"global-sysop":            true,
+		"interface-admin":         true,
+		"checkuser":               true,
+		"suppress":                true,
+		"global-interface-editor": true,
+		"ombuds":                  true,
+		"staff":                   true,
+		"sysadmin":                true,
+	}
+
+	// 1. Check global rights
+	for _, g := range result.Query.GlobalUserInfo.Groups {
+		if elevatedGroups[strings.ToLower(strings.TrimSpace(g))] {
+			return true, nil
+		}
+	}
+
+	// 2. Check local rights across ANY merged wiki
+	for _, m := range result.Query.GlobalUserInfo.Merged {
+		for _, g := range m.Groups {
+			if elevatedGroups[strings.ToLower(strings.TrimSpace(g))] {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}
+
 // -------------------------------------------------------------
 // Real MediaWiki Article Query & Verification (Concurrent Pool)
 // -------------------------------------------------------------

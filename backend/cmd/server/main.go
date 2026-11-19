@@ -108,6 +108,7 @@ func main() {
 		api.Delete("/articles/{id}", h.DeleteArticle)
 		api.Post("/articles/bulk-review", h.BulkReview)
 		api.Get("/users/suggest", h.SuggestUsers)
+		api.Get("/users/elevated", h.GetElevatedUsers)
 	})
 
 	server := &http.Server{

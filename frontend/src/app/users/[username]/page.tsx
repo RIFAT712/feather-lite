@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatUtcToTz } from "@/lib/time";
+import UserBadge from "@/components/users/UserBadge";
 
 export default function UserGlobalProfilePage() {
   const params = useParams();
@@ -100,16 +101,11 @@ export default function UserGlobalProfilePage() {
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 {t("feather-profile-kicker")}
               </p>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-                {profile.username}
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
+                <span>{profile.username}</span>
+                <UserBadge username={profile.username} role={profile.role} />
               </h1>
               <div className="flex items-center gap-2.5 pt-1">
-                <Badge
-                  variant={profile.role === "owner" ? "default" : "secondary"}
-                  className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5"
-                >
-                  {profile.role}
-                </Badge>
                 <a
                   href={`https://bn.wikipedia.org/wiki/User:${encodeURIComponent(profile.username)}`}
                   target="_blank"

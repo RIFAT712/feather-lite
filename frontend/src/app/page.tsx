@@ -615,51 +615,65 @@ export default function HomePage() {
                   {/* Meta badges & time row */}
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                      <Badge
-                        variant={isActive ? "secondary" : c.status === "pending_approval" ? "destructive" : "outline"}
-                        className="text-[11px] font-medium gap-1 px-1.5 py-0.5 h-5"
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            isActive
-                              ? "bg-emerald-500"
-                              : c.status === "pending_approval"
-                              ? "bg-amber-400 animate-pulse"
-                              : "bg-muted-foreground"
-                          }`}
-                        />
-                        {isActive
-                          ? t("feather-contest-status-active")
-                          : c.status === "pending_approval"
-                          ? "Pending Approval"
-                          : c.status}
-                      </Badge>
+                      {/* Status Indicator Badge */}
+                      {(() => {
+                        const isPending = c.status === "pending_approval";
+                        const isDraft = c.status === "draft";
+                        const isEnded = c.status === "ended";
+
+                        let label = c.status;
+                        if (isActive) label = t("feather-contest-status-active");
+                        else if (isPending) label = t("feather-contest-status-pending-approval");
+                        else if (isDraft) label = t("feather-contest-status-draft");
+                        else if (isEnded) label = t("feather-contest-status-ended");
+
+                        let badgeClass = "bg-muted/40 text-muted-foreground border-border/60";
+                        let dotEl = <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 shrink-0" />;
+
+                        if (isActive) {
+                          badgeClass = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25";
+                          dotEl = (
+                            <span className="relative flex h-2 w-2 shrink-0">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                            </span>
+                          );
+                        } else if (isPending) {
+                          badgeClass = "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25";
+                          dotEl = (
+                            <span className="relative flex h-2 w-2 shrink-0">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                            </span>
+                          );
+                        } else if (isDraft) {
+                          badgeClass = "bg-muted/60 text-muted-foreground border-border/70";
+                          dotEl = <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground shrink-0" />;
+                        }
+
+                        return (
+                          <div
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border shrink-0 whitespace-nowrap h-5 ${badgeClass}`}
+                          >
+                            {dotEl}
+                            <span>{label}</span>
+                          </div>
+                        );
+                      })()}
 
                       {c.is_umbrella ? (
-                        <Badge
-                          variant="outline"
-                          className="text-[11px] font-medium gap-1.5 px-2 py-0.5 h-5 text-foreground/90 bg-muted/30 border-border/70 hover:bg-muted/50 transition-colors"
-                          title={`Meta-Wiki (${t("feather-campaign-communities-count", c.sub_contest_count || 0)})`}
+                        <div
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5 rounded-md text-[11px] font-medium text-foreground/90 bg-muted/30 border border-border/70 shrink-0 whitespace-nowrap"
+                          title={t("feather-campaign-badge")}
                         >
-                          <img
-                            src="/icons/projects/meta.svg"
-                            alt=""
-                            width={14}
-                            height={14}
-                            loading="lazy"
-                            decoding="async"
-                            className="h-3.5 w-3.5 object-contain shrink-0"
-                            onError={(e) => {
-                              e.currentTarget.src = "/icons/projects/wikimedia.svg";
-                            }}
-                          />
-                          <span className="font-semibold text-foreground">Meta-Wiki</span>
+                          <Layers className="h-3 w-3 text-primary shrink-0" />
+                          <span className="font-medium">{t("feather-campaign-badge")}</span>
                           {c.sub_contest_count ? (
                             <span className="text-[10px] font-mono text-primary bg-primary/10 px-1 py-0.2 rounded font-medium">
                               {t("feather-campaign-communities-count", c.sub_contest_count)}
                             </span>
                           ) : null}
-                        </Badge>
+                        </div>
                       ) : (() => {
                         const pMeta = getProjectMeta(c.wiki_dbname);
                         const pName = t(`feather-project-${pMeta.id}`) || (locale === "bn" ? pMeta.nativeName : pMeta.name);
@@ -667,7 +681,7 @@ export default function HomePage() {
                         return (
                           <Badge
                             variant="outline"
-                            className="text-[11px] font-medium gap-1.5 px-2 py-0.5 h-5 text-foreground/90 bg-muted/30 border-border/70 hover:bg-muted/50 transition-colors"
+                            className="text-[11px] font-medium gap-1.5 px-2 py-0.5 h-5 text-foreground/90 bg-muted/30 border-border/70 hover:bg-muted/50 transition-colors shrink-0 whitespace-nowrap"
                             title={`${wikiInfo?.englishName || pMeta.name} (${c.wiki_dbname})`}
                           >
                             <img
@@ -682,10 +696,10 @@ export default function HomePage() {
                                 e.currentTarget.src = "/icons/projects/wikipedia.svg";
                               }}
                             />
-                            <span>{pName}</span>
+                            <span className="font-medium text-foreground">{pName}</span>
                             {c.wiki_lang && (
                               <span className="text-[10px] font-mono text-muted-foreground uppercase">
-                                {c.wiki_lang}
+                                ({c.wiki_lang})
                               </span>
                             )}
                           </Badge>

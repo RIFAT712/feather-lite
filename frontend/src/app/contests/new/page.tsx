@@ -9,6 +9,15 @@ import {
   createContest, fetchMe, CreateContestPayload, CommunityRuleConfig,
   AvailableContest, fetchGlobalAvailableContests 
 } from "@/lib/api";
+import { getProjectMeta, getLanguageName } from "@/lib/wikis";
+import { CodexLanguageIcon } from "@/components/icons/CodexIcons";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
@@ -20,7 +29,8 @@ import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { 
   ArrowLeft, ArrowRight, Shield, ShieldAlert, Globe, BookOpen, CheckCircle, 
-  Clock, Sparkles, UserCheck, Layers, Loader2, Calendar, X, Users, Search
+  Clock, Sparkles, UserCheck, Layers, Loader2, Calendar, X, Users, Search,
+  ChevronDown, Check
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -29,7 +39,7 @@ import {
 } from "@/lib/time";
 
 export default function NewContestPage() {
-  const { t, n } = useI18n();
+  const { t, n, locale } = useI18n();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,21 +60,54 @@ export default function NewContestPage() {
   // Selected existing competitions for Multi-Community Campaign
   const [selectedExistingContests, setSelectedExistingContests] = useState<AvailableContest[]>([]);
   const [compSearch, setCompSearch] = useState("");
-  const [compWikiFilter, setCompWikiFilter] = useState("all");
+  const [selectedProject, setSelectedProject] = useState<string>("all");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
 
   const { data: availableContests = [], isLoading: isLoadingAvailable } = useQuery<AvailableContest[]>({
-    queryKey: ["availableContests", compSearch, compWikiFilter],
-    queryFn: () => fetchGlobalAvailableContests(compSearch, compWikiFilter),
+    queryKey: ["availableContests"],
+    queryFn: () => fetchGlobalAvailableContests(),
     enabled: contestType === "umbrella",
   });
 
-  const availableWikis = useMemo(() => {
+  // Unique projects from available ongoing competitions
+  const uniqueProjects = useMemo(() => {
     const set = new Set<string>();
     availableContests.forEach((c) => {
-      if (c.wiki_dbname) set.add(c.wiki_dbname);
+      const p = getProjectMeta(c.wiki_dbname).id;
+      set.add(p);
     });
     return Array.from(set).sort();
   }, [availableContests]);
+
+  // Unique languages from available ongoing competitions
+  const uniqueLanguages = useMemo(() => {
+    const set = new Set<string>();
+    availableContests.forEach((c) => {
+      if (c.wiki_lang) set.add(c.wiki_lang);
+    });
+    return Array.from(set).sort();
+  }, [availableContests]);
+
+  // Client-side ultra-fast filtering for silky 60 FPS responsiveness
+  const filteredAvailableContests = useMemo(() => {
+    return availableContests.filter((c) => {
+      if (selectedProject !== "all") {
+        const p = getProjectMeta(c.wiki_dbname).id;
+        if (p !== selectedProject) return false;
+      }
+      if (selectedLanguage !== "all") {
+        if (c.wiki_lang !== selectedLanguage) return false;
+      }
+      if (compSearch.trim()) {
+        const q = compSearch.toLowerCase().trim();
+        const matchesName = c.name.toLowerCase().includes(q);
+        const matchesCode = c.code.toLowerCase().includes(q);
+        const matchesDb = c.wiki_dbname.toLowerCase().includes(q);
+        if (!matchesName && !matchesCode && !matchesDb) return false;
+      }
+      return true;
+    });
+  }, [availableContests, selectedProject, selectedLanguage, compSearch]);
 
   const handleAddExistingContest = (contest: AvailableContest) => {
     if (selectedExistingContests.some((c) => c.code === contest.code)) {
@@ -363,74 +406,208 @@ export default function NewContestPage() {
                     </div>
                   </div>
 
-                  {/* Search, Filter & Pick Existing Standalone Competitions */}
+                  {/* Search & Project/Language Filters Toolbar (All Projects & All Languages) */}
                   <div className="space-y-2.5 bg-card p-3 rounded-lg border border-border/60 shadow-2xs">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      {/* Search Input */}
                       <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                         <input
                           type="text"
                           value={compSearch}
                           onChange={(e) => setCompSearch(e.target.value)}
                           placeholder={t("feather-campaign-link-search-placeholder", "Search ongoing competitions by name, code, or wiki...")}
-                          className="w-full h-9 pl-8.5 pr-8 rounded-md border border-input bg-background text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          className="w-full h-8 pl-8 pr-7 rounded-md border border-input bg-background text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         />
                         {compSearch ? (
                           <button
                             type="button"
                             onClick={() => setCompSearch("")}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground cursor-pointer"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
                           >
-                            <X className="h-3.5 w-3.5" />
+                            <X className="h-3 w-3" />
                           </button>
                         ) : isLoadingAvailable ? (
-                          <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                          <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
                         ) : null}
+                      </div>
+
+                      {/* Dropdown Filters: All Projects & All Languages */}
+                      <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
+                        {/* All Projects Filter Dropdown */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground"
+                            aria-label={t("feather-filter-project")}
+                          >
+                            {selectedProject === "all" ? (
+                              <>
+                                <img
+                                  src="/icons/projects/wikimedia.svg"
+                                  alt=""
+                                  className="h-3.5 w-3.5 object-contain opacity-80 shrink-0"
+                                />
+                                <span>{t("feather-filter-all-projects")}</span>
+                              </>
+                            ) : (
+                              (() => {
+                                const meta = getProjectMeta(selectedProject);
+                                const label = t(`feather-project-${meta.id}`) || (locale === "bn" ? meta.nativeName : meta.name);
+                                return (
+                                  <>
+                                    <img
+                                      src={meta.icon}
+                                      alt=""
+                                      className="h-3.5 w-3.5 object-contain shrink-0"
+                                      onError={(e) => {
+                                        e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                                      }}
+                                    />
+                                    <span className="font-semibold text-foreground truncate max-w-[95px]">{label}</span>
+                                  </>
+                                );
+                              })()
+                            )}
+                            <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent align="start" className="w-48 p-1 rounded-lg shadow-md border bg-popover z-50">
+                            <DropdownMenuItem
+                              onClick={() => setSelectedProject("all")}
+                              className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                            >
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src="/icons/projects/wikimedia.svg"
+                                  alt=""
+                                  className="h-3.5 w-3.5 object-contain shrink-0"
+                                />
+                                <span className={selectedProject === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                                  {t("feather-filter-all-projects")}
+                                </span>
+                              </div>
+                              {selectedProject === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator className="my-1" />
+
+                            {uniqueProjects.map((p) => {
+                              const meta = getProjectMeta(p);
+                              const isSelected = selectedProject === p;
+                              const label = t(`feather-project-${meta.id}`) || (locale === "bn" ? meta.nativeName : meta.name);
+                              return (
+                                <DropdownMenuItem
+                                  key={p}
+                                  onClick={() => setSelectedProject(p)}
+                                  className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <img
+                                      src={meta.icon}
+                                      alt=""
+                                      className="h-3.5 w-3.5 object-contain shrink-0"
+                                      onError={(e) => {
+                                        e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                                      }}
+                                    />
+                                    <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
+                                      {label}
+                                    </span>
+                                  </div>
+                                  {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        {/* All Languages Filter Dropdown */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-md border border-border/70 hover:bg-muted/80 transition-colors shadow-2xs select-none outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer bg-background text-foreground"
+                            aria-label={t("feather-filter-language")}
+                          >
+                            <CodexLanguageIcon className="h-3.5 w-3.5 opacity-80 shrink-0" />
+                            {selectedLanguage === "all" ? (
+                              <span>{t("feather-filter-all-languages")}</span>
+                            ) : (
+                              (() => {
+                                const langName = getLanguageName(selectedLanguage, locale);
+                                return (
+                                  <span className="font-semibold text-foreground truncate max-w-[95px]">
+                                    {langName} ({selectedLanguage.toUpperCase()})
+                                  </span>
+                                );
+                              })()
+                            )}
+                            <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent align="start" className="w-48 p-1 rounded-lg shadow-md border bg-popover z-50 max-h-60 overflow-y-auto">
+                            <DropdownMenuItem
+                              onClick={() => setSelectedLanguage("all")}
+                              className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                            >
+                              <span className={selectedLanguage === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                                {t("feather-filter-all-languages")}
+                              </span>
+                              {selectedLanguage === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator className="my-1" />
+
+                            {uniqueLanguages.map((langCode) => {
+                              const isSelected = selectedLanguage === langCode;
+                              const langName = getLanguageName(langCode, locale);
+                              return (
+                                <DropdownMenuItem
+                                  key={langCode}
+                                  onClick={() => setSelectedLanguage(langCode)}
+                                  className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className={isSelected ? "font-bold text-foreground" : "text-muted-foreground"}>
+                                      {langName}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                                      ({langCode})
+                                    </span>
+                                  </div>
+                                  {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        {/* Reset Filters Shortcut */}
+                        {(selectedProject !== "all" || selectedLanguage !== "all" || compSearch) && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProject("all");
+                              setSelectedLanguage("all");
+                              setCompSearch("");
+                            }}
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                            title="Reset filters"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </div>
 
-                    {/* Wiki Quick-Filter Pills */}
-                    {availableWikis.length > 0 && (
-                      <div className="flex items-center gap-1.5 flex-wrap text-xs pt-0.5">
-                        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mr-1">
-                          Wiki:
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setCompWikiFilter("all")}
-                          className={`px-2 py-0.5 text-[11px] rounded transition-colors cursor-pointer ${
-                            compWikiFilter === "all"
-                              ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
-                              : "bg-muted/70 text-muted-foreground hover:text-foreground border border-border/60"
-                          }`}
-                        >
-                          All ({availableContests.length})
-                        </button>
-                        {availableWikis.map((wiki) => (
-                          <button
-                            key={wiki}
-                            type="button"
-                            onClick={() => setCompWikiFilter(wiki)}
-                            className={`px-2 py-0.5 text-[11px] font-mono uppercase rounded transition-colors cursor-pointer ${
-                              compWikiFilter === wiki
-                                ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
-                                : "bg-muted/70 text-muted-foreground hover:text-foreground border border-border/60"
-                            }`}
-                          >
-                            {wiki}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
                     {/* Available Contests Picker List (Only Ongoing Comps) */}
                     <div className="max-h-56 overflow-y-auto divide-y divide-border/40 rounded-md border border-border/60 bg-background/50">
-                      {availableContests.length === 0 ? (
+                      {filteredAvailableContests.length === 0 ? (
                         <div className="py-5 text-center text-xs text-muted-foreground">
                           {t("feather-campaign-no-avail-contests", "No standalone ongoing competitions found.")}
                         </div>
                       ) : (
-                        availableContests.map((c) => {
+                        filteredAvailableContests.map((c) => {
                           const isAlreadyAdded = selectedExistingContests.some((sel) => sel.code === c.code);
                           return (
                             <div

@@ -87,29 +87,34 @@ export default function Footer() {
             </nav>
           </div>
 
-          {/* Badges: WikiConnect + Wikimedia Cloud Services */}
-          <div className="flex items-center gap-2 flex-wrap shrink-0">
+          {/* Badges: WikiConnect + Wikimedia Cloud Services (MediaWiki 88x31 Style) */}
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
             {/* WikiConnect Initiative Badge */}
             <a
               href="https://meta.wikimedia.org/wiki/Bangla_WikiConnect"
               target="_blank"
               rel="noopener noreferrer"
-              title="WikiConnect"
-              aria-label="WikiConnect Initiative"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/60 bg-muted/40 hover:bg-muted/80 text-xs transition-colors group cursor-pointer shrink-0"
+              title="Bangla WikiConnect"
+              aria-label="Bangla WikiConnect Initiative"
+              className="inline-flex items-center gap-2 h-9 px-2.5 rounded border border-border/80 bg-card hover:bg-muted/60 hover:border-foreground/30 transition-all group cursor-pointer shadow-2xs shrink-0"
             >
               <img
                 src="/icons/wikiconnect.svg"
                 alt=""
-                width={14}
-                height={14}
+                width={28}
+                height={22}
                 loading="lazy"
                 decoding="async"
-                className="h-3.5 w-3.5 object-contain shrink-0"
+                className="h-5.5 w-auto object-contain shrink-0"
               />
-              <span className="text-[11px] font-medium text-foreground">
-                {t("feather-footer-wikiconnect", "WikiConnect")}
-              </span>
+              <div className="flex flex-col text-left justify-center">
+                <span className="text-[9px] text-muted-foreground font-normal leading-none">
+                  {t("feather-footer-wikiconnect-sub", "Initiative of")}
+                </span>
+                <span className="text-[11px] font-bold text-foreground tracking-tight leading-none mt-0.5">
+                  {t("feather-footer-wikiconnect", "WikiConnect")}
+                </span>
+              </div>
             </a>
 
             {/* Wikimedia Cloud Services Credit Badge */}
@@ -119,20 +124,25 @@ export default function Footer() {
               rel="noopener noreferrer"
               title="Wikimedia Cloud Services"
               aria-label="Wikimedia Cloud Services"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/60 bg-muted/40 hover:bg-muted/80 text-xs transition-colors group cursor-pointer shrink-0"
+              className="inline-flex items-center gap-2 h-9 px-2.5 rounded border border-border/80 bg-card hover:bg-muted/60 hover:border-foreground/30 transition-all group cursor-pointer shadow-2xs shrink-0"
             >
               <img
                 src="/icons/projects/wikimedia.svg"
                 alt=""
-                width={14}
-                height={14}
+                width={22}
+                height={22}
                 loading="lazy"
                 decoding="async"
-                className="h-3.5 w-3.5 object-contain shrink-0"
+                className="h-5.5 w-5.5 object-contain shrink-0"
               />
-              <span className="text-[11px] text-muted-foreground group-hover:text-foreground">
-                Powered by <span className="font-medium text-foreground">Wikimedia Cloud Services</span>
-              </span>
+              <div className="flex flex-col text-left justify-center">
+                <span className="text-[9px] text-muted-foreground font-normal leading-none">
+                  {t("feather-footer-wmcs-sub", "Powered by")}
+                </span>
+                <span className="text-[11px] font-bold text-foreground tracking-tight leading-none mt-0.5">
+                  Wikimedia Cloud Services
+                </span>
+              </div>
             </a>
           </div>
         </div>

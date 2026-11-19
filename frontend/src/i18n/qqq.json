@@ -293,6 +293,8 @@
   "feather-footer-wmcs-name": "Wikimedia Cloud Services brand name.",
   "feather-footer-toolforge-name": "Toolforge brand name.",
   "feather-footer-wikiconnect": "Label for the WikiConnect initiative badge in the footer.",
+  "feather-footer-wikiconnect-sub": "Subline caption for WikiConnect badge.",
+  "feather-footer-wmcs-sub": "Subline caption for Wikimedia Cloud Services badge.",
   "feather-footer-link-privacy": "Link label for privacy policy.",
   "feather-footer-link-about": "Link label for about Feather project documentation.",
   "feather-footer-link-disclaimers": "Link label for disclaimers.",

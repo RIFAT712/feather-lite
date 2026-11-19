@@ -79,6 +79,18 @@ export default function DateTimePicker({
   const [viewYear, setViewYear] = useState(parsed.year);
   const [viewMonth, setViewMonth] = useState(parsed.month);
 
+  // Generate selectable year options from 2015 to (now + 10)
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const start = Math.min(2015, viewYear - 5);
+    const end = Math.max(currentYear + 10, viewYear + 5);
+    const years: number[] = [];
+    for (let y = start; y <= end; y++) {
+      years.push(y);
+    }
+    return years;
+  }, [viewYear]);
+
   // When value prop changes, synchronize calendar view
   useEffect(() => {
     setViewYear(parsed.year);
@@ -308,19 +320,46 @@ export default function DateTimePicker({
       {/* Popover Card */}
       {isOpen && (
         <div className="absolute top-full left-0 z-50 mt-1.5 w-76 sm:w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-popover text-popover-foreground shadow-2xl p-3 animate-in fade-in-0 zoom-in-95 duration-100 select-none">
-          {/* Calendar Header: Month + Navigation */}
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/60">
-            <span className="text-xs font-bold text-foreground">
-              {MONTH_NAMES[viewMonth]} {viewYear}
-            </span>
-            <div className="flex items-center gap-1">
+          {/* Calendar Header: Month/Year Dropdowns + Navigation */}
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/60 gap-1">
+            <div className="flex items-center gap-1 min-w-0">
+              {/* Month Selector */}
+              <select
+                value={viewMonth}
+                onChange={(e) => setViewMonth(Number(e.target.value))}
+                className="h-6.5 px-1.5 py-0 text-xs font-semibold text-foreground bg-muted/40 hover:bg-muted border border-border/70 rounded cursor-pointer transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                aria-label="Select month"
+              >
+                {MONTH_NAMES.map((name, idx) => (
+                  <option key={name} value={idx} className="bg-popover text-popover-foreground">
+                    {name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Year Selector */}
+              <select
+                value={viewYear}
+                onChange={(e) => setViewYear(Number(e.target.value))}
+                className="h-6.5 px-1.5 py-0 text-xs font-semibold font-mono text-foreground bg-muted/40 hover:bg-muted border border-border/70 rounded cursor-pointer transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                aria-label="Select year"
+              >
+                {yearOptions.map((y) => (
+                  <option key={y} value={y} className="bg-popover text-popover-foreground">
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-0.5 shrink-0">
               <button
                 type="button"
                 onClick={prevMonth}
                 className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
                 title="Previous month"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
@@ -340,7 +379,7 @@ export default function DateTimePicker({
                 className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
                 title="Next month"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>

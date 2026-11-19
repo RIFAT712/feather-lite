@@ -344,3 +344,29 @@ type AdminOverview struct {
 	TotalArticles   int `json:"total_articles"`
 	TotalUsers      int `json:"total_users"`
 }
+
+type PlatformOverviewTotals struct {
+	Words       int64 `json:"words"`
+	Articles    int   `json:"articles"`
+	Submissions int   `json:"submissions"`
+	People      int   `json:"people"`
+	Wikis       int   `json:"wikis"`
+	Contests    int   `json:"contests"`
+}
+
+type PlatformOverviewMonth struct {
+	Entries int   `json:"entries"`
+	Words   int64 `json:"words"`
+	People  int   `json:"people"`
+}
+
+type PlatformOverviewTrendItem struct {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
+}
+
+type PlatformOverview struct {
+	Totals PlatformOverviewTotals      `json:"totals"`
+	Month  PlatformOverviewMonth       `json:"month"`
+	Trend  []PlatformOverviewTrendItem `json:"trend"`
+}

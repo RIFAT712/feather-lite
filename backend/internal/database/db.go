@@ -40,7 +40,7 @@ func Connect(cfg *config.Config) (*DB, error) {
 	} else {
 		// SQLite with modernc.org/sqlite (pure Go, zero CGO)
 		dbPath := cfg.DatabaseURL
-		if !filepath.IsAbs(dbPath) {
+		if dbPath != ":memory:" && !strings.HasPrefix(dbPath, "file:") && !filepath.IsAbs(dbPath) {
 			if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 				backendPath := filepath.Join("backend", dbPath)
 				if _, err2 := os.Stat(backendPath); err2 == nil {
@@ -51,7 +51,9 @@ func Connect(cfg *config.Config) (*DB, error) {
 				dbPath = abs
 			}
 		}
-		dbPath = filepath.ToSlash(dbPath)
+		if dbPath != ":memory:" && !strings.HasPrefix(dbPath, "file:") {
+			dbPath = filepath.ToSlash(dbPath)
+		}
 		log.Printf("[DB] Connecting to sqlite dbPath: %q", dbPath)
 		db, err = sql.Open("sqlite", dbPath)
 		if err != nil {

@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { CodexLanguageIcon } from "@/components/icons/CodexIcons";
+import PlatformPulse from "@/components/home/PlatformPulse";
 import {
   Trophy,
   FileText,
@@ -191,6 +192,11 @@ export default function HomePage() {
           <PlusCircle className="h-3.5 w-3.5" />
           {t("feather-nav-create-contest")}
         </Link>
+      </div>
+      
+      {/* Platform Movement Pulse (All Time & This Month) */}
+      <div className="mt-5">
+        <PlatformPulse />
       </div>
 
       {/* 2. Unified Toolbar Block */}

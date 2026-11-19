@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -3203,6 +3204,98 @@ func (h *Handler) EnqueueMissingTalkJobs(w http.ResponseWriter, r *http.Request)
 		"message":  fmt.Sprintf("Enqueued %d missing article(s) to talk page queue", enqueued),
 		"enqueued": enqueued,
 	})
+}
+
+var (
+	overviewCacheMu   sync.RWMutex
+	overviewCacheData *models.PlatformOverview
+	overviewCacheTime time.Time
+)
+
+// GetOverview returns platform-wide aggregated metrics, monthly momentum, and 30-day activity trend sparkline.
+func (h *Handler) GetOverview(w http.ResponseWriter, r *http.Request) {
+	overviewCacheMu.RLock()
+	if overviewCacheData != nil && time.Since(overviewCacheTime) < 30*time.Second {
+		cached := overviewCacheData
+		overviewCacheMu.RUnlock()
+		jsonResponse(w, http.StatusOK, cached)
+		return
+	}
+	overviewCacheMu.RUnlock()
+
+	overviewCacheMu.Lock()
+	defer overviewCacheMu.Unlock()
+
+	// Double-check after acquiring write lock
+	if overviewCacheData != nil && time.Since(overviewCacheTime) < 30*time.Second {
+		jsonResponse(w, http.StatusOK, overviewCacheData)
+		return
+	}
+
+	var totals models.PlatformOverviewTotals
+	_ = h.db.QueryRow(`
+		SELECT 
+			COALESCE(SUM(CASE WHEN status = 'accepted' THEN word_count ELSE 0 END), 0),
+			COUNT(CASE WHEN status = 'accepted' THEN 1 END),
+			COUNT(*),
+			COUNT(DISTINCT submitter_id)
+		FROM articles
+	`).Scan(&totals.Words, &totals.Articles, &totals.Submissions, &totals.People)
+
+	_ = h.db.QueryRow("SELECT COUNT(DISTINCT wiki_dbname) FROM contests WHERE is_draft = 0").Scan(&totals.Wikis)
+	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0").Scan(&totals.Contests)
+
+	now := time.Now().UTC()
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	var month models.PlatformOverviewMonth
+	_ = h.db.QueryRow(`
+		SELECT 
+			COUNT(*),
+			COALESCE(SUM(CASE WHEN status = 'accepted' THEN word_count ELSE 0 END), 0),
+			COUNT(DISTINCT submitter_id)
+		FROM articles 
+		WHERE submitted_at >= ?
+	`, monthStart.Format("2006-01-02 15:04:05")).Scan(&month.Entries, &month.Words, &month.People)
+
+	// Trend: past 30 days daily counts
+	thirtyDaysAgo := now.AddDate(0, 0, -29)
+	trendMap := make(map[string]int)
+	trendRows, err := h.db.Query(`
+		SELECT substr(submitted_at, 1, 10) as day, COUNT(*) 
+		FROM articles 
+		WHERE submitted_at >= ? 
+		GROUP BY day
+	`, thirtyDaysAgo.Format("2006-01-02"))
+	if err == nil {
+		for trendRows.Next() {
+			var day string
+			var cnt int
+			if trendRows.Scan(&day, &cnt) == nil {
+				trendMap[day] = cnt
+			}
+		}
+		trendRows.Close()
+	}
+
+	trendList := make([]models.PlatformOverviewTrendItem, 30)
+	for i := 0; i < 30; i++ {
+		d := thirtyDaysAgo.AddDate(0, 0, i).Format("2006-01-02")
+		trendList[i] = models.PlatformOverviewTrendItem{
+			Date:  d,
+			Count: trendMap[d],
+		}
+	}
+
+	resp := &models.PlatformOverview{
+		Totals: totals,
+		Month:  month,
+		Trend:  trendList,
+	}
+
+	overviewCacheData = resp
+	overviewCacheTime = time.Now()
+
+	jsonResponse(w, http.StatusOK, resp)
 }
 
 func jsonResponse(w http.ResponseWriter, status int, data any) {

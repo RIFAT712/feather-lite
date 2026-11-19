@@ -70,6 +70,7 @@ func main() {
 
 	r.Route("/api", func(api chi.Router) {
 		api.Get("/me", h.GetMe)
+		api.Get("/overview", h.GetOverview)
 		api.Get("/contests", h.ListContests)
 		api.Post("/contests", h.CreateContest)
 		api.Get("/contests/{code}", h.GetContest)

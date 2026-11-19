@@ -155,6 +155,38 @@ export interface StandingEntry {
   wikis_contributed?: string[];
 }
 
+export interface PlatformOverviewTrendItem {
+  date: string;
+  count: number;
+}
+
+export interface PlatformOverviewTotals {
+  words: number;
+  articles: number;
+  submissions: number;
+  people: number;
+  wikis: number;
+  contests: number;
+}
+
+export interface PlatformOverviewMonth {
+  entries: number;
+  words: number;
+  people: number;
+}
+
+export interface PlatformOverview {
+  totals: PlatformOverviewTotals;
+  month: PlatformOverviewMonth;
+  trend: PlatformOverviewTrendItem[];
+}
+
+export async function fetchPlatformOverview(): Promise<PlatformOverview> {
+  const res = await fetch(`${API_BASE}/overview`, { cache: "no-store", credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch platform overview");
+  return res.json();
+}
+
 export async function fetchMe(): Promise<UserSession> {
   const res = await fetch(`${API_BASE}/me`, { cache: "no-store", credentials: "include" });
   if (!res.ok) {

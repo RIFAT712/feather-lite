@@ -1,19 +1,24 @@
-# Feather 2.0 (Feather New)
+# Feather
 
-A high-throughput, modern Wiki Article Contest Management & Judging Platform built from scratch for **Wikimedia** projects (Bengali Wiktionary, Wikipedia, and sister wikis).
+A high-throughput, modern Wiki Article Contest Management & Judging Platform built from scratch for **Wikimedia** projects (Bengali Wikipedia, Wiktionary, Commons, Wikisource, and sister wikis).
 
 Engineered specifically to handle **50,000+ entries** with sub-millisecond query response times, zero DOM lag, and a sleek modern interface.
+
+* **Live on Wikimedia Toolforge:** [https://feather-lite.toolforge.org](https://feather-lite.toolforge.org)
+* **License:** GNU General Public License v3.0 (GPL-3.0-or-later)
 
 ---
 
 ## Architecture Overview
 
 ```
-D:\WikiTools\Feather New\
 ├── backend/                  # High-throughput Go REST API service
-│   ├── cmd/server/main.go    # Server entry point, chi router, CORS, graceful shutdown
+│   ├── cmd/
+│   │   ├── server/main.go    # Server entry point, chi router, CORS, graceful shutdown
+│   │   └── benchmark/main.go # 50,000+ entries benchmark & performance suite
 │   ├── internal/
-│   │   ├── auth/             # JWT claims, cookie management (feather_token), auth middleware
+│   │   ├── auth/             # JWT claims, cookie management (feather_token), steward/admin rights
+│   │   ├── balancer/         # Scarcity-first jury load balancer
 │   │   ├── config/           # Environment configuration loader (.env)
 │   │   ├── database/         # Pure-Go SQLite WAL & MariaDB keyset engine
 │   │   ├── mwclient/         # Real MediaWiki API client (OAuth 2.0, action=query, action=parse)
@@ -23,22 +28,28 @@ D:\WikiTools\Feather New\
 │   ├── go.mod
 │   └── go.sum
 │
-├── frontend/                 # Next.js 16 + Tailwind CSS + shadcn/ui application
+├── frontend/                 # Next.js 16 + Tailwind CSS v4 + Base-UI / shadcn application
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── layout.tsx    # Root layout with modern Navbar & Query Provider
+│   │   │   ├── layout.tsx    # Root layout with modern Navbar, Footer & Query Provider
 │   │   │   ├── page.tsx      # Active contests portal
+│   │   │   ├── admin/        # Platform admin management
+│   │   │   ├── license/      # Dedicated Open Source (GPL-3.0 & CC BY-SA 4.0) license page
+│   │   │   ├── users/        # User profiles & global activity
 │   │   │   └── contests/[code]/
 │   │   │       ├── page.tsx  # Contest overview & participant leaderboard
+│   │   │       ├── jury/     # Jury stats hub & queue redistribution
 │   │   │       ├── review/   # Virtualized split-screen review queue with live MediaWiki preview
 │   │   │       └── submit/   # Bulk article submission page with author validation
 │   │   ├── components/
 │   │   │   ├── layout/       # Navbar with dynamic Wikimedia OAuth session indicator & actions
-│   │   │   └── ui/           # shadcn primitive components (Card, Button, Badge, Table, Input, Textarea, Dialog)
+│   │   │   └── ui/           # Base-UI primitive components (Card, Button, Badge, Table, Input, Textarea, Dialog)
+│   │   ├── i18n/             # Translatewiki-compliant multilingual system (bn, en, qqq)
 │   │   └── lib/api.ts        # Typed API client with credentials inclusion
 │   └── package.json
 │
-├── .gitignore
+├── LICENSE                   # GNU General Public License v3.0
+├── AGENTS.md                 # System architecture & engineering guidelines
 └── README.md
 ```
 
@@ -50,8 +61,8 @@ D:\WikiTools\Feather New\
    - Authorization redirect: `https://meta.wikimedia.org/w/rest.php/oauth2/authorize`
    - Code-token exchange: `https://meta.wikimedia.org/w/rest.php/oauth2/access_token`
    - Profile retrieval: `https://meta.wikimedia.org/w/rest.php/oauth2/resource/profile`
-   - Secure HTTP-only JWT cookies (`feather_token`) with role management (`owner`, `jury`, `participant`).
-   - Dynamic user session display in Navbar and auto-filled submit forms.
+   - Secure HTTP-only JWT cookies (`feather_token`) with role management (`owner`, `admin`, `jury`, `participant`).
+   - Dynamic user session display in Navbar and automatic global steward/admin detection.
 
 2. **Real MediaWiki API Integration (Zero Fake Placeholders):**
    - **Page Verification:** `action=query&prop=info|revisions&rvdir=newer&rvlimit=1` queries the true original page creator, creation timestamp, and byte length.
@@ -69,6 +80,9 @@ D:\WikiTools\Feather New\
    - <kbd>A</kbd> — Accept
    - <kbd>R</kbd> — Reject
    - <kbd>S</kbd> — Skip
+   - <kbd>C</kbd> — Focus Comment
+   - <kbd>Q</kbd> — Toggle Queue Panel
+   - <kbd>U</kbd> — Undo last review
 
 6. **Wikimedia Rate-Limiting:**  
    Throttled background worker (`chan TalkPageJob`) running on a `time.Ticker(3s)` guarantees compliance with Wikimedia's 1-edit-per-3-seconds rule.
@@ -82,7 +96,7 @@ D:\WikiTools\Feather New\
 
 ### 1. Start the Go Backend (Port `8080`)
 ```powershell
-cd "D:\WikiTools\Feather New\backend"
+cd "backend"
 go run ./cmd/server
 # Or run the compiled binary:
 .\server.exe
@@ -91,7 +105,7 @@ go run ./cmd/server
 
 ### 2. Start the Next.js Frontend (Port `3000`)
 ```powershell
-cd "D:\WikiTools\Feather New\frontend"
+cd "frontend"
 pnpm dev
 ```
 > Open **http://localhost:3000** in your browser.

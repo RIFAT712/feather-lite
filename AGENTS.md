@@ -1,33 +1,35 @@
-# AGENTS.md — Feather 2.0 (Feather New)
+# AGENTS.md — Feather
 
-Welcome to **Feather 2.0** (`Feather New`). This document outlines the system architecture, design invariants, operational workflows, and engineering guardrails for AI coding agents and human developers working in this repository.
+Welcome to **Feather** (`feather-lite`). This document outlines the system architecture, design invariants, operational workflows, and engineering guardrails for AI coding agents and human developers working in this repository.
 
 ---
 
 ## 1. Project Overview & Mission
 
-**Feather 2.0** is an enterprise-grade, high-throughput Wiki Article Contest Management and Judging Platform built from scratch for **Wikimedia** projects (Bengali Wikipedia, Wiktionary, Commons, Wikisource, and sister wikis). It is engineered as a modern, high-performance successor to Wikimedia Fountain.
+**Feather** is an enterprise-grade, high-throughput Wiki Article Contest Management and Judging Platform built from scratch for **Wikimedia** projects (Bengali Wikipedia, English Wikipedia, Wiktionary, Commons, Wikisource, and sister wikis). It is engineered as a modern, high-performance, and user-friendly successor to Wikimedia Fountain.
 
 ### Primary Scale & Performance Target
 * **50,000+ entries** per contest.
 * **Sub-millisecond query response times** using composite indexes and cursor-based keyset pagination.
 * **60 FPS zero-lag UI** using viewport virtualization (`@tanstack/react-virtual`).
 * **Strict Wikimedia compliance**: 1 edit per 3 seconds rate-limiting, OAuth 2.0 token security, and accurate Bengali/multi-script Unicode word counting.
+* **Unified Branding**: Always brand as **Feather** (never "Feather 2.0").
 
 ---
 
 ## 2. Repository Structure
 
 ```
-D:\WikiTools\Feather New\
 ├── backend/                       # Go REST API service
-│   ├── cmd/server/main.go         # Entry point, Chi router, CORS, graceful shutdown
+│   ├── cmd/
+│   │   ├── server/main.go         # Entry point, Chi router, CORS, graceful shutdown
+│   │   └── benchmark/main.go      # 50,000+ article benchmark & performance suite
 │   ├── internal/
-│   │   ├── auth/                  # JWT auth middleware, claims, cookie management
+│   │   ├── auth/                  # JWT auth middleware, claims, global steward/admin detection
 │   │   ├── balancer/              # Scarcity-first jury assignment algorithm
 │   │   ├── config/                # Environment configuration loader (.env)
 │   │   ├── database/              # Pure-Go SQLite WAL & MariaDB engine (schema.sql)
-│   │   ├── handlers/              # Chi HTTP endpoints (auth, contests, articles, review)
+│   │   ├── handlers/              # Chi HTTP endpoints (auth, contests, articles, review, admin)
 │   │   ├── models/                # Domain models, DTOs, and KeysetPaginationResult
 │   │   ├── mwclient/              # Real MediaWiki Action API & OAuth 2.0 client
 │   │   ├── wikitext/              # Wikitext cleaner and Unicode word count engine
@@ -40,20 +42,28 @@ D:\WikiTools\Feather New\
 │   │   ├── app/                   # App Router pages and API routes
 │   │   │   ├── layout.tsx         # Root layout with Navbar, Footer, and Query Provider
 │   │   │   ├── page.tsx           # Active contests portal
-│   │   │   ├── contests/[code]/   # Contest dashboard, leaderboard, submit, review
+│   │   │   ├── admin/             # Platform admin management portal
+│   │   │   ├── license/           # Open source GPL-3.0 & CC BY-SA 4.0 license page
+│   │   │   ├── users/             # User profiles & global activity
+│   │   │   ├── contests/[code]/   # Contest dashboard & tabs (Articles, Leaderboard, Rules)
+│   │   │   │   ├── jury/          # Jury stats hub & queue redistribution
+│   │   │   │   ├── review/        # Split-pane review queue, keyboard shortcuts, diffs
+│   │   │   │   ├── submit/        # Multi-check article submission modal
+│   │   │   │   └── users/[user]/  # Contest-specific user contribution view
 │   │   │   └── contests/new/      # Contest creation wizard
 │   │   ├── components/
 │   │   │   ├── contests/          # WikiSelector, TimezoneSelector
 │   │   │   ├── icons/             # CodexIcons (Wikimedia design system icons)
 │   │   │   ├── layout/            # Navbar, Footer, LanguageSwitcher
-│   │   │   └── ui/                # shadcn primitives (Button, Card, Dialog, Table, etc.)
-│   │   ├── i18n/                  # Translatewiki-compliant i18n (bn.json, en.json, qqq.json)
+│   │   │   ├── users/             # UserBadge (role badges: Owner, Admin, Jury, Participant)
+│   │   │   └── ui/                # Base-UI / shadcn primitives (Button, Card, Dialog, Table, etc.)
+│   │   ├── i18n/                  # Translatewiki-compliant i18n (bn.json, en.json, qqq.json, etc.)
 │   │   └── lib/                   # API client (api.ts), time helpers, wikis database
 │   ├── package.json               # Dependencies and scripts
 │   └── tsconfig.json
 │
-├── .gitignore                     # Ignores *.exe, *.db, *.db-wal, node_modules, .env
-├── AGENTS.md                      # This guide for AI agents
+├── LICENSE                        # GNU General Public License v3.0 (GPL-3.0-or-later)
+├── AGENTS.md                      # This guide for AI agents & developers
 └── README.md                      # Public project documentation
 ```
 
@@ -66,24 +76,24 @@ D:\WikiTools\Feather New\
 | **Backend Language** | Go 1.22+ | Compiled, low memory, high concurrency |
 | **HTTP Router** | `go-chi/chi/v5` | Lightweight, idiomatic standard `net/http` compatibility |
 | **Database Engine** | `modernc.org/sqlite` | **Zero CGO** SQLite with WAL mode for local dev; MariaDB driver for Toolforge |
-| **Auth** | Wikimedia OAuth 2.0 + `golang-jwt/jwt/v5` | Secure HTTP-only `feather_token` cookie |
+| **Auth** | Wikimedia OAuth 2.0 + `golang-jwt/jwt/v5` | Secure HTTP-only `feather_token` cookie, Steward/Admin detection |
 | **Frontend Framework** | Next.js 16.4+ (App Router) + React 19 | Server & Client components, modern web architecture |
-| **Styling** | Tailwind CSS v4 + `shadcn/ui` | Clean, modern, accessible interface |
+| **Styling** | Tailwind CSS v4 + Base-UI / `shadcn` | Clean, modern, accessible interface |
 | **State & Data Fetching** | `@tanstack/react-query` | Dynamic caching, invalidation, background revalidation |
 | **Virtualization** | `@tanstack/react-virtual` | 60 FPS rendering for 50,000+ article tables |
-| **Internationalization** | Custom Context + Translatewiki format | Standardized `bn.json`, `en.json`, and `qqq.json` |
+| **Internationalization** | Custom Context + Translatewiki format | Synchronous `bn.json`, `en.json`, and `qqq.json` |
 
 ---
 
-## 4. Development Workflow & Commands
+## 4. Development & Deployment Workflow
 
 ### Backend Commands (`backend/`)
 ```powershell
 # Run the Go backend server (port 8080)
-cd "D:\WikiTools\Feather New\backend"
+cd "backend"
 go run ./cmd/server
 
-# Run unit tests (balancer, wikitext, etc.)
+# Run unit tests (balancer, wikitext, worker, etc.)
 go test ./...
 
 # Build binary
@@ -93,24 +103,33 @@ go build -o feather-server.exe ./cmd/server
 ### Frontend Commands (`frontend/`)
 ```powershell
 # Install dependencies (use pnpm)
-cd "D:\WikiTools\Feather New\frontend"
+cd "frontend"
 pnpm install
 
 # Start development server (port 3000)
 pnpm dev
 
+# Typecheck source code
+pnpm exec tsc --noEmit --incremental false
+
 # Build production bundle
 pnpm build
-
-# Lint source code
-pnpm lint
 ```
 
-### Development Bypass & Testing
-* **Dev Login Bypass:** When Wikimedia OAuth is unavailable locally, use `http://localhost:8080/auth/dev-login?username=YourUsername` to automatically generate a valid JWT session cookie without going through Meta-Wiki.
-* **Port Setup:**
-  * Backend: `http://localhost:8080`
-  * Frontend: `http://localhost:3000`
+### Wikimedia Toolforge Deployment
+Feather is deployed to Wikimedia Cloud Services (Toolforge) under tool `feather-lite`.
+* **Live Toolforge URL**: `https://feather-lite.toolforge.org`
+* **Source Repository**: `https://github.com/RIFAT712/feather-lite.git` (`main` branch)
+* **Toolforge Build & Deploy**:
+  ```bash
+  # 1. Trigger build via SSH
+  ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new login.toolforge.org \
+    "become feather-lite toolforge build start https://github.com/RIFAT712/feather-lite.git"
+  
+  # 2. Restart webservice after successful build
+  ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new login.toolforge.org \
+    "become feather-lite toolforge webservice restart"
+  ```
 
 ---
 
@@ -136,19 +155,23 @@ All agents modifying code in this repository must uphold the following rules:
   * `idx_articles_jury_queue ON articles(contest_id, assigned_to_id, status, id DESC)`
 
 ### C. Wikimedia API & Rate-Limiting Guardrails
-* **Talk Page Edit Throttle:** Wikimedia policy requires bot edits to be throttled. All talk-page notification jobs MUST pass through `worker.TalkQueueWorker` using a `time.Ticker(3s)` (1 edit per 3 seconds max).
+* **Talk Page Edit Throttle:** Wikimedia policy strictly requires bot edits to be throttled. All talk-page notification jobs MUST pass through `worker.TalkQueueWorker` using a `time.Ticker(3s)` (1 edit per 3 seconds max).
+* **Edit Summary Standard:**
+  * Clean single-link attribution: `[[:m:Feather|Feather]]`.
+  * Localized by target wiki language (e.g., Bengali for `bnwiki`, English default for others).
+  * Do not duplicate the tool name in edit summaries.
 * **Real MediaWiki API Integration:**
-  * Use real MediaWiki Action API endpoints (`action=query&prop=info|revisions`, `action=parse`).
+  * Use real MediaWiki Action API endpoints (`action=query&prop=info|revisions`, `action=parse`, `action=compare`).
   * Never introduce fake mocked responses into production paths.
 * **Accurate Unicode Bengali Counting:**
   * Wikitext must be stripped of templates, refs, comments, and opaque blocks before counting words (`internal/wikitext/wikitext.go`).
   * Unicode Bengali punctuation (`।`, `॥`, etc.) and multi-script boundaries must be preserved.
 
-### D. Jury Load Balancing & Scarcity-First Allocation
-* The assignment of pending articles to juries is handled via `balancer.PlanScarcityFirst`.
-* When implementing jury rules:
-  * Prevent Conflict of Interest (COI) — juries must not review their own articles unless explicitly permitted.
-  * Allocate the most constrained articles first (scarcity-first min-heap) to avoid jury starvation.
+### D. Jury Load Balancing & Review Workflow
+* **Scarcity-First Balancer:** Assignment of pending articles to juries is handled via `balancer.PlanScarcityFirst`.
+* **Conflict of Interest (COI):** Juries must not review their own articles unless explicitly permitted by contest settings.
+* **Review Locking:** Juries acquire a soft lock on an article (`acquireArticleLock`) while reviewing to prevent collision.
+* **Keyboard Navigation:** Review screen supports rapid keyboard shortcuts (`A` accept, `R` reject, `S` skip, `C` comment, `Q` queue toggle, `U` undo).
 
 ### E. Translatewiki-Compliant i18n
 * **No hardcoded text** in UI components.
@@ -158,21 +181,26 @@ All agents modifying code in this repository must uphold the following rules:
   * `qqq.json` — Parameter descriptions and translator notes for Translatewiki.
 * When adding a new key, update all three files synchronously.
 
-### F. Next.js 16 & React 19 Standards
+### F. Global Rights & Auth Architecture
+* **OAuth 2.0 Handshake:** Secure token exchange with Wikimedia Meta-Wiki.
+* **Global Rights Recognition:** When fetching user rights, global steward, global sysop, and local admin rights must be recognized without requiring manual role overrides.
+* **Dev Login Bypass:** When Wikimedia OAuth is unavailable locally, use `http://localhost:8080/auth/dev-login?username=YourUsername` to generate a valid JWT session cookie without going through Meta-Wiki.
+
+### G. Clean "Feather" Branding
+* Always brand the application simply as **Feather** (never "Feather 2.0" or "Feather New" in user-facing UI or copy).
+* No version badge pills next to the logo in headers or footers.
+
+### H. Next.js 16 & React 19 Standards
 * Respect `frontend/AGENTS.md` regarding breaking changes in Next.js 16 / React 19.
 * Use Server Components where possible; use `"use client"` only for interactive components (hooks, state, event handlers).
 * Table rows for contests with many submissions must use `@tanstack/react-virtual` to avoid rendering large numbers of DOM nodes.
+* Note: Button primitives in this repo use `@base-ui/react/button` and do not support Radix `asChild`. Use `buttonVariants({ variant, size })` on links.
 
-### G. Modern Web Guidance (Google Chrome Web Platform Standards)
-* **Search Before Implementation:** For all HTML/CSS and client-side JS tasks, consult the modern web catalog (`modern-web-guidance search "<query>"`).
-* **Native Web Primitives Over Heavy Polyfills:**
-  * Modals and popovers: native `<dialog>` and HTML `popover` / `popovertarget`.
-  * Responsive positioning: CSS Anchor Positioning and Container Queries (`@container`).
-  * Transitions: native View Transitions API (`document.startViewTransition`).
-  * Smooth responsiveness: CSS Subgrid instead of JS layout calculations.
-* **Core Web Vitals:** Prevent layout shifts (CLS), optimize INP using `scheduler.yield()`, and employ `content-visibility: auto` on lengthy DOM fragments.
+### I. Modern Web Guidance (Google Chrome Platform Standards)
+* Native primitives over heavy polyfills: `<dialog>` for modals, HTML `popover` for popovers, CSS Anchor Positioning, and View Transitions API.
+* Core Web Vitals: Optimize INP with `scheduler.yield()`, prevent CLS, and use `content-visibility: auto` on lengthy DOM fragments.
 
-### H. Ponytail Engineering Discipline (Lazy Senior Dev Mode)
+### J. Ponytail Engineering Discipline (Lazy Senior Dev Mode)
 * **The Principle:** Lazy means efficient and disciplined, not careless. The best code is code you never had to write.
 * **Climb the Ladder Before Writing Code:**
   1. YAGNI: Does this feature or abstraction actually need to exist?
@@ -185,31 +213,19 @@ All agents modifying code in this repository must uphold the following rules:
 * **Anti-Bloat Invariants:** No unrequested abstractions, no speculative generic layers, no new dependencies without explicit necessity.
 * **Shortcut Accountability:** Mark any intentional shortcut with a `// ponytail:` comment detailing the boundary and upgrade path.
 
-### I. Model Context Protocol (MCP) & Plugin Ecosystem
-* **Declared Plugins (`.agents/plugins.json`):**
-  * `modern-web-guidance` — Web platform guides and standards.
-  * `ponytail` — Engineering restraint and minimal-code review tools.
-  * `context-mode` — High-efficiency context window reduction and file indexing.
-* **Configured MCP Servers:**
-  * `shadcn` — Fast UI component scaffolding.
-  * `sqlite` — Direct SQLite querying and schema verification on `backend/feather.db`.
-  * `puppeteer` — Headless browser UI testing and screenshot verification.
-  * `ponytail` — On-demand ruleset and guidance prompts via MCP stdio.
-  * `context-mode` — Knowledge base and large output processor.
-
 ---
 
 ## 6. Database Schema Summary
 
 Key tables in SQLite (`feather.db`) / MariaDB:
 
-1. **`users`**: Wikimedia users (`wiki_username`, `role` = `participant` | `jury` | `owner`, `oauth_access_token`).
+1. **`users`**: Wikimedia users (`wiki_username`, `role` = `participant` | `jury` | `admin` | `owner`, `oauth_access_token`).
 2. **`contests`**: Contest configurations, rules (creator check, byte/word minimums, date windows, talk template options).
 3. **`contest_juries`**: Association of users acting as juries for a contest.
 4. **`contest_jury_restrictions`**: COI and submitter-jury restrictions.
 5. **`articles`**: Submitted articles with verification metadata (`status` = `pending` | `accepted` | `rejected` | `validation_failed`, word/byte counts, assigned jury).
-6. **`reviews`**: Jury decisions (`accepted`, `rejected`, `skipped`) with optional comments.
-7. **`talk_page_jobs`**: Throttled queue for writing talk page templates.
+6. **`reviews`**: Jury decisions (`accepted`, `rejected`, `skipped`) with optional comments and timestamps.
+7. **`talk_page_jobs`**: Throttled queue for writing talk page templates (`status` = `queued` | `processing` | `done` | `failed`, `retry_count`).
 
 ---
 

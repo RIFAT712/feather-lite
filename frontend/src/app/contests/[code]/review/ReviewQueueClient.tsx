@@ -172,7 +172,7 @@ export default function ReviewQueueClient({
     return DEFAULT_SHORTCUTS;
   });
 
-  const commentBoxRef = useRef<HTMLTextAreaElement>(null);
+  const commentBoxRef = useRef<HTMLInputElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
   const currentlyLockedArticleIdRef = useRef<number | null>(null);
 
@@ -818,131 +818,229 @@ export default function ReviewQueueClient({
 
   return (
     <div className="flex flex-col h-screen h-[100dvh] bg-background text-foreground overflow-hidden select-none">
-      {/* 1. FLOW HEADER BAR (Progress Bar + Stat Cards + Mode Switcher) */}
-      <div className="shrink-0 border-b border-border bg-card/95 backdrop-blur-md px-3 sm:px-6 py-2 z-20">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          {/* Contest info & drawer toggle */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Link
-              href={`/contests/${code}`}
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
-            >
-              <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
-              <span className="hidden sm:inline">{t("feather-nav-dashboard")}</span>
-            </Link>
+      {/* 1. UNIFIED COMMAND BAR (42px) */}
+      <header className="shrink-0 border-b border-border bg-card/95 backdrop-blur-md px-3 sm:px-4 h-11 flex items-center justify-between gap-2 z-20">
+        {/* Left: Nav, Queue toggle, & Current Article context */}
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href={`/contests/${code}`}
+            className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0"
+            title={t("feather-nav-dashboard")}
+          >
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+          </Link>
 
-            <span className="text-border">|</span>
+          {/* Collapse / Expand Drawer Toggle */}
+          <Button
+            variant={sidebarCollapsed ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setSidebarCollapsed((prev) => !prev)}
+            className="h-7 px-2 text-xs gap-1.5 cursor-pointer font-medium shadow-2xs shrink-0"
+            title={`${sidebarCollapsed ? t("feather-review-expand-drawer") : t("feather-review-collapse-drawer")} (${shortcuts.queue.toUpperCase()})`}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen className="h-3.5 w-3.5 text-primary" />
+            ) : (
+              <PanelLeftClose className="h-3.5 w-3.5" />
+            )}
+            <Badge variant="secondary" className="text-[10px] font-mono px-1 py-0 h-4">
+              {activeTabArticles.length}
+            </Badge>
+          </Button>
 
-            {/* Live Indicator Dot */}
-            <span
-              className="relative flex h-2.5 w-2.5 shrink-0"
-              title={t("feather-review-live-dot-title")}
-            >
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
+          <span className="text-border/80 hidden sm:inline">|</span>
 
-            {/* Collapse / Expand Drawer Toggle */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSidebarCollapsed((prev) => !prev)}
-              className="h-7 px-2 text-xs gap-1.5 cursor-pointer font-medium shadow-2xs shrink-0"
-              title={sidebarCollapsed ? t("feather-review-expand-drawer") : t("feather-review-collapse-drawer")}
-            >
-              {sidebarCollapsed ? (
-                <PanelLeftOpen className="h-3.5 w-3.5 text-primary" />
-              ) : (
-                <PanelLeftClose className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden sm:inline">{t("feather-review-nav-queue")}</span>
-              <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0 h-4">
-                {activeTabArticles.length}
-              </Badge>
-            </Button>
+          {selectedArticle ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[11px] font-mono text-muted-foreground hidden lg:inline">
+                #{n(selectedArticle.id)}
+              </span>
 
-            <h1 className="text-xs sm:text-sm font-bold truncate text-foreground flex items-center gap-2">
-              <span>{contest?.name || t("feather-nav-review-queue")}</span>
-              <Badge variant="outline" className="text-[9px] font-normal uppercase tracking-wider text-muted-foreground hidden lg:inline-flex">
-                {isDistributedMode ? t("feather-create-jury-distribution-divided") : t("feather-create-jury-distribution-shared")}
-              </Badge>
-            </h1>
-          </div>
-
-          {/* Quick links, Organizer Switcher, & Hotkeys */}
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto text-xs">
-            {/* If contest is distributed mode and user is owner, show judge switcher */}
-            {isDistributedMode && isOwner && contest?.juries?.length ? (
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="text-[11px] text-muted-foreground hidden md:inline">
-                  {t("feather-review-view-as")}:
-                </span>
-                <select
-                  value={selectedJudge}
-                  onChange={(e) => setSelectedJudge(e.target.value)}
-                  className="h-7 px-2 text-xs rounded-md border border-border bg-background text-foreground cursor-pointer shadow-2xs font-medium"
+              <div className="flex items-center gap-1 min-w-0 max-w-[140px] sm:max-w-[220px] md:max-w-[320px] lg:max-w-[420px]">
+                <h1 className="text-xs sm:text-sm font-bold truncate text-foreground" title={selectedArticle.title}>
+                  {selectedArticle.title}
+                </h1>
+                <button
+                  type="button"
+                  onClick={handleCopyTitle}
+                  className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer shrink-0"
+                  title={t("feather-review-copy-title")}
                 >
-                  <option value="all">All Juries</option>
-                  {contest.juries.map((jury) => (
-                    <option key={jury} value={jury}>
-                      {jury} {jury === myUsername ? "(You)" : ""}
-                    </option>
-                  ))}
-                </select>
+                  {titleCopied ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </button>
               </div>
-            ) : null}
 
-            {/* Link to Jury Hub */}
-            <Link
-              href={`/contests/${code}/jury`}
-              className={buttonVariants({
-                variant: "ghost",
-                size: "sm",
-                className: "h-7 text-xs gap-1.5 font-medium text-muted-foreground hover:text-foreground cursor-pointer px-2.5",
-              })}
-              title="Open full Jury Statistics Hub"
-            >
-              <BarChart3 className="h-3.5 w-3.5 text-primary" />
-              <span className="hidden sm:inline">{t("feather-review-nav-hub")}</span>
-            </Link>
+              <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+                <span className="flex items-center gap-1 truncate max-w-[120px]">
+                  <User className="h-3 w-3" />
+                  <strong className="text-foreground">{selectedArticle.submitter_username}</strong>
+                </span>
 
-            {/* Keyboard shortcuts modal trigger */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowShortcutHelp(true)}
-              className="h-7 px-2.5 text-xs gap-1.5 font-mono cursor-pointer shadow-2xs"
-              title="Keyboard shortcuts (?)"
-            >
-              <Keyboard className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="hidden sm:inline">{t("feather-review-nav-shortcuts")}</span>
-              <kbd className="hidden sm:inline-block px-1 rounded bg-muted text-[10px] border border-border/80">?</kbd>
-            </Button>
-          </div>
+                {selectedArticle.wiki_creator && selectedArticle.wiki_creator === selectedArticle.submitter_username && (
+                  <Badge variant="outline" className="text-[9px] text-emerald-600 bg-emerald-500/10 border-emerald-500/20 py-0 px-1 font-semibold gap-0.5">
+                    <CheckCircle2 className="h-2.5 w-2.5" />
+                    <span>Creator</span>
+                  </Badge>
+                )}
+
+                {selectedArticle.locked_by_username && selectedArticle.locked_by_username !== myUsername && (
+                  <Badge variant="outline" className="text-[9px] gap-0.5 text-amber-600 bg-amber-500/10 border-amber-500/20 py-0 px-1">
+                    <Lock className="h-2.5 w-2.5" />
+                    <span>{selectedArticle.locked_by_username}</span>
+                  </Badge>
+                )}
+
+                <Badge
+                  variant={
+                    selectedArticle.status === "accepted"
+                      ? "default"
+                      : selectedArticle.status === "rejected"
+                      ? "destructive"
+                      : "secondary"
+                  }
+                  className="text-[9px] uppercase font-bold px-1.5 py-0 h-4"
+                >
+                  {selectedArticle.status === "accepted"
+                    ? `✓ ${t("feather-contest-filter-accepted")}`
+                    : selectedArticle.status === "rejected"
+                    ? `✕ ${t("feather-contest-filter-rejected")}`
+                    : t("feather-contest-filter-pending")}
+                </Badge>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-xs sm:text-sm font-bold truncate text-foreground">
+                {contest?.name || t("feather-nav-review-queue")}
+              </h1>
+            </div>
+          )}
         </div>
 
-        {/* Real-time Progress Bar */}
-        <div className="mt-2 space-y-1">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-foreground">
-                {t("feather-review-progress-summary", statusStats.judged, statusStats.judgeableTotal)}
+        {/* Right: Quick Tools, Live Stats, Shortcuts */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Article Live Word / Byte Count Chip */}
+          {selectedArticle && (
+            <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50">
+              <span className="font-semibold text-foreground">
+                {t("feather-review-preview-words", previewData?.word_count ?? selectedArticle.word_count)}
               </span>
-              <span className="font-mono text-[10px] text-muted-foreground hidden sm:inline">
-                (✓ {statusStats.accepted} · ✕ {statusStats.rejected} · ⏳ {statusStats.pending})
+              <span>·</span>
+              <span>
+                {t("feather-review-preview-bytes", previewData?.byte_count ?? selectedArticle.byte_count)}
               </span>
             </div>
-            <span className="font-mono font-semibold text-primary">
-              {t("feather-review-progress-percent", statusStats.percent)}
+          )}
+
+          {/* Micro Progress Chip */}
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded border border-border/40">
+            <span className="font-semibold text-foreground">
+              {n(statusStats.judged)}/{n(statusStats.judgeableTotal)}
+            </span>
+            <span className="text-primary font-mono text-[10px]">
+              ({statusStats.percent}%)
             </span>
           </div>
-          <div className="h-1.5 w-full bg-muted/60 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-300 rounded-full"
-              style={{ width: `${statusStats.percent}%` }}
-            />
-          </div>
+
+          {/* If contest is distributed mode and user is owner, show judge switcher */}
+          {isDistributedMode && isOwner && contest?.juries?.length ? (
+            <select
+              value={selectedJudge}
+              onChange={(e) => setSelectedJudge(e.target.value)}
+              className="h-7 px-1.5 text-xs rounded border border-border bg-background text-foreground cursor-pointer font-medium max-w-[100px] sm:max-w-none"
+              title="Filter by assigned jury"
+            >
+              <option value="all">All Juries</option>
+              {contest.juries.map((jury) => (
+                <option key={jury} value={jury}>
+                  {jury} {jury === myUsername ? "(You)" : ""}
+                </option>
+              ))}
+            </select>
+          ) : null}
+
+          {/* Selected Article Tools (Wikitext split & External Wiki) */}
+          {selectedArticle && (
+            <>
+              <Button
+                variant={showWikitext ? "default" : "outline"}
+                size="sm"
+                onClick={toggleWikitext}
+                className="h-7 px-2 text-xs gap-1 cursor-pointer font-medium shadow-2xs"
+                title={`Toggle Wikitext Pane (${shortcuts.wiki.toUpperCase()})`}
+              >
+                <Code2 className="h-3.5 w-3.5" />
+                <span className="hidden xl:inline">{t("feather-review-wikitext-toggle")}</span>
+              </Button>
+
+              <a
+                href={`${activeWikiUrl}/wiki/${encodeURIComponent(selectedArticle.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants({
+                  variant: "outline",
+                  size: "sm",
+                  className: "h-7 px-2 text-xs gap-1 cursor-pointer shadow-2xs",
+                })}
+                title="Open article on Wikimedia wiki"
+              >
+                <span className="hidden xl:inline">{t("feather-review-open-wiki")}</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+
+              {/* Delete article button (owner or admin) */}
+              {(isOwner || me?.role === "owner" || me?.role === "admin") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDeleteConfirmArticle(selectedArticle)}
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
+                  title={t("feather-review-btn-delete")}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </>
+          )}
+
+          {/* Link to Jury Hub */}
+          <Link
+            href={`/contests/${code}/jury`}
+            className={buttonVariants({
+              variant: "ghost",
+              size: "sm",
+              className: "h-7 w-7 sm:w-auto p-0 sm:px-2 text-xs gap-1 font-medium text-muted-foreground hover:text-foreground cursor-pointer",
+            })}
+            title="Open full Jury Statistics Hub"
+          >
+            <BarChart3 className="h-3.5 w-3.5 text-primary" />
+            <span className="hidden sm:inline">{t("feather-review-nav-hub")}</span>
+          </Link>
+
+          {/* Keyboard shortcuts modal trigger */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowShortcutHelp(true)}
+            className="h-7 px-1.5 sm:px-2 text-xs gap-1 font-mono cursor-pointer shadow-2xs"
+            title="Keyboard shortcuts (?)"
+          >
+            <Keyboard className="h-3.5 w-3.5 text-muted-foreground" />
+            <kbd className="hidden sm:inline-block px-1 rounded bg-muted text-[10px] border border-border/80">?</kbd>
+          </Button>
         </div>
+      </header>
+
+      {/* Progress Track (2px high, zero clutter) */}
+      <div className="h-[2px] w-full bg-muted/40 overflow-hidden shrink-0">
+        <div
+          className="h-full bg-primary transition-all duration-300"
+          style={{ width: `${statusStats.percent}%` }}
+        />
       </div>
 
       {/* 2. MAIN SPLIT/FLOW WORKSPACE */}
@@ -1309,179 +1407,49 @@ export default function ReviewQueueClient({
         >
           {selectedArticle ? (
             <div className="flex-1 flex flex-col h-full overflow-hidden">
-              {/* Article Top Bar */}
-              <div className="px-4 sm:px-6 py-2.5 border-b border-border bg-card/70 backdrop-blur-sm flex items-center justify-between gap-3 shrink-0">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    {/* Mobile Back Button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setMobileTab("list")}
-                      className="md:hidden h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
-                      <span>{t("feather-review-nav-queue")}</span>
-                    </Button>
-
-                    <Badge variant="outline" className="text-[10px] font-mono">
-                      #{n(selectedArticle.id)}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                      <User className="h-3 w-3" />
-                      by <strong className="text-foreground">{selectedArticle.submitter_username}</strong>
-                    </span>
-
-                    {selectedArticle.wiki_creator && selectedArticle.wiki_creator === selectedArticle.submitter_username && (
-                      <Badge variant="outline" className="text-[9px] text-emerald-600 bg-emerald-500/10 border-emerald-500/20 py-0 px-1 font-semibold gap-0.5">
-                        <CheckCircle2 className="h-2.5 w-2.5" />
-                        <span>Creator</span>
-                      </Badge>
-                    )}
-
-                    {/* Lock Badge */}
-                    {selectedArticle.locked_by_username && selectedArticle.locked_by_username !== myUsername && (
-                      <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 bg-amber-500/10 border-amber-500/20">
-                        <Lock className="h-3 w-3" />
-                        <span>{t("feather-review-locked-by", selectedArticle.locked_by_username)}</span>
-                      </Badge>
-                    )}
-
-                    <Badge
-                      variant={
-                        selectedArticle.status === "accepted"
-                          ? "default"
-                          : selectedArticle.status === "rejected"
-                          ? "destructive"
-                          : "secondary"
-                      }
-                      className="text-[10px] uppercase font-bold px-1.5 py-0"
-                    >
-                      {selectedArticle.status === "accepted"
-                        ? `✓ ${t("feather-contest-filter-accepted")}`
-                        : selectedArticle.status === "rejected"
-                        ? `✕ ${t("feather-contest-filter-rejected")}`
-                        : t("feather-contest-filter-pending")}
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-foreground truncate">
-                      {selectedArticle.title}
-                    </h2>
+              {/* Mobile Back Button & Pane switch (Visual vs Wikitext) on mobile only */}
+              <div className="sm:hidden flex items-center justify-between border-b border-border bg-card px-3 py-1.5 text-xs shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMobileTab("list")}
+                  className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
+                  <span>{t("feather-review-nav-queue")}</span>
+                </Button>
+                {showWikitext && (
+                  <div className="flex items-center gap-1 font-medium">
                     <button
                       type="button"
-                      onClick={handleCopyTitle}
-                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer shrink-0"
-                      title={t("feather-review-copy-title")}
+                      onClick={() => setMobilePreviewPane("visual")}
+                      className={`px-2 py-0.5 rounded ${
+                        mobilePreviewPane === "visual" ? "bg-muted font-bold text-foreground" : "text-muted-foreground"
+                      }`}
                     >
-                      {titleCopied ? (
-                        <Check className="h-4 w-4 text-emerald-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
+                      {t("feather-review-mobile-tab-visual")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobilePreviewPane("wikitext")}
+                      className={`px-2 py-0.5 rounded ${
+                        mobilePreviewPane === "wikitext" ? "bg-muted font-bold text-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      {t("feather-review-mobile-tab-wikitext")}
                     </button>
                   </div>
-                </div>
-
-                {/* Top Action Tools */}
-                <div className="flex items-center gap-2 shrink-0">
-                  {/* Wikitext Switcher */}
-                  <Button
-                    variant={showWikitext ? "default" : "outline"}
-                    size="sm"
-                    onClick={toggleWikitext}
-                    className="h-8 text-xs gap-1.5 cursor-pointer font-medium shadow-2xs"
-                    title="Toggle raw wikitext pane (Wikitext)"
-                  >
-                    <Code2 className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{t("feather-review-wikitext-toggle")}</span>
-                  </Button>
-
-                  {/* Open on Wiki Link */}
-                  <a
-                    href={`${activeWikiUrl}/wiki/${encodeURIComponent(
-                      selectedArticle.title
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={buttonVariants({
-                      variant: "outline",
-                      size: "sm",
-                      className: "h-8 text-xs gap-1.5 cursor-pointer shadow-2xs",
-                    })}
-                    title="Open article on Wikimedia wiki (W)"
-                  >
-                    <span className="hidden sm:inline">{t("feather-review-open-wiki")}</span>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-
-                  {/* Delete article button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteConfirmArticle(selectedArticle)}
-                    className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive cursor-pointer"
-                    title={t("feather-review-btn-delete")}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                )}
               </div>
-
-              {/* Mobile Pane Tabs (Visual vs Wikitext) */}
-              {showWikitext && (
-                <div className="flex sm:hidden border-b border-border bg-muted/20 p-1 text-xs font-medium shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setMobilePreviewPane("visual")}
-                    className={`flex-1 py-1 rounded text-center transition-colors ${
-                      mobilePreviewPane === "visual"
-                        ? "bg-background text-foreground font-bold shadow-2xs"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {t("feather-review-mobile-tab-visual")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMobilePreviewPane("wikitext")}
-                    className={`flex-1 py-1 rounded text-center transition-colors ${
-                      mobilePreviewPane === "wikitext"
-                        ? "bg-background text-foreground font-bold shadow-2xs"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {t("feather-review-mobile-tab-wikitext")}
-                  </button>
-                </div>
-              )}
 
               {/* MediaWiki Sandboxed Iframe Preview & Raw Wikitext Split Pane */}
               <div className="flex-1 overflow-hidden flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-border">
                 {/* Visual Preview Iframe Pane */}
                 <div
-                  className={`flex-1 flex flex-col overflow-hidden ${
+                  className={`flex-1 flex flex-col h-full overflow-hidden ${
                     showWikitext && mobilePreviewPane === "wikitext" ? "hidden md:flex" : "flex"
                   }`}
                 >
-                  {/* Live Word / Byte Count Header */}
-                  <div className="px-4 py-2 border-b border-border/60 bg-muted/10 flex items-center justify-between text-xs font-mono text-muted-foreground shrink-0">
-                    <span className="flex items-center gap-1.5 font-semibold text-foreground">
-                      <BookOpen className="h-3.5 w-3.5 text-primary" />
-                      {t("feather-review-preview-header")}
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-foreground">
-                        {t("feather-review-preview-words", previewData?.word_count ?? selectedArticle.word_count)}
-                      </span>
-                      <span>·</span>
-                      <span className="font-semibold text-foreground">
-                        {t("feather-review-preview-bytes", previewData?.byte_count ?? selectedArticle.byte_count)}
-                      </span>
-                    </div>
-                  </div>
-
                   {previewLoading ? (
                     <div className="flex-1 p-6 space-y-4 bg-background">
                       <div className="flex items-center justify-between border-b border-border/40 pb-3">
@@ -1582,7 +1550,7 @@ export default function ReviewQueueClient({
                       mobilePreviewPane === "visual" ? "hidden md:flex" : "flex"
                     }`}
                   >
-                    <div className="p-2.5 sm:p-3 border-b border-border bg-card flex items-center justify-between gap-2 shrink-0">
+                    <div className="p-2 sm:p-2.5 border-b border-border bg-card flex items-center justify-between gap-2 shrink-0">
                       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                         <Code2 className="h-3.5 w-3.5 text-primary" />
                         {t("feather-review-raw-wikitext")}
@@ -1622,130 +1590,125 @@ export default function ReviewQueueClient({
                 )}
               </div>
 
-              {/* Previous Evaluation Card (if re-reviewing) */}
+              {/* Previous Evaluation Banner (Compact 1-liner if re-reviewing) */}
               {selectedArticle.reviews && selectedArticle.reviews.length > 0 && (
-                <div className="mx-3 sm:mx-6 mb-1 p-2.5 rounded-lg border border-border/80 bg-muted/30 flex items-start gap-2.5 text-xs animate-in fade-in-0 duration-150">
-                  <MessageSquareQuote className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                      <span className="font-semibold text-foreground">
-                        {t("feather-review-previous-decision")}:
-                      </span>
-                      <Badge
-                        variant={
-                          selectedArticle.reviews[selectedArticle.reviews.length - 1].status === "accepted"
-                            ? "default"
-                            : selectedArticle.reviews[selectedArticle.reviews.length - 1].status === "rejected"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                        className="text-[9px] font-bold uppercase py-0 px-1.5 h-4"
-                      >
-                        {selectedArticle.reviews[selectedArticle.reviews.length - 1].status}
-                      </Badge>
-                      <span className="text-muted-foreground font-medium">
-                        {t("feather-review-reviewed-by", selectedArticle.reviews[selectedArticle.reviews.length - 1].reviewer_username)}
-                      </span>
-                      {selectedArticle.reviews[selectedArticle.reviews.length - 1].timestamp && (
-                        <span className="text-muted-foreground/80 font-mono text-[10px]">
-                          • {new Date(selectedArticle.reviews[selectedArticle.reviews.length - 1].timestamp).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
+                <div className="px-3 sm:px-4 py-1.5 border-t border-border bg-muted/40 flex items-center justify-between gap-2 text-xs shrink-0 animate-in fade-in-0 duration-150">
+                  <div className="flex items-center gap-2 min-w-0 truncate">
+                    <MessageSquareQuote className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="text-muted-foreground text-[11px] shrink-0 font-medium">
+                      {t("feather-review-previous-decision")}:
+                    </span>
+                    <Badge
+                      variant={
+                        selectedArticle.reviews[selectedArticle.reviews.length - 1].status === "accepted"
+                          ? "default"
+                          : selectedArticle.reviews[selectedArticle.reviews.length - 1].status === "rejected"
+                          ? "destructive"
+                          : "secondary"
+                      }
+                      className="text-[9px] font-bold uppercase py-0 px-1.5 h-4 shrink-0"
+                    >
+                      {selectedArticle.reviews[selectedArticle.reviews.length - 1].status}
+                    </Badge>
+                    <span className="text-muted-foreground font-medium text-[11px] truncate">
+                      by {selectedArticle.reviews[selectedArticle.reviews.length - 1].reviewer_username}
+                    </span>
                     {selectedArticle.reviews[selectedArticle.reviews.length - 1].comment && (
-                      <p className="text-xs text-foreground/90 italic bg-background/70 px-2 py-1 rounded border border-border/50">
+                      <span className="text-foreground/90 italic truncate max-w-xs sm:max-w-md">
                         "{selectedArticle.reviews[selectedArticle.reviews.length - 1].comment}"
-                      </p>
+                      </span>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* 3. DECISION CONSOLE (Sticky Bottom with Safe Area) */}
-              <div className="p-3 sm:p-4 border-t border-border bg-card/95 backdrop-blur-md shrink-0 shadow-lg space-y-2.5">
+              {/* 3. DECISION DOCK (Compact 48px Sticky Bar) */}
+              <div className="px-3 sm:px-4 py-2 border-t border-border bg-card/95 backdrop-blur-md shrink-0 shadow-lg flex items-center justify-between gap-2 sm:gap-3">
                 {/* Note for submitter */}
-                <div className="flex gap-2">
-                  <Textarea
+                <div className="relative flex-1 max-w-xs sm:max-w-sm md:max-w-md">
+                  <Input
                     ref={commentBoxRef}
+                    type="text"
                     placeholder={t("feather-review-comment-placeholder")}
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    className="h-14 text-xs resize-none bg-background"
+                    className="h-8 text-xs bg-background pr-7"
                   />
+                  <kbd className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[9px] font-mono text-muted-foreground bg-muted px-1 rounded border border-border/60 hidden sm:inline-block">
+                    {shortcuts.comment.toUpperCase()}
+                  </kbd>
                 </div>
 
-                {/* Action Buttons Row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <span className="hidden sm:inline text-[11px] text-muted-foreground">
-                    {t("feather-review-action-instant-hint")}
-                  </span>
+                <span className="hidden xl:inline text-[11px] text-muted-foreground">
+                  {t("feather-review-action-instant-hint")}
+                </span>
 
-                  <div className="grid grid-cols-3 sm:flex items-center gap-2 w-full sm:w-auto">
-                    {/* Skip Button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        mutation.mutate({
-                          articleId: selectedArticle.id,
-                          status: "skipped",
-                          decisionComment: comment,
-                        })
-                      }
-                      disabled={mutation.isPending}
-                      className="h-9 sm:h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer shadow-2xs"
-                      title="Skip to next article (S)"
-                    >
-                      <SkipForward className="h-3.5 w-3.5" />
-                      <span>{t("feather-review-btn-skip")}</span>
-                      <kbd className="hidden sm:inline-block px-1 rounded bg-muted text-[10px] font-mono border">
-                        {shortcuts.skip.toUpperCase()}
-                      </kbd>
-                    </Button>
+                {/* Instant Action Buttons Row */}
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  {/* Skip Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      mutation.mutate({
+                        articleId: selectedArticle.id,
+                        status: "skipped",
+                        decisionComment: comment,
+                      })
+                    }
+                    disabled={mutation.isPending}
+                    className="h-8 gap-1 sm:gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer shadow-2xs px-2 sm:px-3"
+                    title={`Skip article (${shortcuts.skip.toUpperCase()})`}
+                  >
+                    <SkipForward className="h-3.5 w-3.5" />
+                    <span>{t("feather-review-btn-skip")}</span>
+                    <kbd className="hidden sm:inline-block px-1 rounded bg-muted text-[10px] font-mono border">
+                      {shortcuts.skip.toUpperCase()}
+                    </kbd>
+                  </Button>
 
-                    {/* Reject Button */}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() =>
-                        mutation.mutate({
-                          articleId: selectedArticle.id,
-                          status: "rejected",
-                          decisionComment: comment,
-                        })
-                      }
-                      disabled={mutation.isPending}
-                      className="h-9 sm:h-8 gap-1.5 text-xs cursor-pointer shadow-2xs font-semibold"
-                      title="Reject article (R)"
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                      <span>{t("feather-review-btn-reject")}</span>
-                      <kbd className="hidden sm:inline-block px-1 rounded bg-destructive-foreground/20 text-[10px] font-mono">
-                        {shortcuts.reject.toUpperCase()}
-                      </kbd>
-                    </Button>
+                  {/* Reject Button */}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() =>
+                      mutation.mutate({
+                        articleId: selectedArticle.id,
+                        status: "rejected",
+                        decisionComment: comment,
+                      })
+                    }
+                    disabled={mutation.isPending}
+                    className="h-8 gap-1 sm:gap-1.5 text-xs cursor-pointer shadow-2xs font-semibold px-2.5 sm:px-3"
+                    title={`Reject article (${shortcuts.reject.toUpperCase()})`}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    <span>{t("feather-review-btn-reject")}</span>
+                    <kbd className="hidden sm:inline-block px-1 rounded bg-destructive-foreground/20 text-[10px] font-mono">
+                      {shortcuts.reject.toUpperCase()}
+                    </kbd>
+                  </Button>
 
-                    {/* Accept Button */}
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        mutation.mutate({
-                          articleId: selectedArticle.id,
-                          status: "accepted",
-                          decisionComment: comment,
-                        })
-                      }
-                      disabled={mutation.isPending}
-                      className="h-9 sm:h-8 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-2xs font-semibold"
-                      title="Accept article (A)"
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>{t("feather-review-btn-accept")}</span>
-                      <kbd className="hidden sm:inline-block px-1 rounded bg-white/20 text-[10px] font-mono">
-                        {shortcuts.accept.toUpperCase()}
-                      </kbd>
-                    </Button>
-                  </div>
+                  {/* Accept Button */}
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      mutation.mutate({
+                        articleId: selectedArticle.id,
+                        status: "accepted",
+                        decisionComment: comment,
+                      })
+                    }
+                    disabled={mutation.isPending}
+                    className="h-8 gap-1 sm:gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-2xs font-semibold px-2.5 sm:px-3"
+                    title={`Accept article (${shortcuts.accept.toUpperCase()})`}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>{t("feather-review-btn-accept")}</span>
+                    <kbd className="hidden sm:inline-block px-1 rounded bg-white/20 text-[10px] font-mono">
+                      {shortcuts.accept.toUpperCase()}
+                    </kbd>
+                  </Button>
                 </div>
               </div>
             </div>

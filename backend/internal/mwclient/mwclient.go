@@ -1,6 +1,7 @@
 package mwclient
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -73,16 +74,29 @@ func IsTokenExpired(token string) bool {
 	if err != nil {
 		payloadBytes, err = base64.URLEncoding.DecodeString(parts[1])
 		if err != nil {
-			return true
+			p := parts[1]
+			if rem := len(p) % 4; rem != 0 {
+				p += strings.Repeat("=", 4-rem)
+			}
+			payloadBytes, err = base64.StdEncoding.DecodeString(p)
+			if err != nil {
+				return true
+			}
 		}
 	}
 	var claims struct {
-		Exp int64 `json:"exp"`
+		Exp json.Number `json:"exp"`
 	}
-	if err := json.Unmarshal(payloadBytes, &claims); err != nil || claims.Exp == 0 {
+	decoder := json.NewDecoder(bytes.NewReader(payloadBytes))
+	decoder.UseNumber()
+	if err := decoder.Decode(&claims); err != nil {
 		return true
 	}
-	return time.Now().Unix() >= (claims.Exp - 60)
+	expVal, err := claims.Exp.Float64()
+	if err != nil || expVal == 0 {
+		return true
+	}
+	return float64(time.Now().Unix()) >= (expVal - 60)
 }
 
 func ExchangeCodeForToken(cfg *config.Config, code string) (string, string, error) {

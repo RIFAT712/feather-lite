@@ -93,6 +93,8 @@ func Connect(cfg *config.Config) (*DB, error) {
 
 	// Recover any orphaned jobs stuck in 'processing' state back to 'queued' on startup
 	_, _ = db.Exec("UPDATE talk_page_jobs SET status = 'queued' WHERE status = 'processing';")
+	// Reset any queued jobs that were placed into backoff due to OAuth token verification check
+	_, _ = db.Exec("UPDATE talk_page_jobs SET retry_after = NULL, attempts = 0, error = '' WHERE status = 'queued' AND error LIKE '%Wikimedia OAuth session expired%';")
 
 	return &DB{DB: db, DBType: cfg.DBType}, nil
 }

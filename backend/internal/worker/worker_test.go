@@ -108,3 +108,27 @@ func TestSubstitutePlaceholders(t *testing.T) {
 		}
 	}
 }
+
+func TestGetTalkEditSummary(t *testing.T) {
+	templates := []string{"{{আলাপ পাতা}}"}
+
+	// Bengali by wikiLang
+	bnSummary := GetTalkEditSummary("bn", "https://bn.wikipedia.org", templates)
+	expectedBn := "[[:m:Feather|Feather]]-এর মাধ্যমে প্রতিযোগিতার টেমপ্লেট যুক্ত করা হচ্ছে: {{আলাপ পাতা}}"
+	if bnSummary != expectedBn {
+		t.Errorf("GetTalkEditSummary(bn) = %q, want %q", bnSummary, expectedBn)
+	}
+
+	// Bengali inferred by wikiURL
+	bnInferred := GetTalkEditSummary("", "https://bn.wikipedia.org", templates)
+	if bnInferred != expectedBn {
+		t.Errorf("GetTalkEditSummary(inferred bn) = %q, want %q", bnInferred, expectedBn)
+	}
+
+	// English default
+	enSummary := GetTalkEditSummary("en", "https://en.wikipedia.org", []string{"{{Talk page}}"})
+	expectedEn := "Adding contest templates via [[:m:Feather|Feather]]: {{Talk page}}"
+	if enSummary != expectedEn {
+		t.Errorf("GetTalkEditSummary(en) = %q, want %q", enSummary, expectedEn)
+	}
+}

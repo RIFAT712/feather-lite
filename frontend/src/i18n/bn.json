@@ -166,6 +166,7 @@
   "feather-talk-queue-auth-expired-title": "উইকিমিডিয়া অনুমোদন প্রয়োজন",
   "feather-talk-queue-auth-expired-desc": "স্বয়ংক্রিয় আলাপ পাতা বার্তা প্রেরণের ওঅথ (OAuth) মেয়াদ শেষ হয়েছে। পুনরায় অনুমোদন প্রদান করতে দয়া করে উইকিমিডিয়া দিয়ে লগইন করুন।",
   "feather-talk-queue-auth-renew-btn": "উইকিমিডিয়া দিয়ে অনুমোদন দিন",
+  "feather-talk-queue-edit-summary": "[[:m:Feather|Feather]]-এর মাধ্যমে প্রতিযোগিতার টেমপ্লেট যুক্ত করা হচ্ছে: $1",
   "feather-create-submit-btn": "প্রতিযোগিতা তৈরি করুন",
   "feather-create-creating-btn": "তৈরি হচ্ছে...",
   "feather-create-success": "'$1' প্রতিযোগিতাটি সফলভাবে তৈরি হয়েছে!",

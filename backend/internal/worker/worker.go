@@ -246,7 +246,7 @@ func (w *TalkQueueWorker) processNextJob() {
 	}
 
 	// 6. Prepend templates to talk page via MediaWiki API
-	summary := fmt.Sprintf("Adding contest templates via Feather [[:m:Feather|Feather 2.0]]: %s", strings.Join(templates, " "))
+	summary := GetTalkEditSummary(wikiLang, wikiURL, templates)
 	editErr := mwclient.PrependTemplatesToTalkPage(wikiURL, talkTitle, templatesBlock, summary, oauthToken)
 
 	// If edit returned 401/expired, try a refresh on the fly once
@@ -344,4 +344,21 @@ func SubstitutePlaceholders(templates []string, submitter, title, contest, year 
 		res[i] = t
 	}
 	return res
+}
+
+// GetTalkEditSummary returns the localized edit summary according to the contest wiki language.
+// Default is English; supports Bengali (bn). Tool name is kept as Feather linked to [[:m:Feather|Feather]].
+func GetTalkEditSummary(wikiLang, wikiURL string, templates []string) string {
+	templateList := strings.Join(templates, " ")
+	lang := strings.ToLower(strings.TrimSpace(wikiLang))
+	if lang == "" && strings.Contains(strings.ToLower(wikiURL), "bn.") {
+		lang = "bn"
+	}
+
+	switch lang {
+	case "bn":
+		return fmt.Sprintf("[[:m:Feather|Feather]]-এর মাধ্যমে প্রতিযোগিতার টেমপ্লেট যুক্ত করা হচ্ছে: %s", templateList)
+	default:
+		return fmt.Sprintf("Adding contest templates via [[:m:Feather|Feather]]: %s", templateList)
+	}
 }

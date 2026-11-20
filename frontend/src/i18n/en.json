@@ -166,6 +166,7 @@
   "feather-talk-queue-auth-expired-title": "Wikimedia Authorization Required",
   "feather-talk-queue-auth-expired-desc": "The OAuth session for automated talk page edits has expired. Please log in with Wikimedia to renew the authorization.",
   "feather-talk-queue-auth-renew-btn": "Authorize with Wikimedia",
+  "feather-talk-queue-edit-summary": "Adding contest templates via [[:m:Feather|Feather]]: $1",
   "feather-create-submit-btn": "Create Contest",
   "feather-create-creating-btn": "Creating...",
   "feather-create-success": "Contest '$1' created successfully!",

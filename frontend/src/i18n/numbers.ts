@@ -1,5 +1,5 @@
 /**
- * Locale-aware digit and number formatting engine for Feather 2.0.
+ * Locale-aware digit and number formatting engine for Feather.
  * Automatically supports Bengali, Arabic, Persian, Urdu, Devanagari, and Latin digit scripts.
  */
 

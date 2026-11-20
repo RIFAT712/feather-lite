@@ -28,9 +28,6 @@ export default function Footer() {
               <span className="font-bold text-foreground tracking-tight text-xs sm:text-sm">
                 {t("feather-title")}
               </span>
-              <span className="text-[10px] font-semibold tracking-wider uppercase px-1 py-0.2 rounded bg-muted text-muted-foreground border border-border/60">
-                2.0
-              </span>
             </div>
 
             <span className="text-border hidden sm:inline">•</span>

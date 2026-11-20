@@ -34,7 +34,6 @@ export const metadata: Metadata = {
   generator: "Next.js",
   keywords: [
     "Feather",
-    "Feather 2.0",
     "Wikimedia",
     "Wikipedia",
     "Fountain",
@@ -133,7 +132,7 @@ const jsonLd = {
       "@type": "WebApplication",
       "@id": `${siteUrl}/#webapp`,
       name: "Feather",
-      alternateName: ["Feather 2.0", "Wikimedia Feather", "Feather Contest Platform"],
+      alternateName: ["Wikimedia Feather", "Feather Contest Platform"],
       url: siteUrl,
       description:
         "Ultra-fast, modern contest management and judging platform for Wikimedia projects including Wikipedia, Wikisource, and Wiktionary.",

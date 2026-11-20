@@ -1,5 +1,5 @@
 /**
- * Right-to-Left (RTL) language detection and configuration for Feather 2.0.
+ * Right-to-Left (RTL) language detection and configuration for Feather.
  * Standard Wikimedia RTL language codes.
  */
 

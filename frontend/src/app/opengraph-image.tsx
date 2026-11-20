@@ -56,24 +56,9 @@ export default function Image() {
             >
               🪶
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
               <span style={{ fontSize: "38px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.03em" }}>
                 Feather
-              </span>
-              <span
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "700",
-                  color: "#93c5fd",
-                  backgroundColor: "rgba(59, 130, 246, 0.15)",
-                  border: "1px solid rgba(59, 130, 246, 0.35)",
-                  padding: "4px 10px",
-                  borderRadius: "9999px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                2.0
               </span>
             </div>
           </div>

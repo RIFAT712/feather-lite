@@ -62,11 +62,8 @@ export default function Navbar() {
               <Feather className="h-4 w-4" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center">
                 <span className="font-bold tracking-tight text-base sm:text-lg">{t("feather-title")}</span>
-                <Badge variant="secondary" className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0">
-                  2.0
-                </Badge>
               </div>
               <p className="hidden sm:block text-[11px] text-muted-foreground leading-none">{t("feather-subtitle")}</p>
             </div>

@@ -35,6 +35,8 @@ import {
   Check,
   Layers,
   Globe,
+  LayoutGrid,
+  BookOpen,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -253,8 +255,10 @@ export default function HomePage() {
                 }`}
                 aria-label={t("feather-filter-type")}
               >
-                <div className="flex items-center gap-1 min-w-0 truncate">
-                  <Layers className="h-3.5 w-3.5 opacity-75 shrink-0" />
+                <div className="flex items-center gap-1.5 min-w-0 truncate">
+                  {typeFilter === "all" && <LayoutGrid className="h-3.5 w-3.5 opacity-75 shrink-0" />}
+                  {typeFilter === "campaigns" && <Layers className="h-3.5 w-3.5 shrink-0" />}
+                  {typeFilter === "single" && <BookOpen className="h-3.5 w-3.5 shrink-0" />}
                   <span className="truncate">
                     {typeFilter === "all" && t("feather-filter-all-types")}
                     {typeFilter === "campaigns" && t("feather-filter-type-campaigns")}
@@ -264,14 +268,17 @@ export default function HomePage() {
                 <ChevronDown className="h-3 w-3 opacity-60 ms-0.5 shrink-0" />
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="start" className="w-52 p-1 rounded-lg shadow-md border bg-popover z-50">
+              <DropdownMenuContent align="start" className="w-48 p-1 rounded-lg shadow-md border bg-popover z-50">
                 <DropdownMenuItem
                   onClick={() => setTypeFilter("all")}
                   className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
                 >
-                  <span className={typeFilter === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
-                    {t("feather-filter-all-types")}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <LayoutGrid className={`h-3.5 w-3.5 shrink-0 ${typeFilter === "all" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={typeFilter === "all" ? "font-bold text-foreground" : "text-muted-foreground"}>
+                      {t("feather-filter-all-types")}
+                    </span>
+                  </div>
                   {typeFilter === "all" && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
                 </DropdownMenuItem>
 
@@ -282,7 +289,7 @@ export default function HomePage() {
                   className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
                 >
                   <div className="flex items-center gap-2">
-                    <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <Layers className={`h-3.5 w-3.5 shrink-0 ${typeFilter === "campaigns" ? "text-primary" : "text-muted-foreground"}`} />
                     <span className={typeFilter === "campaigns" ? "font-bold text-foreground" : "text-muted-foreground"}>
                       {t("feather-filter-type-campaigns")}
                     </span>
@@ -295,6 +302,7 @@ export default function HomePage() {
                   className="flex items-center justify-between py-1.5 px-2 cursor-pointer font-medium text-xs rounded-md"
                 >
                   <div className="flex items-center gap-2">
+                    <BookOpen className={`h-3.5 w-3.5 shrink-0 ${typeFilter === "single" ? "text-primary" : "text-muted-foreground"}`} />
                     <span className={typeFilter === "single" ? "font-bold text-foreground" : "text-muted-foreground"}>
                       {t("feather-filter-type-single")}
                     </span>

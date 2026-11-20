@@ -55,33 +55,63 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-xs">
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 shrink-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-2xs">
-            <Feather className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold tracking-tight text-base sm:text-lg">{t("feather-title")}</span>
-              <Badge variant="secondary" className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0">
-                2.0
-              </Badge>
+        {/* Brand & Left Navigation Links */}
+        <div className="flex items-center gap-4 lg:gap-6">
+          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-2xs">
+              <Feather className="h-4 w-4" />
             </div>
-            <p className="hidden sm:block text-[11px] text-muted-foreground leading-none">{t("feather-subtitle")}</p>
-          </div>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-3 lg:gap-4">
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <Trophy className="h-4 w-4" />
-            {t("feather-nav-contests")}
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold tracking-tight text-base sm:text-lg">{t("feather-title")}</span>
+                <Badge variant="secondary" className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0">
+                  2.0
+                </Badge>
+              </div>
+              <p className="hidden sm:block text-[11px] text-muted-foreground leading-none">{t("feather-subtitle")}</p>
+            </div>
           </Link>
 
-          {/* New Contest Button */}
+          <div className="hidden md:block h-5 w-px bg-border/60" />
+
+          {/* Primary Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1 lg:gap-1.5">
+            <Link
+              href="/"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                pathname === "/"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              }`}
+            >
+              <Trophy className="h-4 w-4" />
+              <span>{t("feather-nav-contests")}</span>
+            </Link>
+
+            {(isOwner || isAdmin) && (
+              <Link
+                href="/admin"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                  pathname === "/admin"
+                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 font-semibold shadow-2xs"
+                    : "text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10"
+                }`}
+              >
+                <ShieldAlert className="h-4 w-4" />
+                <span>{t("feather-nav-admin")}</span>
+                {adminOverview && adminOverview.pending_contests > 0 && (
+                  <Badge variant="destructive" className="h-4 px-1.5 text-[10px] font-bold rounded-full">
+                    {adminOverview.pending_contests}
+                  </Badge>
+                )}
+              </Link>
+            )}
+          </nav>
+        </div>
+
+        {/* Desktop Right: Actions, Utilities, Account */}
+        <div className="hidden md:flex items-center gap-2.5 lg:gap-3">
+          {/* New Contest CTA Button */}
           <Link
             href="/contests/new"
             className={buttonVariants({
@@ -94,26 +124,10 @@ export default function Navbar() {
             <span>{t("feather-nav-create-contest")}</span>
           </Link>
 
-          {/* Admin Dashboard (Owner & Admin) */}
-          {(isOwner || isAdmin) && (
-            <Link
-              href="/admin"
-              className="flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors"
-            >
-              <ShieldAlert className="h-4 w-4" />
-              <span>{t("feather-nav-admin")}</span>
-              {adminOverview && adminOverview.pending_contests > 0 && (
-                <Badge variant="destructive" className="h-4 px-1.5 text-[10px] font-bold rounded-full">
-                  {adminOverview.pending_contests}
-                </Badge>
-              )}
-            </Link>
-          )}
-
           {/* Theme & Language Controls */}
           <div className="flex items-center gap-1.5">
-            <ThemeToggle />
             <LanguageSwitcher />
+            <ThemeToggle />
           </div>
 
           <div className="h-4 w-px bg-border" />
@@ -159,12 +173,12 @@ export default function Navbar() {
               <span>{t("feather-nav-login")}</span>
             </a>
           )}
-        </nav>
+        </div>
 
         {/* Mobile Navigation Header Controls */}
         <div className="flex md:hidden items-center gap-1.5">
-          <ThemeToggle />
           <LanguageSwitcher />
+          <ThemeToggle />
 
           <Button
             variant="ghost"
@@ -191,15 +205,6 @@ export default function Navbar() {
               <span>{t("feather-nav-contests")}</span>
             </Link>
 
-            <Link
-              href="/contests/new"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted/70 transition-colors"
-            >
-              <PlusCircle className="h-4 w-4 text-primary" />
-              <span>{t("feather-nav-create-contest")}</span>
-            </Link>
-
             {(isOwner || isAdmin) && (
               <Link
                 href="/admin"
@@ -217,6 +222,15 @@ export default function Navbar() {
                 )}
               </Link>
             )}
+
+            <Link
+              href="/contests/new"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted/70 transition-colors"
+            >
+              <PlusCircle className="h-4 w-4 text-primary" />
+              <span>{t("feather-nav-create-contest")}</span>
+            </Link>
           </div>
 
           <div className="border-t border-border/70 pt-2.5">

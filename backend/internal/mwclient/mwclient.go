@@ -1,6 +1,7 @@
 package mwclient
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -58,7 +59,33 @@ func GetAuthorizeURL(cfg *config.Config, state string) string {
 	return fmt.Sprintf("%s?%s", WikimediaOAuthAuthorizeURL, params.Encode())
 }
 
-func ExchangeCodeForToken(cfg *config.Config, code string) (string, error) {
+// IsTokenExpired checks whether a Wikimedia OAuth 2.0 JWT access token is expired or about to expire in the next 60s.
+func IsTokenExpired(token string) bool {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return true
+	}
+	parts := strings.Split(token, ".")
+	if len(parts) < 2 {
+		return true
+	}
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		payloadBytes, err = base64.URLEncoding.DecodeString(parts[1])
+		if err != nil {
+			return true
+		}
+	}
+	var claims struct {
+		Exp int64 `json:"exp"`
+	}
+	if err := json.Unmarshal(payloadBytes, &claims); err != nil || claims.Exp == 0 {
+		return true
+	}
+	return time.Now().Unix() >= (claims.Exp - 60)
+}
+
+func ExchangeCodeForToken(cfg *config.Config, code string) (string, string, error) {
 	data := url.Values{}
 	data.Set("grant_type", "authorization_code")
 	data.Set("client_id", cfg.WikimediaClientID)
@@ -68,43 +95,101 @@ func ExchangeCodeForToken(cfg *config.Config, code string) (string, error) {
 
 	req, err := http.NewRequest("POST", WikimediaOAuthTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", DefaultUserAgent)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("token request failed: %w", err)
+		return "", "", fmt.Errorf("token request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("token endpoint returned HTTP %d: %s", resp.StatusCode, string(body))
+		return "", "", fmt.Errorf("token endpoint returned HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
 	var res struct {
-		AccessToken string `json:"access_token"`
-		TokenType   string `json:"token_type"`
-		ExpiresIn   int    `json:"expires_in"`
-		Error       string `json:"error"`
-		ErrorDesc   string `json:"error_description"`
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+		TokenType    string `json:"token_type"`
+		ExpiresIn    int    `json:"expires_in"`
+		Error        string `json:"error"`
+		ErrorDesc    string `json:"error_description"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return "", fmt.Errorf("failed to parse token response: %w", err)
+		return "", "", fmt.Errorf("failed to parse token response: %w", err)
 	}
 
 	if res.Error != "" {
-		return "", fmt.Errorf("oauth error: %s - %s", res.Error, res.ErrorDesc)
+		return "", "", fmt.Errorf("oauth error: %s - %s", res.Error, res.ErrorDesc)
 	}
 
 	if res.AccessToken == "" {
-		return "", errors.New("no access_token in response")
+		return "", "", errors.New("no access_token in response")
 	}
 
-	return res.AccessToken, nil
+	return res.AccessToken, res.RefreshToken, nil
+}
+
+func RefreshAccessToken(cfg *config.Config, refreshToken string) (string, string, error) {
+	if strings.TrimSpace(refreshToken) == "" {
+		return "", "", errors.New("empty refresh token")
+	}
+	data := url.Values{}
+	data.Set("grant_type", "refresh_token")
+	data.Set("client_id", cfg.WikimediaClientID)
+	data.Set("client_secret", cfg.WikimediaClientSecret)
+	data.Set("refresh_token", refreshToken)
+
+	req, err := http.NewRequest("POST", WikimediaOAuthTokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return "", "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", DefaultUserAgent)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("token refresh request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", "", fmt.Errorf("token refresh endpoint returned HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	var res struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+		TokenType    string `json:"token_type"`
+		ExpiresIn    int    `json:"expires_in"`
+		Error        string `json:"error"`
+		ErrorDesc    string `json:"error_description"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return "", "", fmt.Errorf("failed to parse refresh token response: %w", err)
+	}
+
+	if res.Error != "" {
+		return "", "", fmt.Errorf("oauth refresh error: %s - %s", res.Error, res.ErrorDesc)
+	}
+
+	if res.AccessToken == "" {
+		return "", "", errors.New("no access_token in refresh response")
+	}
+
+	returnedRefresh := res.RefreshToken
+	if returnedRefresh == "" {
+		returnedRefresh = refreshToken
+	}
+
+	return res.AccessToken, returnedRefresh, nil
 }
 
 func FetchUserProfile(accessToken string) (*UserProfile, error) {
@@ -663,6 +748,14 @@ func FetchCSRFToken(wikiURL, oauthToken string) (string, error) {
 		return "", fmt.Errorf("csrf token request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return "", errors.New("wikimedia oauth token expired or invalid (HTTP 401)")
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("mediawiki csrf endpoint HTTP %d: %s", resp.StatusCode, string(body))
+	}
 
 	var res struct {
 		Query struct {

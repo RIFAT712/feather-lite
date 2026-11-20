@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     wiki_username TEXT UNIQUE NOT NULL,
     role TEXT NOT NULL DEFAULT 'participant', -- 'participant', 'jury', 'owner'
     oauth_access_token TEXT,
+    oauth_refresh_token TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

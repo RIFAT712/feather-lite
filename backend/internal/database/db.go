@@ -80,6 +80,7 @@ func Connect(cfg *config.Config) (*DB, error) {
 	}
 
 	// Graceful column additions for custom creation window and multi-community campaigns
+	_, _ = db.Exec("ALTER TABLE users ADD COLUMN oauth_refresh_token TEXT;")
 	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN custom_creation_start_date DATETIME;")
 	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN custom_creation_end_date DATETIME;")
 	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN is_umbrella INTEGER NOT NULL DEFAULT 0;")

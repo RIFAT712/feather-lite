@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/i18n/I18nContext";
-import { fetchTalkQueue, retryTalkQueue, enqueueMissingTalkQueue, TalkQueueResponse, TalkQueueJob } from "@/lib/api";
+import { fetchTalkQueue, retryTalkQueue, enqueueMissingTalkQueue, TalkQueueResponse, TalkQueueJob, AUTH_BASE } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +71,21 @@ export default function TalkQueueMonitor({
   const counts = data?.counts || { queued: 0, processing: 0, done: 0, failed: 0, total: 0 };
   const jobs = data?.jobs || [];
 
+  const isAuthInvalid =
+    data?.auth_valid === false ||
+    jobs.some(
+      (j) =>
+        j.error &&
+        (j.error.includes("OAuth") ||
+          j.error.includes("expired") ||
+          j.error.includes("401"))
+    );
+
+  const canRetry =
+    counts.failed > 0 ||
+    counts.processing > 0 ||
+    jobs.some((j) => j.attempts > 0 || (j.error && j.error.length > 0));
+
   return (
     <Card className="border-border/80 bg-card/60 shadow-xs">
       <CardHeader className="pb-3 border-b border-border/50">
@@ -115,7 +130,7 @@ export default function TalkQueueMonitor({
                 variant="outline"
                 size="sm"
                 onClick={handleRetry}
-                disabled={isRetrying || (counts.failed === 0 && counts.processing === 0)}
+                disabled={isRetrying || !canRetry}
                 className="text-xs h-8 gap-1.5 cursor-pointer"
               >
                 <RotateCw className={`h-3.5 w-3.5 ${isRetrying ? "animate-spin" : ""}`} />
@@ -133,6 +148,30 @@ export default function TalkQueueMonitor({
             </div>
           )}
         </div>
+
+        {/* OAuth Session Warning Banner if credentials expired */}
+        {isAuthInvalid && (
+          <div className="mt-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <div className="font-semibold text-foreground">{t("feather-talk-queue-auth-expired-title")}</div>
+                <div className="text-[11px] opacity-90">{t("feather-talk-queue-auth-expired-desc")}</div>
+              </div>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              className="h-7 text-xs gap-1.5 shrink-0 bg-amber-600 hover:bg-amber-700 text-white cursor-pointer self-end sm:self-auto"
+              onClick={() => {
+                window.location.href = `${AUTH_BASE}/login`;
+              }}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span>{t("feather-talk-queue-auth-renew-btn")}</span>
+            </Button>
+          </div>
+        )}
 
         {/* Counter Pills */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3">

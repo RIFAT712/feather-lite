@@ -150,7 +150,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := mwclient.ExchangeCodeForToken(h.cfg, code)
+	accessToken, refreshToken, err := mwclient.ExchangeCodeForToken(h.cfg, code)
 	if err != nil {
 		log.Printf("[OAuth] Token exchange failed: %v", err)
 		http.Redirect(w, r, fmt.Sprintf("%s?error=token_exchange_failed", h.cfg.FrontendURL), http.StatusTemporaryRedirect)
@@ -191,8 +191,8 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 			role = "admin"
 		}
 		res, insErr := h.db.Exec(
-			"INSERT INTO users (wiki_username, role, oauth_access_token) VALUES (?, ?, ?)",
-			profile.Username, role, accessToken,
+			"INSERT INTO users (wiki_username, role, oauth_access_token, oauth_refresh_token) VALUES (?, ?, ?, ?)",
+			profile.Username, role, accessToken, refreshToken,
 		)
 		if insErr != nil {
 			log.Printf("[OAuth] User insert error: %v", insErr)
@@ -209,7 +209,11 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		} else if isAdmin && user.Role != "owner" {
 			user.Role = "admin"
 		}
-		_, _ = h.db.Exec("UPDATE users SET oauth_access_token = ?, role = ? WHERE id = ?", accessToken, user.Role, user.ID)
+		if refreshToken != "" {
+			_, _ = h.db.Exec("UPDATE users SET oauth_access_token = ?, oauth_refresh_token = ?, role = ? WHERE id = ?", accessToken, refreshToken, user.Role, user.ID)
+		} else {
+			_, _ = h.db.Exec("UPDATE users SET oauth_access_token = ?, role = ? WHERE id = ?", accessToken, user.Role, user.ID)
+		}
 	}
 
 	// Issue JWT session cookie
@@ -3447,9 +3451,30 @@ func (h *Handler) GetTalkQueue(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// 3. Check if OAuth token is valid for this contest or fallback
+	var token, refreshToken string
+	_ = h.db.QueryRow(`
+		SELECT COALESCE(u.oauth_access_token, ''), COALESCE(u.oauth_refresh_token, '')
+		FROM contests c
+		LEFT JOIN users u ON c.created_by_id = u.id
+		WHERE c.id = ?
+	`, contestID).Scan(&token, &refreshToken)
+
+	if token == "" || (mwclient.IsTokenExpired(token) && refreshToken == "") {
+		_ = h.db.QueryRow(`
+			SELECT COALESCE(oauth_access_token, ''), COALESCE(oauth_refresh_token, '')
+			FROM users
+			WHERE oauth_access_token IS NOT NULL AND oauth_access_token != ''
+			ORDER BY CASE WHEN role = 'owner' THEN 0 ELSE 1 END, id DESC
+			LIMIT 1
+		`).Scan(&token, &refreshToken)
+	}
+	authValid := (token != "" && (!mwclient.IsTokenExpired(token) || refreshToken != ""))
+
 	jsonResponse(w, http.StatusOK, map[string]any{
 		"enabled":            addTalkTemplate == 1,
 		"talk_template_name": talkTemplateName,
+		"auth_valid":         authValid,
 		"counts":             counts,
 		"jobs":               jobs,
 	})
@@ -3483,7 +3508,7 @@ func (h *Handler) RetryTalkQueue(w http.ResponseWriter, r *http.Request) {
 	res, err := h.db.Exec(`
 		UPDATE talk_page_jobs
 		SET status = 'queued', attempts = 0, error = '', retry_after = NULL
-		WHERE contest_id = ? AND (status = 'failed' OR status = 'processing')
+		WHERE contest_id = ? AND (status = 'failed' OR status = 'processing' OR attempts > 0)
 	`, contestID)
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, "Failed to retry jobs")

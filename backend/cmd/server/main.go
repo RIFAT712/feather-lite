@@ -39,7 +39,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	talkQueue := worker.NewTalkQueueWorker(db.DB)
+	talkQueue := worker.NewTalkQueueWorker(db.DB, cfg)
 	talkQueue.Start(ctx)
 
 	h := handlers.New(cfg, db, talkQueue)

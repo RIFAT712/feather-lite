@@ -833,6 +833,7 @@ export interface TalkQueueJob {
 export interface TalkQueueResponse {
   enabled: boolean;
   talk_template_name: string;
+  auth_valid?: boolean;
   counts: {
     queued: number;
     processing: number;

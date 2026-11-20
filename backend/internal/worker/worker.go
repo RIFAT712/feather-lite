@@ -10,20 +10,23 @@ import (
 	"sync"
 	"time"
 
+	"feather-backend/internal/config"
 	"feather-backend/internal/models"
 	"feather-backend/internal/mwclient"
 )
 
 type TalkQueueWorker struct {
 	db       *sql.DB
+	cfg      *config.Config
 	notifyCh chan struct{}
 	mu       sync.Mutex
 	running  bool
 }
 
-func NewTalkQueueWorker(db *sql.DB) *TalkQueueWorker {
+func NewTalkQueueWorker(db *sql.DB, cfg *config.Config) *TalkQueueWorker {
 	return &TalkQueueWorker{
 		db:       db,
+		cfg:      cfg,
 		notifyCh: make(chan struct{}, 100),
 	}
 }
@@ -122,7 +125,9 @@ func (w *TalkQueueWorker) processNextJob() {
 	row := w.db.QueryRow(`
 		SELECT q.id, q.contest_id, q.article_id, q.title, q.attempts,
 		       c.name, c.wiki_url, c.wiki_lang, c.add_talk_template, c.talk_template_name,
+		       COALESCE(u.id, 0),
 		       COALESCE(u.oauth_access_token, ''),
+		       COALESCE(u.oauth_refresh_token, ''),
 		       COALESCE(sub.wiki_username, '')
 		FROM talk_page_jobs q
 		JOIN contests c ON q.contest_id = c.id
@@ -146,14 +151,18 @@ func (w *TalkQueueWorker) processNextJob() {
 		wikiLang          string
 		addTalkTemplate   int
 		talkTemplateName  string
+		tokenUserID       int64
 		oauthToken        string
+		refreshToken      string
 		submitterUsername string
 	)
 
 	err := row.Scan(
 		&jobID, &contestID, &articleID, &title, &attempts,
 		&contestName, &wikiURL, &wikiLang, &addTalkTemplate, &talkTemplateName,
+		&tokenUserID,
 		&oauthToken,
+		&refreshToken,
 		&submitterUsername,
 	)
 	if err == sql.ErrNoRows {
@@ -165,26 +174,61 @@ func (w *TalkQueueWorker) processNextJob() {
 		return
 	}
 
-	// Fallback to any active owner/organizer token in DB if contest creator token is empty
-	if oauthToken == "" {
-		_ = w.db.QueryRow(`
-			SELECT oauth_access_token FROM users
+	// Fallback to any active owner/organizer token in DB if contest creator token is empty or expired without refresh
+	if oauthToken == "" || (mwclient.IsTokenExpired(oauthToken) && refreshToken == "") {
+		var fbUserID int64
+		var fbToken, fbRefresh string
+		fbErr := w.db.QueryRow(`
+			SELECT id, oauth_access_token, COALESCE(oauth_refresh_token, '')
+			FROM users
 			WHERE oauth_access_token IS NOT NULL AND oauth_access_token != ''
 			ORDER BY CASE WHEN role = 'owner' THEN 0 ELSE 1 END, id DESC
 			LIMIT 1
-		`).Scan(&oauthToken)
+		`).Scan(&fbUserID, &fbToken, &fbRefresh)
+		if fbErr == nil && fbToken != "" {
+			tokenUserID = fbUserID
+			oauthToken = fbToken
+			refreshToken = fbRefresh
+		}
 	}
 
-	// 2. Mark job as processing
-	_, _ = w.db.Exec("UPDATE talk_page_jobs SET status = 'processing' WHERE id = ?", jobID)
+	// 2. Refresh OAuth access token if expired and refresh token is available
+	if mwclient.IsTokenExpired(oauthToken) && refreshToken != "" && w.cfg != nil {
+		log.Printf("[TalkQueueWorker] OAuth token expired for user ID %d, refreshing via refresh_token...", tokenUserID)
+		newAccess, newRefresh, refErr := mwclient.RefreshAccessToken(w.cfg, refreshToken)
+		if refErr == nil {
+			oauthToken = newAccess
+			refreshToken = newRefresh
+			_, _ = w.db.Exec("UPDATE users SET oauth_access_token = ?, oauth_refresh_token = ? WHERE id = ?", newAccess, newRefresh, tokenUserID)
+			log.Printf("[TalkQueueWorker] Successfully refreshed OAuth token for user ID %d", tokenUserID)
+		} else {
+			log.Printf("[TalkQueueWorker] Token refresh failed for user ID %d: %v", tokenUserID, refErr)
+		}
+	}
 
-	// If talk template is disabled or template name is empty, mark done
+	// If talk template is disabled or template name is empty, mark done immediately
 	if addTalkTemplate == 0 || strings.TrimSpace(talkTemplateName) == "" {
 		_, _ = w.db.Exec("UPDATE talk_page_jobs SET status = 'done', processed_at = CURRENT_TIMESTAMP WHERE id = ?", jobID)
 		return
 	}
 
-	// 3. Format templates (support multiple templates newline-separated or JSON array) and substitute dynamic parameters
+	// If token is missing or still expired (no valid refresh token), back off to avoid spamming 401s
+	if oauthToken == "" || mwclient.IsTokenExpired(oauthToken) {
+		authErr := "Wikimedia OAuth session expired. Organizer re-login required to authorize talk page edits."
+		nextAttempt := attempts + 1
+		log.Printf("[TalkQueueWorker] [Attempt %d Held] %s: %s (backing off 300s)", nextAttempt, title, authErr)
+		_, _ = w.db.Exec(`
+			UPDATE talk_page_jobs
+			SET status = 'queued', attempts = ?, error = ?, retry_after = datetime(CURRENT_TIMESTAMP, '+300 seconds')
+			WHERE id = ?
+		`, nextAttempt, authErr, jobID)
+		return
+	}
+
+	// 3. Mark job as processing
+	_, _ = w.db.Exec("UPDATE talk_page_jobs SET status = 'processing' WHERE id = ?", jobID)
+
+	// 4. Format templates (support multiple templates newline-separated or JSON array) and substitute dynamic parameters
 	templates := FormatTemplates(talkTemplateName)
 	if len(templates) == 0 {
 		_, _ = w.db.Exec("UPDATE talk_page_jobs SET status = 'done', processed_at = CURRENT_TIMESTAMP WHERE id = ?", jobID)
@@ -195,15 +239,29 @@ func (w *TalkQueueWorker) processNextJob() {
 	templates = SubstitutePlaceholders(templates, submitterUsername, title, contestName, currentYear)
 	templatesBlock := strings.Join(templates, "\n")
 
-	// 4. Determine Talk Page Title (MediaWiki canonical namespace Talk: resolves across all languages)
+	// 5. Determine Talk Page Title (MediaWiki canonical namespace Talk: resolves across all languages)
 	talkTitle := title
 	if !strings.HasPrefix(strings.ToLower(talkTitle), "talk:") && !strings.Contains(talkTitle, ":") {
 		talkTitle = "Talk:" + talkTitle
 	}
 
-	// 5. Prepend templates to talk page via MediaWiki API
+	// 6. Prepend templates to talk page via MediaWiki API
 	summary := fmt.Sprintf("Adding contest templates via Feather [[:m:Feather|Feather 2.0]]: %s", strings.Join(templates, " "))
 	editErr := mwclient.PrependTemplatesToTalkPage(wikiURL, talkTitle, templatesBlock, summary, oauthToken)
+
+	// If edit returned 401/expired, try a refresh on the fly once
+	if editErr != nil && refreshToken != "" && w.cfg != nil &&
+		(strings.Contains(editErr.Error(), "401") || strings.Contains(strings.ToLower(editErr.Error()), "expired")) {
+		log.Printf("[TalkQueueWorker] Edit 401 unauthorized, attempting token refresh for user ID %d...", tokenUserID)
+		newAccess, newRefresh, refErr := mwclient.RefreshAccessToken(w.cfg, refreshToken)
+		if refErr == nil {
+			oauthToken = newAccess
+			refreshToken = newRefresh
+			_, _ = w.db.Exec("UPDATE users SET oauth_access_token = ?, oauth_refresh_token = ? WHERE id = ?", newAccess, newRefresh, tokenUserID)
+			// Retry edit with refreshed token
+			editErr = mwclient.PrependTemplatesToTalkPage(wikiURL, talkTitle, templatesBlock, summary, oauthToken)
+		}
+	}
 
 	if editErr == nil {
 		// Success!

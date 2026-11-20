@@ -3,11 +3,12 @@ package models
 import "time"
 
 type User struct {
-	ID               int64     `json:"id"`
-	WikiUsername     string    `json:"wiki_username"`
-	Role             string    `json:"role"` // "participant", "jury", "owner"
-	OAuthAccessToken string    `json:"-"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID                int64     `json:"id"`
+	WikiUsername      string    `json:"wiki_username"`
+	Role              string    `json:"role"` // "participant", "jury", "owner"
+	OAuthAccessToken  string    `json:"-"`
+	OAuthRefreshToken string    `json:"-"`
+	CreatedAt         time.Time `json:"created_at"`
 }
 
 type Contest struct {

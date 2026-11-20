@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Feather } from "lucide-react";
 import { useI18n } from "@/i18n/I18nContext";
@@ -84,6 +85,12 @@ export default function Footer() {
               >
                 {t("feather-footer-link-coc")}
               </a>
+              <Link
+                href="/license"
+                className="hover:text-foreground transition-colors cursor-pointer font-medium"
+              >
+                {t("feather-footer-link-license")}
+              </Link>
             </nav>
           </div>
 

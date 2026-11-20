@@ -2102,8 +2102,9 @@ func (h *Handler) GetArticlePreview(w http.ResponseWriter, r *http.Request) {
 // -------------------------------------------------------------
 
 type ReviewDecisionRequest struct {
-	Status  string `json:"status"` // "accepted", "rejected", "skipped", "pending" (undo)
-	Comment string `json:"comment"`
+	Status   string `json:"status"` // "accepted", "rejected", "skipped", "pending" (undo)
+	Decision string `json:"decision"`
+	Comment  string `json:"comment"`
 }
 
 func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
@@ -2120,6 +2121,9 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Status == "" && req.Decision != "" {
+		req.Status = req.Decision
+	}
 	req.Status = strings.ToLower(strings.TrimSpace(req.Status))
 	if req.Status != "accepted" && req.Status != "rejected" && req.Status != "skipped" && req.Status != "pending" {
 		jsonError(w, http.StatusBadRequest, "Status must be 'accepted', 'rejected', 'skipped', or 'pending'")
@@ -2403,6 +2407,7 @@ func (h *Handler) DeleteArticle(w http.ResponseWriter, r *http.Request) {
 type BulkReviewRequest struct {
 	ArticleIDs []int64 `json:"article_ids"`
 	Status     string  `json:"status"` // "accepted" or "rejected"
+	Decision   string  `json:"decision"`
 	Comment    string  `json:"comment"`
 }
 
@@ -2419,6 +2424,9 @@ func (h *Handler) BulkReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Status == "" && req.Decision != "" {
+		req.Status = req.Decision
+	}
 	req.Status = strings.ToLower(strings.TrimSpace(req.Status))
 	if req.Status != "accepted" && req.Status != "rejected" {
 		jsonError(w, http.StatusBadRequest, "Bulk review status must be 'accepted' or 'rejected'")
@@ -2438,21 +2446,27 @@ func (h *Handler) BulkReview(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback()
 
 	reviewedCount := 0
+	succeeded := make([]int64, 0)
+	failed := make([]map[string]any, 0)
+
 	for _, articleID := range req.ArticleIDs {
 		var contestID int64
 		var submitterID int64
 		err := tx.QueryRow("SELECT contest_id, submitter_id FROM articles WHERE id = ?", articleID).Scan(&contestID, &submitterID)
 		if err != nil {
+			failed = append(failed, map[string]any{"article_id": articleID, "detail": "Article not found"})
 			continue
 		}
 
 		// Authorization check
 		if !h.isUserJuryOrOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+			failed = append(failed, map[string]any{"article_id": articleID, "detail": "Permission denied"})
 			continue
 		}
 
 		// COI Check: Jury cannot review their own article unless owner
 		if submitterID == currentUser.UserID && currentUser.Role != "owner" {
+			failed = append(failed, map[string]any{"article_id": articleID, "detail": "Conflict of interest"})
 			continue
 		}
 
@@ -2465,15 +2479,18 @@ func (h *Handler) BulkReview(w http.ResponseWriter, r *http.Request) {
 				timestamp = CURRENT_TIMESTAMP
 		`, articleID, currentUser.UserID, req.Status, req.Comment)
 		if err != nil {
+			failed = append(failed, map[string]any{"article_id": articleID, "detail": err.Error()})
 			continue
 		}
 
 		_, err = tx.Exec("UPDATE articles SET status = ? WHERE id = ?", req.Status, articleID)
 		if err != nil {
+			failed = append(failed, map[string]any{"article_id": articleID, "detail": err.Error()})
 			continue
 		}
 
 		reviewedCount++
+		succeeded = append(succeeded, articleID)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -2485,6 +2502,56 @@ func (h *Handler) BulkReview(w http.ResponseWriter, r *http.Request) {
 		"success":        true,
 		"reviewed_count": reviewedCount,
 		"status":         req.Status,
+		"succeeded":      succeeded,
+		"failed":         failed,
+	})
+}
+
+type BulkDeleteRequest struct {
+	ArticleIDs []int64 `json:"article_ids"`
+}
+
+func (h *Handler) BulkDeleteArticles(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	var req BulkDeleteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	succeeded := make([]int64, 0)
+	failed := make([]map[string]any, 0)
+
+	for _, id := range req.ArticleIDs {
+		var contestID int64
+		err := h.db.QueryRow("SELECT contest_id FROM articles WHERE id = ?", id).Scan(&contestID)
+		if err != nil {
+			failed = append(failed, map[string]any{"article_id": id, "detail": "Article not found"})
+			continue
+		}
+		if !h.isUserJuryOrOrganizer(contestID, currentUser.UserID, currentUser.Role) {
+			failed = append(failed, map[string]any{"article_id": id, "detail": "Permission denied"})
+			continue
+		}
+		_, _ = h.db.Exec("DELETE FROM talk_page_jobs WHERE article_id = ?", id)
+		_, _ = h.db.Exec("DELETE FROM reviews WHERE article_id = ?", id)
+		_, err = h.db.Exec("DELETE FROM articles WHERE id = ?", id)
+		if err != nil {
+			failed = append(failed, map[string]any{"article_id": id, "detail": err.Error()})
+		} else {
+			succeeded = append(succeeded, id)
+		}
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"success":   true,
+		"succeeded": succeeded,
+		"failed":    failed,
 	})
 }
 

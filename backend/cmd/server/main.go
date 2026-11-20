@@ -111,6 +111,7 @@ func main() {
 		api.Delete("/articles/{id}/lock", h.ReleaseArticleLock)
 		api.Delete("/articles/{id}", h.DeleteArticle)
 		api.Post("/articles/bulk-review", h.BulkReview)
+		api.Post("/articles/bulk-delete", h.BulkDeleteArticles)
 		api.Get("/users/suggest", h.SuggestUsers)
 		api.Get("/users/elevated", h.GetElevatedUsers)
 		api.Get("/users/{username}/role", h.GetUserRole)

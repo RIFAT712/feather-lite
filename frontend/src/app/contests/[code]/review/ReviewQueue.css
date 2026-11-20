@@ -1,0 +1,1069 @@
+.rq-app {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  
+  /* Deep slate palette: comfortable for long review sessions */
+  --rq-bg: hsl(223 41% 2%);
+  --rq-bg: oklch(0.1 0.01 264);
+  --rq-surface: hsl(220 26% 5%);
+  --rq-surface: oklch(0.15 0.01 264);
+  --rq-surface-alt: hsl(220 15% 9%);
+  --rq-surface-alt: oklch(0.2 0.01 264);
+  --rq-surface-hover: hsl(220 9% 40%);
+  --rq-surface-hover: oklch(0.5 0.02 264);
+  --rq-border: hsl(220 11% 29%);
+  --rq-border: oklch(0.4 0.02 264);
+  --rq-border-light: hsl(220 16% 19%);
+  --rq-border-light: oklch(0.3 0.02 264);
+  
+  --rq-text: hsl(220 100% 96%);
+  --rq-text: oklch(0.96 0.02 264);
+  --rq-text-muted: hsl(220 13% 71%);
+  --rq-text-muted: oklch(0.76 0.02 264);
+  
+  --rq-accent: hsl(220 78% 76%);
+  --rq-accent: oklch(0.76 0.1 264);
+  --rq-accent-hover: oklch(0.82 0.1 264);
+  --rq-accent-bg: oklch(0.2 0.04 264);
+  
+  --rq-success: hsl(146 17% 59%);
+  --rq-success: oklch(0.7 0.05 160);
+  --rq-success-dark: oklch(0.58 0.05 160);
+  --rq-danger: hsl(9 26% 64%);
+  --rq-danger: oklch(0.7 0.05 30);
+  --rq-danger-dark: oklch(0.58 0.05 30);
+  --rq-warning: hsl(52 19% 57%);
+  --rq-warning: oklch(0.7 0.05 100);
+  
+  --rq-font: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.rq-app.rq-theme-light {
+  /* The Feather palette from docs/STYLE_GUIDE.md "Core tokens", mapped by role
+     rather than by name -- this route's --rq-surface is the panel body where
+     Feather's --feather-surface is a card, so the names do not line up even
+     though the colours must. Before this, the review shell ran a parallel
+     oklch palette that landed near the Feather values without matching them
+     (--rq-text was #12203a against Feather's #20364d) while a dozen rules
+     hard-coded the real Feather hexes. Two palettes, one drifting. */
+  --rq-bg: #e7f0f8;              /* --feather-bg: the canvas behind the panels */
+  --rq-surface: #f4f8fb;         /* --feather-surface-alt: panel body, chrome bands */
+  --rq-surface-alt: #ffffff;     /* --feather-surface: list rows, cards */
+  --rq-surface-hover: #eaf1f8;
+  --rq-border: #c7d6e3;          /* --feather-border */
+  --rq-border-light: #dde7f0;    /* hairline between rows */
+  --rq-text: #20364d;            /* --feather-text */
+  --rq-text-muted: #47637c;      /* --feather-muted */
+  --rq-accent: #355b80;          /* --feather-accent */
+  --rq-accent-hover: #27455f;
+  --rq-accent-bg: #e2ecf6;
+  /* Status stays pale-background / dark-text, per the style guide's rule that
+     semantic colour carries meaning only. */
+  --rq-success: #22a05a;
+  --rq-success-dark: #1a6e3f;
+  --rq-danger: #d94b4b;
+  --rq-danger-dark: #a33a3a;
+  --rq-warning: #d99322;
+}
+
+* { box-sizing: border-box; }
+
+.rq-app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--rq-bg);
+  font-family: var(--rq-font);
+  color: var(--rq-text);
+  overflow: hidden;
+}
+
+.rq-app *::-webkit-scrollbar { width: 6px; height: 6px; }
+.rq-app *::-webkit-scrollbar-track { background: transparent; }
+.rq-app *::-webkit-scrollbar-thumb { background: var(--rq-border); border-radius: 4px; }
+.rq-app *::-webkit-scrollbar-thumb:hover { background: var(--rq-text-muted); }
+
+button, input, textarea { font-family: inherit; }
+button { cursor: pointer; }
+
+.rq-center-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  flex: 1; padding: 40px 24px; gap: 12px; color: var(--rq-text-muted);
+}
+.rq-center-full { height: 100%; }
+
+.rq-card-unauth, .rq-card-done {
+  text-align: center; background: var(--rq-surface); border: 1px solid var(--rq-border);
+  border-radius: 8px; padding: 48px; max-width: 400px;
+  box-shadow: 0 8px 24px rgba(32, 54, 77, .08);
+}
+.rq-icon-large, .rq-done-icon { font-size: 3rem; margin-bottom: 16px; }
+.rq-done-icon { color: var(--rq-success); }
+.rq-card-done h3 { color: var(--rq-text); margin: 0 0 8px; font-size: 1.4rem; font-weight: 600; }
+.rq-card-done p { margin: 0; font-size: 0.85rem; line-height: 1.6; }
+
+.rq-spinner {
+  width: 40px; height: 40px; border: 3px solid var(--rq-border);
+  border-top-color: var(--rq-accent); border-radius: 50%;
+  animation: rq-spin 0.8s linear infinite;
+}
+.rq-spinner-sm { width: 24px; height: 24px; border-width: 2px; }
+@keyframes rq-spin { to { transform: rotate(360deg); } }
+
+/* --- 2-COLUMN LAYOUT (DESKTOP) --- */
+.rq-layout {
+  display: flex;
+  flex-direction: row;
+  /* No gap: the 5px splitter between the panel and the review area is the
+     separator, and an 8px gap either side of it made that 21px. */
+  gap: 0;
+  padding: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.rq-panel {
+  background: var(--rq-surface);
+  border: 1px solid var(--rq-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(32, 54, 77, .08);
+}
+
+/* --- QUEUE PANEL (COLLAPSIBLE) --- */
+.rq-app .cdx-icon,
+.rq-app .cdx-icon svg {
+  color: currentColor !important;
+  fill: currentColor !important;
+}
+.rq-app .rq-icon-btn .cdx-icon,
+.rq-app .rq-hamburger-btn .cdx-icon,
+.rq-app .rq-back-btn .cdx-icon,
+.rq-app .rq-group-header .cdx-icon,
+.rq-app .rq-nav-btn .cdx-icon {
+  color: var(--rq-text-muted) !important;
+}
+.rq-app .rq-icon-btn:hover .cdx-icon,
+.rq-app .rq-hamburger-btn:hover .cdx-icon,
+.rq-app .rq-back-btn:hover .cdx-icon,
+.rq-app .rq-group-header:hover .cdx-icon,
+.rq-app .rq-nav-btn:hover .cdx-icon {
+  color: var(--rq-text) !important;
+}
+.rq-app .rq-btn .cdx-icon,
+.rq-app .rq-bbtn .cdx-icon,
+.rq-app .rq-owner-mode-buttons .cdx-icon {
+  color: currentColor !important;
+}
+
+.rq-queue-panel {
+  position: relative;
+  width: var(--rq-panel-w, 340px);
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width 160ms var(--ease-out);
+}
+/* The collapse animation is a transition on width; a drag sets width every
+   pointermove, so the same transition would make the panel lag the cursor. */
+.rq-queue-panel.is-resizing { transition: none; }
+
+/* Splitter between the queue and the review area. Desktop only -- the mobile
+   breakpoint hides .rq-desktop-only and gives the panel the full width. */
+.rq-resize-handle {
+  position: relative;
+  flex: 0 0 5px;
+  align-self: stretch;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 160ms var(--ease-out);
+  touch-action: none;
+}
+/* A 5px target is a small thing to hit, so the grip is padded out to 11px
+   with a pseudo-element while the visible line stays thin. */
+.rq-resize-handle::before {
+  content: "";
+  position: absolute; top: 0; bottom: 0; left: -3px; right: -3px;
+}
+.rq-resize-handle::after {
+  content: "";
+  position: absolute; top: 50%; left: 50%;
+  width: 3px; height: 34px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: var(--rq-border-light);
+  opacity: 0;
+  transition: opacity 160ms var(--ease-out);
+}
+.rq-resize-handle:hover::after,
+.rq-resize-handle:focus-visible::after,
+.rq-resize-handle.is-resizing::after { opacity: 1; }
+.rq-resize-handle:hover, .rq-resize-handle.is-resizing { background: var(--rq-surface-hover); }
+.rq-resize-handle:focus-visible { outline: 2px solid var(--rq-accent); outline-offset: -2px; }
+/* Desktop only. On mobile the panel IS the screen, governed by mobileTab, and
+   an unscoped collapse rule would hand phone users a blank list -- harmless
+   while the default was false, a regression the moment it became true. */
+@media (min-width: 769px) {
+  .rq-queue-panel.is-collapsed {
+    width: 0;
+    border: none;
+  }
+}
+
+/* One row: live dot, name, and the three icon actions. Replaces the old
+   header-top plus the all-caps "Jury Workspace" eyebrow and Live pill, which
+   between them spent a whole band restating where you already are. */
+.rq-panel-titlebar { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.rq-panel-titlebar .rq-panel-title { margin: 0; flex: 1; }
+.rq-titlebar-actions { display: flex; align-items: center; gap: 4px; }
+.rq-icon-btn.is-active { background: var(--rq-accent-bg); color: var(--rq-accent); }
+/* The polling indicator, reduced from a pill with a word in it to the dot the
+   pill already contained. */
+.rq-live-dot {
+  flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--rq-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rq-success) 20%, transparent);
+}
+
+/* Queue options, behind the gear. */
+.rq-queue-options {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 8px; padding: 8px;
+  border: 1px solid var(--rq-border); border-radius: 8px;
+  background: var(--rq-surface-alt);
+}
+
+/* Tabs. The count sits inside the tab because it is the reason you pick one. */
+.rq-tabs { display: flex; gap: 2px; margin-bottom: 0; padding: 2px; border-radius: 8px; background: var(--rq-bg); }
+.rq-tabs button {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 0; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--rq-text-muted); font: inherit; font-size: .76rem; font-weight: 600;
+  white-space: nowrap; cursor: pointer;
+  transition: background 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.rq-tabs button:hover { color: var(--rq-text); }
+.rq-tabs button.is-active { background: var(--rq-surface-alt); color: var(--rq-text); box-shadow: 0 1px 2px rgba(32, 54, 77, .12); }
+.rq-tabs button:focus-visible { outline: 2px solid var(--rq-accent); outline-offset: -2px; }
+.rq-tab-count { color: var(--rq-text-muted); font-size: .7rem; font-variant-numeric: tabular-nums; }
+.rq-tabs button.is-active .rq-tab-count { color: var(--rq-accent); }
+.rq-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 6px; border: 1px solid transparent;
+  background: transparent; color: var(--rq-text-muted);
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out), border-color 160ms var(--ease-out);
+}
+.rq-icon-btn:hover { background: var(--rq-surface-alt); border-color: var(--rq-border); color: var(--rq-text); }
+.rq-icon-btn:focus-visible { outline: 2px solid var(--rq-accent); outline-offset: 1px; }
+.rq-icon-btn:active { transform: scale(0.95); }
+
+.rq-panel-header {
+  padding: 6px 12px 5px;
+  border-bottom: 1px solid var(--rq-border);
+  background: var(--rq-surface);
+}
+.rq-panel-title { margin: 0; font-size: .95rem; font-weight: 600; color: var(--rq-text); }
+.rq-owner-switcher { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; border: 0; background: none; }
+.rq-owner-switcher-label { color: var(--rq-text-muted); font-size: .75rem; font-weight: 600; }
+.rq-owner-mode-buttons { display: inline-flex; gap: 1px; padding: 1px; border-radius: 6px; background: var(--rq-bg); }
+.rq-owner-mode-buttons button { border: 0; border-radius: 5px; padding: 3px 8px; background: transparent; color: var(--rq-text-muted); font-size: .73rem; font-weight: 600; }
+.rq-owner-mode-buttons button.is-active { background: var(--rq-accent); color: #fff; }
+.rq-owner-judge-select { min-width: 90px; flex: 1; padding: 3px 7px; border: 1px solid var(--rq-border-light); border-radius: 6px; background: var(--rq-surface); color: var(--rq-text); font-size: .75rem; }
+
+.rq-panel-scroll { flex: 1; overflow-y: auto; }
+
+/* No vertical padding and no border of its own: the panel already draws the
+   outer edge and the header the divider above, so both only added a gap and
+   a doubled line between the two. */
+/* `overflow: hidden` used to clip the list's own rounded corners. With the
+   border and radius gone it only broke the decision headings: an ancestor
+   clip between a sticky element and its scroll container stops the sticky. */
+.rq-list { list-style: none; padding: 0; margin: 0; background: var(--rq-surface-alt); border: 0; border-radius: 0; }
+.rq-list-loading { padding: 8px 12px 12px; color: var(--rq-text-muted); font-size: .72rem; text-align: center; }
+.rq-list-item {
+  display: flex; align-items: center; gap: 8px; margin: 0; padding: 6px 12px;
+  border: none; border-radius: 0;
+  background: var(--rq-surface-alt);
+  cursor: pointer; transition: background 160ms var(--ease-out), opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+}
+.rq-list-item { position: relative; border-radius: 0; }
+.rq-list-item:not(:last-child)::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 1px; background: var(--rq-border-light); }
+.rq-list-item:hover { background: var(--rq-surface-hover); }
+.rq-list-item.is-active { background: var(--rq-accent-bg); box-shadow: inset 3px 0 0 var(--rq-accent); }
+
+.rq-fade-enter-active, .rq-fade-leave-active {
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+}
+.rq-fade-enter-from, .rq-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.rq-item-pending { }
+/* Both of these used to be `background: transparent`, i.e. a judged article
+   looked identical whether it was accepted or rejected. The tint carries it
+   now -- at 34% it reads at a glance, where the earlier 10% needed the glyph
+   beside it to be legible at all. The glyphs are gone; the block heading above
+   each run names the decision, so position and label still carry it for anyone
+   the colour does not. */
+/* No per-row accepted/rejected tint or edge: the Re-review list is already
+   split into sticky Accepted and Rejected blocks, so colour was restating the
+   heading a reader has on screen anyway. */
+
+/* One row introducing each decision block. Sticky, so the label is still there
+   after scrolling into a long run of rejections. */
+.rq-decision-head {
+  position: sticky; top: 0; z-index: 3;
+  background: var(--rq-surface);
+  border-bottom: 1px solid var(--rq-border-light);
+}
+.rq-decision-toggle {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding: 4px 12px;
+  border: 0; background: none;
+  color: var(--rq-text-muted); font: inherit; font-size: .7rem; font-weight: 700;
+  text-align: left; cursor: pointer;
+}
+.rq-decision-toggle:hover { background: var(--rq-surface-hover); }
+.rq-decision-toggle:focus-visible { outline: 2px solid var(--rq-accent); outline-offset: -2px; }
+.rq-decision-chevron { font-size: .9rem; transition: transform 180ms var(--ease-out); }
+.rq-decision-chevron.is-collapsed { transform: rotate(-90deg); }
+.rq-decision-count { margin-left: auto; color: var(--rq-text-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+.rq-item-readonly { cursor: default; }
+.rq-panel-search { width: 100%; }
+:deep(.rq-panel-search.cdx-text-input) { width: 100%; }
+
+.rq-cb-wrapper { display: flex; align-items: center; }
+.rq-cb { width: 16px; height: 16px; accent-color: var(--rq-accent); cursor: pointer; }
+
+.rq-item-content { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+/* 1.5, not 1.2: Bengali and Devanagari stack vowel signs above and below the
+   baseline and the tighter figure clipped them. The entry title is the only
+   content in this panel -- everything else is chrome -- so it gets the room. */
+.rq-item-title { flex: 1; min-width: 0; font-size: 0.9rem; line-height: 1.5; font-weight: 500; color: var(--rq-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rq-list-item.is-active .rq-item-title { color: var(--rq-accent-hover); font-weight: 600; }
+.rq-item-meta { flex-shrink: 0; white-space: nowrap; font-size: 0.7rem; line-height: 1.5; color: var(--rq-text-muted); }
+/* Keyboard focus, which is not the open article: an outline rather than a
+   background, so it reads on top of the selected and decision tints. */
+.rq-list-item.is-focused { outline: 2px solid var(--rq-accent); outline-offset: -2px; }
+/* The list takes DOM focus so aria-activedescendant is announced; the focused
+   row is the visible indicator, so a ring round the whole list is noise. */
+.rq-list:focus, .rq-list:focus-visible { outline: none; }
+.rq-list-item.is-locked { opacity: 0.5; }
+.rq-icon-lock { color: var(--rq-text-muted); font-size: 1.1rem; }
+.rq-list-empty { padding: 32px 24px; text-align: center; color: var(--rq-text-muted); font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rq-empty-icon { font-size: 2rem; opacity: 0.3; }
+
+/* The selection bands float over the bottom of the queue rather than sitting
+   above the list. In flow they pushed every row down as they appeared -- and
+   the comment box appears on the *second* row selected, so the rows moved
+   mid-gesture and a shift-click landed on a different article than the one
+   under the cursor. Floating them costs the last ~80px of the list, which
+   `.has-bulk` gives back as scroll padding. */
+.rq-bulk-bar {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 6;
+  /* Opaque: the banner's own tint is translucent, which was invisible while it
+     sat on the panel background and showed the rows through it once it moved
+     on top of them. */
+  background: var(--rq-surface);
+  box-shadow: 0 -6px 18px rgba(32, 54, 77, .12);
+}
+.rq-queue-panel.has-bulk .rq-panel-scroll { padding-bottom: 82px; }
+
+/* Two bands above a list that is the point of the panel, so both are kept to
+   one line: the count sits on the button row, and the comment box says how
+   many articles it covers in its own placeholder rather than in a heading and
+   a hint above itself. */
+.rq-bulk-banner { padding: 4px 10px; background: #205184; border-bottom: 1px solid #5a8db8; display: flex; align-items: center; justify-content: space-between; }
+.rq-bulk-count { font-size: 0.75rem; font-weight: 600; color: #d5eaff; }
+.rq-bulk-actions { display: flex; gap: 4px; }
+.rq-bulk-comment-panel {
+  padding: 4px 10px 5px;
+  background: var(--rq-surface-alt);
+  border-bottom: 1px solid var(--rq-border);
+}
+.rq-bbtn {
+  width: 26px; height: 26px; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: transform 160ms var(--ease-out), filter 160ms var(--ease-out);
+}
+.rq-bbtn:hover:not(:disabled) { filter: brightness(1.2); }
+.rq-bbtn:active:not(:disabled) { transform: scale(0.95); }
+.rq-bbtn-accept { background: var(--rq-success-dark); }
+.rq-bbtn-reject { background: var(--rq-danger-dark); }
+.rq-bbtn-remove { background: #450a0a; border: 1px solid #7f1d1d; }
+
+/* --- REVIEW AREA (PREVIEW + DECISION) --- */
+.rq-review-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* --- PREVIEW PANEL --- */
+.rq-preview-panel {
+  flex: 1;
+  min-height: 0;
+}
+.rq-article-header {
+  display: flex; align-items: center; padding: 5px 16px;
+  background: var(--rq-surface); border-bottom: 1px solid var(--rq-border); gap: 12px;
+}
+.rq-hamburger-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--rq-border);
+  background: var(--rq-surface); color: var(--rq-text);
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out);
+}
+.rq-hamburger-btn:hover { background: var(--rq-surface-hover); }
+.rq-hamburger-btn:active { transform: scale(0.95); }
+
+.rq-back-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--rq-border);
+  background: var(--rq-surface); color: var(--rq-text);
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out);
+}
+.rq-back-btn:active { transform: scale(0.95); }
+.rq-mobile-only { display: none; }
+
+.rq-article-meta-area { flex: 1; min-width: 0; display: flex; flex-direction: row; align-items: baseline; gap: 10px; }
+.rq-article-title-link {
+  flex: 0 1 auto; min-width: 0;
+  font-size: 1rem; font-weight: 700; color: var(--rq-text); text-decoration: none;
+  font-family: 'Linux Libertine', Georgia, serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color 160ms var(--ease-out);
+}
+.rq-article-title-link:hover { color: var(--rq-accent-hover); }
+
+/* margin-right: auto keeps the tags with the title they describe; without it
+   the title grew to fill the strip and stranded them beside the buttons. */
+.rq-tags { display: flex; flex-wrap: nowrap; flex-shrink: 0; gap: 6px; align-items: center; margin-right: auto; }
+.rq-tag { font-size: 0.7rem; font-weight: 500; color: var(--rq-text-muted); background: var(--rq-surface-alt); padding: 2px 8px; border-radius: 5px; white-space: nowrap; }
+.rq-tag-locked { background: #fff1d6; color: #8a5a00; display: flex; align-items: center; gap: 4px; }
+.rq-tag-verdict { font-weight: 600; }
+.rq-tag-accepted { background: #dff6e9; color: var(--rq-success-dark); }
+.rq-tag-rejected { background: #fde4e4; color: var(--rq-danger-dark); }
+.rq-tag-skipped { background: #edf0f3; color: var(--rq-text-muted); }
+
+.rq-btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600;
+  color: var(--rq-text); background: var(--rq-surface); border: 1px solid var(--rq-border);
+  padding: 8px 14px; border-radius: 8px; text-decoration: none;
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out);
+}
+.rq-btn-secondary:active { transform: scale(0.97); }
+.rq-btn-secondary:hover { background: var(--rq-surface-hover); }
+.rq-wiki-link-btn { color: var(--rq-accent); border-color: var(--rq-border); background: var(--rq-accent-bg); }
+.rq-wiki-link-btn:hover { background: var(--rq-surface-hover); }
+
+.rq-header-tools { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.rq-header-tools .rq-btn-secondary { padding: 4px 10px; font-size: .78rem; gap: 6px; }
+.rq-header-tools .rq-icon-btn { width: 28px; height: 28px; }
+
+/* Wikitext switch: pairs the label with a track/knob so its state reads at a
+   glance next to the article title. */
+.rq-wikitext-switch {
+  display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 9px;
+  border: 1px solid var(--rq-border); border-radius: 8px; background: var(--rq-surface);
+  color: var(--rq-text-muted); font-size: .78rem; font-weight: 650; white-space: nowrap;
+  transition: background 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out);
+}
+.rq-wikitext-switch:hover { background: var(--rq-surface-hover); }
+.rq-wikitext-switch.is-on { color: var(--rq-accent-hover); border-color: #312e81; background: #1e1b4b; }
+.rq-switch-track {
+  position: relative; width: 30px; height: 16px; border-radius: 999px;
+  background: var(--rq-border); transition: background 160ms var(--ease-out);
+}
+.rq-switch-knob {
+  position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%;
+  background: #fff; transition: transform 160ms var(--ease-out);
+}
+.rq-wikitext-switch.is-on .rq-switch-track { background: var(--rq-accent); }
+.rq-wikitext-switch.is-on .rq-switch-knob { transform: translateX(14px); }
+
+/* Mobile pane picker: visual and raw are mutually exclusive on small screens. */
+.rq-pane-tabs {
+  display: none; gap: 4px; padding: 6px 9px; background: var(--rq-surface);
+  border-bottom: 1px solid var(--rq-border);
+}
+.rq-pane-tabs button {
+  flex: 1; min-height: 32px; border: 1px solid var(--rq-border-light); border-radius: 7px;
+  background: var(--rq-surface); color: var(--rq-text-muted); font-size: .74rem; font-weight: 650;
+}
+.rq-pane-tabs button.is-active { background: var(--rq-accent); border-color: var(--rq-accent); color: #fff; }
+
+.rq-preview-container { flex: 1; min-height: 0; background: var(--rq-bg); display: flex; flex-direction: column; }
+.rq-preview-container.is-split { flex-direction: row; }
+.rq-preview-pane { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.rq-wiki-iframe { flex: 1; width: 100%; border: none; }
+
+.rq-wikitext-pane { background: var(--rq-surface); border-left: 1px solid var(--rq-border); }
+.rq-wikitext-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 10px; background: var(--rq-surface-alt); border-bottom: 1px solid var(--rq-border-light);
+  flex-shrink: 0;
+}
+.rq-wikitext-heading {
+  font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--rq-text-muted);
+}
+.rq-wikitext-copy {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 0 8px;
+  border: 1px solid var(--rq-border-light); border-radius: 6px; background: var(--rq-surface);
+  color: var(--rq-text); font-size: .7rem; font-weight: 600;
+  transition: background 160ms var(--ease-out);
+}
+.rq-wikitext-copy:hover:not(:disabled) { background: var(--rq-surface-hover); }
+.rq-wikitext-copy:disabled { opacity: .45; cursor: not-allowed; }
+.rq-wikitext-copy .cdx-icon { font-size: .85rem; }
+.rq-wikitext-scroll { flex: 1; min-height: 0; overflow: auto; }
+.rq-wikitext-code {
+  margin: 0; padding: 12px 14px;
+  font-family: 'SFMono-Regular', ui-monospace, Consolas, 'Liberation Mono', monospace;
+  font-size: .78rem; line-height: 1.65; color: var(--rq-text);
+  white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4;
+}
+.rq-wikitext-empty { margin: 0; padding: 16px 14px; color: var(--rq-text-muted); font-size: .8rem; }
+
+/* --- DECISION PANEL (BOTTOM) --- */
+.rq-decision-panel {
+  flex-shrink: 0;
+  background: var(--rq-surface);
+}
+.rq-decision-body {
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rq-decision-form {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+
+.rq-help-guide { color: var(--rq-accent); font-size: 0.75rem; text-decoration: underline; white-space: nowrap; }
+
+.rq-error-msg { color: var(--rq-danger); font-size: 0.85rem; padding: 12px; background: #450a0a; border-radius: 8px; border: 1px solid #7f1d1d; margin-bottom: -4px; }
+
+.rq-input {
+  flex: 1;
+  background: var(--rq-bg); border: 1px solid var(--rq-border-light);
+  border-radius: 8px; padding: 8px 16px; color: var(--rq-text); font-size: 0.85rem;
+  transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out);
+  resize: none;
+  height: 40px; /* Fixed height for 1-2 lines */
+}
+.rq-input:focus { outline: none; border-color: var(--rq-accent); background: var(--rq-surface-alt); }
+/* Must follow `.rq-input`, whose 40px height and 8px/16px padding it
+   overrides -- the bulk box shares that class for the theme rules only.
+   Same specificity, so order is what decides it. */
+.rq-bulk-comment-input { display: block; width: 100%; min-height: 28px; height: 28px; max-height: 56px; padding: 5px 8px; resize: vertical; font-size: .75rem; line-height: 1.25; }
+
+.rq-actions-wrapper {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.rq-primary-actions { display: flex; gap: 8px; }
+.rq-secondary-actions { display: flex; gap: 8px; }
+
+.rq-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 0 12px; height: 40px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; border: none; color: #fff;
+  transition: transform 160ms var(--ease-out), filter 160ms var(--ease-out);
+}
+.rq-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.rq-btn:active:not(:disabled) { transform: scale(0.97); }
+.rq-btn:hover:not(:disabled) { filter: brightness(1.15); }
+
+.rq-btn-accept { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.rq-btn-reject { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+
+.rq-btn-ghost {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 0 12px; height: 40px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+  background: var(--rq-surface-alt); border: 1px solid var(--rq-border-light); color: var(--rq-text-muted);
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.rq-btn-ghost:hover:not(:disabled) { background: var(--rq-surface-hover); color: var(--rq-text); }
+.rq-btn-ghost:active:not(:disabled) { transform: scale(0.97); }
+.rq-btn-ghost.rq-btn-remove:hover { border-color: #7f1d1d; color: var(--rq-danger); background: #450a0a; }
+
+/* --- MOBILE NAV --- */
+.rq-mobile-nav {
+  display: none; background: var(--rq-surface); border-top: 1px solid var(--rq-border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.rq-app.rq-theme-light .rq-panel-scroll { background: var(--rq-surface-alt); }
+.rq-app.rq-theme-light .rq-panel-scroll { scrollbar-color: var(--rq-border) var(--rq-surface); }
+.rq-app.rq-theme-light .rq-panel-scroll::-webkit-scrollbar-track { background: var(--rq-surface); }
+.rq-app.rq-theme-light .rq-panel-scroll::-webkit-scrollbar-thumb { background: var(--rq-border); }
+.rq-app.rq-theme-light .rq-panel-scroll::-webkit-scrollbar-thumb:hover { background: var(--rq-text-muted); }
+
+.rq-app.rq-theme-light .rq-cb {
+  color-scheme: light;
+  background-color: var(--rq-surface-alt) !important;
+  accent-color: var(--rq-accent);
+}
+.rq-app.rq-theme-light .rq-bulk-banner { background: var(--rq-accent-bg); border-bottom-color: var(--rq-border); }
+.rq-app.rq-theme-light .rq-bulk-count { color: var(--rq-accent); }
+.rq-app.rq-theme-light .rq-bulk-comment-panel { background: var(--rq-surface); border-bottom-color: var(--rq-border-light); }
+.rq-app.rq-theme-light .rq-input,
+.rq-app.rq-theme-light textarea.rq-input { background: var(--rq-surface-alt) !important; color: var(--rq-text) !important; border-color: var(--rq-border-light) !important; }
+.rq-app.rq-theme-light .rq-input:focus,
+.rq-app.rq-theme-light textarea.rq-input:focus { background: var(--rq-surface-alt) !important; color: var(--rq-text) !important; }
+.rq-app.rq-theme-light .rq-input::placeholder { color: var(--rq-text-muted) !important; }
+.rq-app.rq-theme-light .rq-preview-container { background: var(--rq-bg); }
+.rq-app.rq-theme-light .rq-btn-ghost { background: var(--rq-surface); }
+.rq-app.rq-theme-light .rq-btn-ghost:hover:not(:disabled) { background: var(--rq-accent-bg); }
+.rq-app.rq-theme-light .rq-spinner { border-color: var(--rq-border); }
+
+.rq-app.rq-theme-light .rq-wikitext-switch { background: var(--rq-surface); }
+.rq-app.rq-theme-light .rq-wikitext-switch.is-on { color: var(--rq-accent); border-color: var(--rq-border); background: var(--rq-accent-bg); }
+.rq-app.rq-theme-light .rq-pane-tabs { background: var(--rq-surface); }
+.rq-app.rq-theme-light .rq-wikitext-pane { background: var(--rq-surface-alt); border-left-color: var(--rq-border-light); }
+.rq-app.rq-theme-light .rq-wikitext-bar { background: var(--rq-surface); }
+.rq-app.rq-theme-light .rq-error-msg { background: #fff0f0; border-color: #d99090; }
+.rq-app.rq-theme-light .rq-input:focus { background: var(--rq-surface-alt); }
+.rq-app.rq-theme-light .rq-panel-header,
+.rq-app.rq-theme-light .rq-group-header,
+.rq-app.rq-theme-light .rq-article-header,
+.rq-app.rq-theme-light .rq-mobile-nav { color: var(--rq-text); }
+.rq-nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 8px; background: none; border: none; color: var(--rq-text-muted);
+  transition: color 160ms var(--ease-out), transform 160ms var(--ease-out); position: relative;
+}
+.rq-nav-btn.is-active { color: var(--rq-accent-hover); }
+.rq-nav-btn:active { transform: scale(0.95); }
+.rq-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.rq-nav-icon { font-size: 1.4rem; }
+.rq-nav-label { font-size: 0.72rem; font-weight: 600; }
+.rq-nav-badge { position: absolute; top: 6px; right: 25%; background: var(--rq-accent); color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 8px; }
+
+/* --- RESPONSIVE LAYOUT --- */
+@media (max-width: 1024px) {
+  .rq-decision-form { flex-direction: column; align-items: stretch; }
+  .rq-actions-wrapper { justify-content: space-between; }
+  .rq-input { height: 48px; }
+  /* Not enough width for two readable columns -- stack the panes instead. */
+  .rq-preview-container.is-split { flex-direction: column; }
+  .rq-preview-container.is-split .rq-wikitext-pane {
+    flex: 0 0 42%; border-left: none; border-top: 1px solid var(--rq-border);
+  }
+}
+
+@media (max-width: 768px) {
+  .rq-desktop-only { display: none !important; }
+  .rq-mobile-only { display: flex !important; }
+  
+  .rq-app { padding-bottom: 70px; }
+  .rq-layout { display: flex; flex-direction: column; padding: 0; gap: 0; }
+  
+  .mobile-hidden { display: none !important; }
+  
+  .rq-panel { border-radius: 0; border: none; border-bottom: 1px solid var(--rq-border); box-shadow: none; }
+  .rq-queue-panel { flex: 1; transition: none; width: 100%; opacity: 1; }
+  
+  .rq-review-area { flex: 1; display: flex; flex-direction: column; position: relative; gap: 0; }
+  .rq-preview-panel { flex: 1; border-bottom: none; margin-bottom: 190px; }
+  
+  .rq-decision-panel {
+    position: fixed; bottom: 70px; left: 0; right: 0;
+    border-radius: 12px 12px 0 0; border: 1px solid var(--rq-border);
+    border-bottom: none; box-shadow: 0 -8px 24px rgba(32, 54, 77, .1);
+    z-index: 40; padding-bottom: env(safe-area-inset-bottom);
+  }
+  .rq-decision-body { padding: 12px; gap: 8px; }
+  .rq-decision-form { flex-direction: column; gap: 8px; }
+  .rq-input { height: 48px; }
+  .rq-actions-wrapper { flex-direction: column; gap: 8px; }
+  .rq-primary-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 8px; }
+  .rq-secondary-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 8px; }
+  
+  .rq-mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 70px; z-index: 50; }
+  /* Clear of the fixed bottom nav. */
+  .rq-bulk-bar { bottom: 70px; }
+
+  .rq-pane-tabs { display: flex !important; }
+  .rq-preview-container.is-split { flex-direction: column; }
+  .rq-preview-container.is-split .rq-wikitext-pane { flex: 1; border-left: none; border-top: none; }
+  .rq-preview-container.is-split.is-showing-visual .rq-wikitext-pane { display: none; }
+  .rq-preview-container.is-split.is-showing-wikitext .rq-visual-pane { display: none; }
+  .rq-wikitext-switch { height: 30px; gap: 6px; padding: 0 8px; font-size: .68rem; }
+  .rq-switch-track { width: 26px; height: 14px; }
+  .rq-switch-knob { width: 10px; height: 10px; }
+  .rq-wikitext-switch.is-on .rq-switch-knob { transform: translateX(12px); }
+}
+
+/* Compact mobile review workspace: keep the article, preview, and decision
+   controls usable without turning the screen into stacked full-height cards. */
+@media (max-width: 768px) {
+  .rq-app { padding-bottom: 60px; }
+  .rq-panel-header { padding: 7px 10px; }
+  .rq-panel-title { margin-bottom: 6px; font-size: .92rem; }
+  .rq-owner-switcher { display: grid; grid-template-columns: auto 1fr; gap: 4px 6px; }
+  .rq-tabs button { padding: 5px 6px; font-size: .7rem; }
+    .rq-owner-switcher-label { align-self: center; }
+  .rq-owner-mode-buttons { justify-self: end; }
+  .rq-owner-judge-select { grid-column: 1 / -1; width: 100%; min-height: 28px; }
+  .rq-list-item { min-height: 44px; padding: 8px 9px; gap: 6px; }
+  /* Mobile shrinks the type but keeps the leading: on a phone the queue IS
+     the screen, and clipped vowel signs are worse here than anywhere. */
+  .rq-item-title { font-size: .84rem; line-height: 1.5; }
+  .rq-item-meta { font-size: .66rem; line-height: 1.5; }
+  .rq-list-loading { padding: 7px 9px 9px; font-size: .68rem; }
+  .rq-preview-panel { margin-bottom: 0; }
+  .rq-article-header { min-height: 42px; padding: 5px 9px; gap: 7px; }
+  .rq-article-title-link { font-size: .92rem; }
+  .rq-tags { gap: 4px; }
+  .rq-tag { padding: 3px 6px; font-size: .62rem; }
+  .rq-decision-panel { bottom: 60px; border-radius: 10px 10px 0 0; box-shadow: 0 -5px 20px rgba(32, 54, 77, .1); }
+  .rq-decision-body { padding: 7px 9px; gap: 5px; }
+  .rq-decision-form { gap: 5px; }
+  .rq-input, .rq-bulk-comment-input { height: 36px; min-height: 36px; padding: 6px 9px; font-size: .78rem; }
+  .rq-actions-wrapper, .rq-primary-actions, .rq-secondary-actions { gap: 5px; }
+  .rq-btn { min-height: 36px; padding: 7px 9px; font-size: .78rem; }
+  .rq-btn-ghost { min-height: 34px; padding: 6px 8px; }
+  .rq-actions-wrapper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; gap: 4px; }
+  .rq-primary-actions, .rq-secondary-actions { display: contents; }
+  .rq-actions-wrapper .rq-desktop-only { display: inline !important; overflow: hidden; font-size: .62rem; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+  /* Keyboard hints mean nothing on a phone -- the row only has to fit fingers. */
+  .rq-actions-wrapper .rq-kbd { display: none !important; }
+  .rq-actions-wrapper .rq-btn, .rq-actions-wrapper .rq-btn-ghost { min-width: 0; min-height: 36px; flex-direction: row; justify-content: center; gap: 4px; padding: 4px 3px; font-size: .62rem; }
+  .rq-actions-wrapper .rq-btn .cdx-icon, .rq-actions-wrapper .rq-btn-ghost .cdx-icon { font-size: .95rem; flex-shrink: 0; }
+  .rq-actions-wrapper .rq-btn span, .rq-actions-wrapper .rq-btn-ghost span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rq-error-msg { padding: 4px 7px; font-size: .7rem; }
+  .rq-mobile-nav { height: 60px; }
+  .rq-bulk-bar { bottom: 60px; }
+  .rq-nav-btn { gap: 2px; }
+  .rq-nav-icon { font-size: 1.2rem; }
+  .rq-nav-label { font-size: .62rem; }
+}
+
+/* --- KEYBOARD SHORTCUTS, UNDO --------------------------------------------
+   Built entirely from the --rq-* tokens so the light theme switch
+   (.rq-app.rq-theme-light, which redefines those same tokens) applies without
+   needing a parallel set of overrides here. */
+
+.rq-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 1px solid var(--rq-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--rq-surface-alt);
+  color: var(--rq-text-muted);
+  font-family: var(--rq-font);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rq-btn .rq-kbd { opacity: 0.75; }
+
+/* --- Undo toast --- */
+.rq-undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 12px 10px 16px;
+  overflow: hidden; /* clips the countdown bar to the rounded corners */
+  border: 1px solid var(--rq-border);
+  border-radius: 10px;
+  background: var(--rq-surface-alt);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  font-size: 0.82rem;
+  color: var(--rq-text);
+  animation: rq-undo-in 160ms var(--ease-out);
+}
+
+@keyframes rq-undo-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rq-undo-toast { animation: none; }
+}
+
+/* Countdown for the undo window. Duration is set inline from UNDO_WINDOW_MS. */
+.rq-undo-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  transform-origin: left center;
+  background: var(--rq-accent);
+  animation: rq-undo-countdown linear forwards;
+}
+
+@keyframes rq-undo-countdown {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+.rq-undo-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rq-undo-decision {
+  flex-shrink: 0;
+  text-transform: capitalize;
+  font-weight: 700;
+}
+.rq-undo-accepted { color: var(--rq-success); }
+.rq-undo-rejected { color: var(--rq-danger); }
+.rq-undo-skipped  { color: var(--rq-warning); }
+
+.rq-undo-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--rq-text-muted);
+}
+
+.rq-undo-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--rq-border);
+  border-radius: 7px;
+  background: var(--rq-surface);
+  color: var(--rq-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rq-undo-btn:hover:not(:disabled) { background: var(--rq-accent-bg); color: var(--rq-accent-hover); }
+.rq-undo-btn:disabled { opacity: 0.6; cursor: default; }
+
+.rq-undo-dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--rq-text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.rq-undo-dismiss:hover { color: var(--rq-text); background: var(--rq-surface-hover); }
+
+/* --- Shortcut help panel --- */
+.rq-help-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.rq-help-panel {
+  width: min(400px, 100%);
+  border: 1px solid var(--rq-border);
+  border-radius: 12px;
+  background: var(--rq-surface);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.rq-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--rq-border-light);
+}
+.rq-help-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--rq-text);
+}
+.rq-help-close {
+  background: none;
+  border: none;
+  color: var(--rq-text-muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.rq-help-close:hover { color: var(--rq-text); background: var(--rq-surface-hover); }
+
+.rq-help-list { margin: 0; padding: 8px 16px 4px; }
+.rq-help-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+}
+/* Wide enough for the longest bindable label ("Enter"/"Space"), not just a
+   single letter. */
+.rq-help-row dt { flex-shrink: 0; width: 62px; margin: 0; }
+.rq-help-row dd { margin: 0; font-size: 0.82rem; color: var(--rq-text-muted); }
+
+.rq-help-note {
+  margin: 0;
+  padding: 4px 16px 14px;
+  font-size: 0.74rem;
+  color: var(--rq-text-muted);
+  opacity: 0.8;
+}
+
+/* The queue is a full-screen workspace on desktop; on phones there is no
+   hardware keyboard to drive it, so the shortcut affordances stay hidden and
+   only the undo toast (which is touch-usable) remains. */
+@media (max-width: 768px) {
+  .rq-undo-toast { bottom: 76px; }
+}
+
+/* ── Rebindable shortcuts ──
+   The key in the help panel is a button now: click it, press a key. Sized to
+   match .rq-kbd so the panel does not reflow when a row switches to
+   "Press a key…". */
+/* Geometry is identical in both states. .rq-help-row dt is a fixed 46px
+   column, so the old capturing width of 6.5rem overflowed its own cell and
+   shoved the row around; the "press a key" prompt now lives in the flexible
+   description instead, and the key box only changes colour. */
+.rq-kbd-editable {
+  cursor: pointer;
+  width: 100%;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.rq-kbd-editable:hover { border-color: var(--rq-accent); color: var(--rq-text); }
+.rq-kbd-editable.is-capturing {
+  border-color: var(--rq-accent);
+  color: var(--rq-accent);
+  animation: rq-kbd-pulse 1.1s ease-out infinite;
+}
+/* The row is waiting on a keystroke -- say so where there is room for words. */
+.rq-help-row dd.is-capturing { color: var(--rq-accent); font-weight: 600; }
+
+@keyframes rq-kbd-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--rq-accent); }
+  70%  { box-shadow: 0 0 0 5px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rq-kbd-editable.is-capturing { animation: none; }
+}
+
+.rq-help-error {
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  color: var(--rq-danger);
+}
+
+.rq-help-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 12px;
+}
+.rq-help-footer .rq-help-note { margin: 0; flex: 1; }
+
+.rq-help-reset {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--rq-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--rq-text-muted);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rq-help-reset:hover { border-color: var(--rq-accent); color: var(--rq-text); }
+
+/* Shortcut help button in the article header. Deliberately NOT inside
+   .rq-actions-wrapper: the mobile override there force-shows .rq-desktop-only,
+   which is exactly how the previous version of this button leaked onto phones. */
+/* Square, and the same 34px tall as the Wikitext switch beside it. Inheriting
+   .rq-btn-secondary's 8px 14px padding while zeroing the width collapsed it to
+   roughly half the height of its neighbours. */
+.rq-help-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rq-owner-special-link {
+  padding: 4px 10px;
+  border: 1px solid var(--rq-border);
+  border-radius: 6px;
+  color: var(--rq-accent);
+  font-size: .8rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ── Flow header ───────────────────────────────────────
+   A progress bar and nothing else. Cards for pending/accepted/rejected were
+   tried and cut: the bar already carries "how far through am I", which is the
+   only question the header needs to answer while judging, and four tiles spent
+   real vertical space restating numbers nobody acts on mid-review. */
+.rq-flow-stats {
+  padding: 8px 16px 9px;
+  border-bottom: 1px solid var(--rq-border-light);
+}
+.rq-progress { display: flex; align-items: center; gap: 10px; }
+.rq-progress-track {
+  flex: 1;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--rq-surface-hover);
+}
+.rq-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--rq-accent);
+  transition: width 240ms var(--ease-out);
+}
+.rq-progress-text {
+  color: var(--rq-text-muted);
+  font-size: .7rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

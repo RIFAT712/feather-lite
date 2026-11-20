@@ -12,6 +12,8 @@
     "@base-ui/react": "^1.9.0",
     "@tanstack/react-query": "^5.107.1",
     "@tanstack/react-virtual": "^3.14.26",
+    "@wikimedia/codex": "^2.8.0",
+    "@wikimedia/codex-icons": "^2.8.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "lucide-react": "^1.72.0",

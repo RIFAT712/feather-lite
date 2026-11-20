@@ -1,106 +1,293 @@
 "use client";
 
-import { use, useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import "@wikimedia/codex/dist/codex.style.css";
+import "./ReviewQueue.css";
+import {
+  cdxIconArticle,
+  cdxIconArticleCheck,
+  cdxIconArrowPrevious,
+  cdxIconCheck,
+  cdxIconClear,
+  cdxIconCollapse,
+  cdxIconDownTriangle,
+  cdxIconSettings,
+  cdxIconCopy,
+  cdxIconLinkExternal,
+  cdxIconLock,
+  cdxIconMenu,
+  cdxIconSearch,
+  cdxIconNext,
+  cdxIconTrash,
+  cdxIconBlock,
+} from "@wikimedia/codex-icons";
+import CdxIcon from "@/components/icons/CdxIcon";
 import {
   fetchContest,
   fetchArticles,
-  fetchArticlePreview,
+  fetchMe,
   reviewArticle,
   acquireArticleLock,
-  releaseArticleLock,
+  releaseArticleLock as apiReleaseLock,
   undoArticleReview,
   deleteArticle,
-  bulkReviewArticles,
   Contest,
-  Article,
-  ArticlePreview,
-  fetchMe,
-  AUTH_BASE,
+  UserSession,
 } from "@/lib/api";
-import { WikimediaLogoIcon } from "@/components/icons/CodexIcons";
-import { useI18n } from "@/i18n/I18nContext";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  XCircle,
-  SkipForward,
-  Search,
-  ExternalLink,
-  Keyboard,
-  BookOpen,
-  Loader2,
-  User,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Copy,
-  Check,
-  Code2,
-  Undo2,
-  Layers,
-  ChevronDown,
-  ChevronRight,
-  ShieldCheck,
-  ShieldAlert,
-  Lock,
-  Sparkles,
-  BarChart3,
-  Calendar,
-  X,
-  Trash2,
-  Settings2,
-  RotateCcw,
-  UserCheck,
-  MessageSquareQuote,
-  AlertTriangle,
-} from "lucide-react";
-import { buildWikiPreviewSrcdoc } from "./wikiPreviewHelper";
 
-interface UndoState {
-  articleId: number;
-  title: string;
-  status: "accepted" | "rejected" | "skipped";
+const COLLAPSIBLE_JS = `
+  (function() {
+    function initNavFrames() {
+      document.querySelectorAll('.NavFrame').forEach(function(frame) {
+        var head = frame.querySelector('.NavHead');
+        var content = frame.querySelector('.NavContent');
+        if (!head || !content) return;
+        content.style.display = 'none';
+        var toggle = head.querySelector('.NavToggle a');
+        if (!toggle) {
+          var wrapper = document.createElement('span');
+          wrapper.className = 'NavToggle';
+          wrapper.style.cssText = 'float:right; font-weight:normal; font-size:smaller; padding-left: 8px;';
+          toggle = document.createElement('a');
+          toggle.href = '#';
+          wrapper.appendChild(toggle);
+          head.appendChild(wrapper);
+        }
+        toggle.textContent = '▶';
+        head.style.cursor = 'pointer';
+        head.addEventListener('click', function(e) {
+          e.preventDefault();
+          var hidden = content.style.display === 'none';
+          content.style.display = hidden ? '' : 'none';
+          toggle.textContent = hidden ? '▼' : '▶';
+        });
+      });
+    }
+
+    function initVsToggles() {
+      document.querySelectorAll('.vsToggleElement').forEach(function(el) {
+        var table = el.closest('table');
+        if (!table) return;
+        var anchor = el.querySelector('.NavToggle a');
+        if (!anchor) {
+          var wrapper = document.createElement('span');
+          wrapper.className = 'NavToggle';
+          wrapper.style.cssText = 'float:right; font-weight:normal; font-size:smaller; padding-left: 8px;';
+          anchor = document.createElement('a');
+          anchor.href = '#';
+          wrapper.appendChild(anchor);
+          el.appendChild(wrapper);
+        }
+        var shows = table.querySelectorAll('.vsShow');
+        var hides = table.querySelectorAll('.vsHide');
+        shows.forEach(function(r){ r.style.display = 'none'; });
+        hides.forEach(function(r){ r.style.display = ''; });
+        anchor.textContent = '▶';
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', function(e) {
+          e.preventDefault();
+          var isExpanded = anchor.textContent.includes('▼');
+          if (isExpanded) {
+            shows.forEach(function(r){ r.style.display = 'none'; });
+            hides.forEach(function(r){ r.style.display = ''; });
+            anchor.textContent = '▶';
+          } else {
+            shows.forEach(function(r){ r.style.display = ''; });
+            hides.forEach(function(r){ r.style.display = 'none'; });
+            anchor.textContent = '▼';
+          }
+        });
+      });
+    }
+
+    function initMwCollapsibles() {
+      document.querySelectorAll('.mw-collapsible, table.collapsed, table.mw-collapsed').forEach(function(el) {
+        var isTable = el.tagName === 'TABLE';
+        var head = isTable ? el.querySelector('tr') : el.firstElementChild;
+        if (!head) return;
+        var toggler = el.querySelector('.mw-collapsible-toggle');
+        if (!toggler) {
+          toggler = document.createElement('span');
+          toggler.className = 'mw-collapsible-toggle';
+          toggler.style.cssText = 'float:right; cursor:pointer; user-select:none; font-size:smaller; padding-left:8px;';
+          var th = head.querySelector('th') || head.querySelector('td') || head;
+          if(th) th.appendChild(toggler);
+        }
+        toggler.textContent = '▶';
+        if (isTable) {
+          var rows = el.querySelectorAll('tr');
+          rows.forEach(function(row, idx) { if (idx > 0) row.style.display = 'none'; });
+        } else {
+          var content = el.querySelector('.mw-collapsible-content');
+          if (content) { content.style.display = 'none'; }
+          else { Array.from(el.children).forEach(function(child, idx) { if (idx > 0) child.style.display = 'none'; }); }
+        }
+        head.style.cursor = 'pointer';
+        head.addEventListener('click', function(e) {
+          e.preventDefault();
+          var isCollapsed = toggler.textContent.includes('▶');
+          toggler.textContent = isCollapsed ? '▼' : '▶';
+          if (isTable) {
+            var rows = el.querySelectorAll('tr');
+            rows.forEach(function(row, idx) { if (idx > 0) row.style.display = isCollapsed ? '' : 'none'; });
+          } else {
+            var content = el.querySelector('.mw-collapsible-content');
+            if (content) { content.style.display = isCollapsed ? '' : 'none'; }
+            else { Array.from(el.children).forEach(function(child, idx) { if (idx > 0) child.style.display = isCollapsed ? '' : 'none'; }); }
+          }
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      initNavFrames(); initVsToggles(); initMwCollapsibles();
+    });
+    if (document.readyState !== 'loading') {
+      initNavFrames(); initVsToggles(); initMwCollapsibles();
+    }
+  })();
+`;
+
+const LIGHT_CSS = `
+  :root { color-scheme: light; }
+  html, body {
+    background: #f5f8fb !important;
+    color: #20364d !important;
+    font-family: 'Linux Libertine', Georgia, Times, serif;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 10px 14px 28px;
+    max-width: 860px;
+  }
+  a { color: #1769aa !important; }
+  a:visited { color: #7253a8 !important; }
+  a.new, a.new:visited { color: #b42332 !important; }
+  a:hover { text-decoration: underline; }
+  * { background-color: unset !important; }
+  table, .wikitable { border-collapse: collapse; background: #ffffff !important; color: #20364d !important; }
+  th, td { border: 1px solid #c7d6e3 !important; padding: 6px 10px; color: #20364d !important; }
+  th { background: #e7f0f7 !important; }
+  tr:nth-child(even) td { background: #f4f8fb !important; }
+  .NavFrame { border: 1px solid #c7d6e3 !important; border-radius: 6px; background: #ffffff !important; margin: 12px 0; overflow: hidden; }
+  .NavHead { background: #e7f0f7 !important; color: #20364d !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
+  .NavContent { background: #ffffff !important; }
+  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #e7f0f7 !important; color: #20364d !important; }
+  .mw-collapsible-toggle { cursor: pointer; color: #47637c !important; }
+  h1, h2, h3, h4, h5 { color: #20364d !important; border-bottom: 1px solid #c7d6e3 !important; padding-bottom: 4px; }
+  #toc, .toc, .infobox { background: #ffffff !important; border: 1px solid #c7d6e3 !important; border-radius: 6px; }
+  .mw-editsection, .mw-editsection-bracket { display: none !important; }
+`;
+
+function formatDateDayFirst(val?: string | null) {
+  if (!val) return "—";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return val;
+  }
 }
 
-interface ShortcutAction {
-  id: string;
-  labelKey: string;
-  defaultKey: string;
-}
-
-const DEFAULT_SHORTCUTS: Record<string, string> = {
-  accept: "a",
-  reject: "r",
-  skip: "s",
-  comment: "c",
-  queue: "q",
-  wiki: "w",
-  undo: "u",
-  help: "?",
+const LIST_STEP = 200;
+const screenful = (rowHeight = 44) => {
+  const height = (typeof window !== "undefined" && window.innerHeight) || 800;
+  return Math.max(Math.ceil(height / rowHeight) + 4, 12);
 };
 
-const SHORTCUT_ACTIONS: ShortcutAction[] = [
-  { id: "accept", labelKey: "feather-review-shortcut-accept", defaultKey: "a" },
-  { id: "reject", labelKey: "feather-review-shortcut-reject", defaultKey: "r" },
-  { id: "skip", labelKey: "feather-review-shortcut-skip", defaultKey: "s" },
-  { id: "comment", labelKey: "feather-review-shortcut-comment", defaultKey: "c" },
-  { id: "queue", labelKey: "feather-review-shortcut-queue", defaultKey: "q" },
-  { id: "wiki", labelKey: "feather-review-shortcut-wiki", defaultKey: "w" },
-  { id: "undo", labelKey: "feather-review-shortcut-undo", defaultKey: "u" },
+const BULK_CHUNK = 200;
+async function postBulkInChunks(url: string, ids: number[], extraBody: any = {}) {
+  const succeeded: number[] = [];
+  const failed: any[] = [];
+  for (let start = 0; start < ids.length; start += BULK_CHUNK) {
+    const chunk = ids.slice(start, start + BULK_CHUNK);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...extraBody, article_ids: chunk }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.detail || `Request failed (${res.status})`);
+      succeeded.push(...(result.succeeded || []));
+      failed.push(...(result.failed || []));
+    } catch (err: any) {
+      failed.push(...chunk.map((id) => ({ article_id: id, detail: err.message || "Request failed" })));
+    }
+  }
+  return { succeeded, failed };
+}
+
+function normalizeArticle(a: any) {
+  return {
+    ...a,
+    article_id: a.article_id ?? a.id,
+    id: a.id ?? a.article_id,
+    submitted_by: a.submitted_by ?? a.submitter_username ?? "",
+    submitter_username: a.submitter_username ?? a.submitted_by ?? "",
+    locked_by: a.locked_by ?? a.locked_by_username ?? null,
+    locked_by_username: a.locked_by_username ?? a.locked_by ?? null,
+    assigned_to: a.assigned_to ?? a.assigned_to_username ?? "",
+    reviews: a.reviews || [],
+  };
+}
+
+const normalizeText = (value: string) =>
+  (value || "")
+    .toLocaleLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const DECISION_LABEL: Record<string, string> = {
+  accepted: "Accepted",
+  rejected: "Rejected",
+  skipped: "Skipped",
+};
+
+const DECISION_RANK: Record<string, number> = {
+  accepted: 0,
+  rejected: 1,
+  skipped: 2,
+};
+
+const SHORTCUT_ACTIONS = [
+  { id: "accept", label: "Accept the current article", default: "a" },
+  { id: "reject", label: "Reject the current article", default: "r" },
+  { id: "skip", label: "Skip to the next article without deciding", default: "s" },
+  { id: "comment", label: "Focus the comment box", default: "c" },
+  { id: "undo", label: "Undo the last decision", default: "u" },
+  { id: "wikitext", label: "Show or hide the raw wikitext panel", default: "w" },
+  { id: "queue", label: "Show or hide the queue drawer", default: "q" },
 ];
+const DEFAULT_SHORTCUTS = Object.fromEntries(SHORTCUT_ACTIONS.map((a) => [a.id, a.default]));
+const RESERVED_SHORTCUT_KEYS = new Set(["escape", "tab", "/", "?"]);
+const ACTIVATION_KEYS = new Set(["enter", "space"]);
+const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta", "CapsLock", "AltGraph"]);
+
+const normalizeShortcutKey = (rawKey: string) => {
+  if (!rawKey) return "";
+  if (rawKey === " " || rawKey === "Spacebar") return "space";
+  return rawKey.toLowerCase();
+};
+const isBindableKey = (key: string) =>
+  !RESERVED_SHORTCUT_KEYS.has(key) && (ACTIVATION_KEYS.has(key) || key.length === 1);
+const shortcutKeyLabel = (key: string) => {
+  if (key === "space") return "Space";
+  if (key === "enter") return "Enter";
+  return (key || "").toUpperCase();
+};
+
+const UNDO_WINDOW_MS = 2000;
+const PANEL_MIN = 260,
+  PANEL_MAX = 640,
+  PANEL_DEFAULT = 340;
 
 interface ReviewQueueClientProps {
   code: string;
   initialContest?: Contest | null;
-  initialUser?: any;
+  initialUser?: UserSession | null;
 }
 
 export default function ReviewQueueClient({
@@ -108,1834 +295,1734 @@ export default function ReviewQueueClient({
   initialContest,
   initialUser,
 }: ReviewQueueClientProps) {
-  const queryClient = useQueryClient();
-  const { t, n } = useI18n();
+  const [contest, setContest] = useState<Contest | null>(initialContest || null);
+  const [user, setUser] = useState<UserSession | null>(initialUser || null);
 
-  // Navigation & Resizable Panel States
-  const [mobileTab, setMobileTab] = useState<"list" | "review">("list");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
-  const [panelWidth, setPanelWidth] = useState<number>(() => {
-    if (typeof window === "undefined") return 360;
-    const saved = localStorage.getItem("feather_review_panel_width");
-    const num = Number(saved);
-    return num >= 260 && num <= 640 ? num : 360;
-  });
-  const [isResizing, setIsResizing] = useState<boolean>(false);
-
-  // Wikitext split pane & Preview states
-  const [showWikitext, setShowWikitext] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("feather_review_wikitext") === "1";
-  });
-  const [mobilePreviewPane, setMobilePreviewPane] = useState<"visual" | "wikitext">("visual");
-  const [wikitextCopied, setWikitextCopied] = useState<boolean>(false);
-
-  // Queue Selection & List States
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [focusedArticleId, setFocusedArticleId] = useState<number | null>(null);
-  const [listTab, setListTab] = useState<"queue" | "rereview" | "all">("queue");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [articles, setArticles] = useState<any[]>([]);
+  const [currentArticle, setCurrentArticle] = useState<any | null>(null);
   const [comment, setComment] = useState("");
+  const [bulkComment, setBulkComment] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+  const [mobileTab, setMobileTab] = useState<"list" | "review">("list");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Re-review decision collapsible blocks
-  const [collapsedDecisions, setCollapsedDecisions] = useState<Record<string, boolean>>({
-    accepted: false,
-    rejected: false,
-    skipped: false,
-  });
+  // Raw-wikitext side panel
+  const [showWikitext, setShowWikitext] = useState(false);
+  const [previewPane, setPreviewPane] = useState<"visual" | "wikitext">("visual");
+  const [wikitextSource, setWikitextSource] = useState("");
+  const [wikitextCopied, setWikitextCopied] = useState(false);
 
-  // Bulk Operations State
+  const [listTab, setListTab] = useState<"queue" | "rereview" | "others">("queue");
+  const [showQueueOptions, setShowQueueOptions] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [panelWidth, setPanelWidthState] = useState(PANEL_DEFAULT);
+  const [isResizing, setIsResizing] = useState(false);
+  const [ownerViewMode, setOwnerViewMode] = useState<"judge" | "owner">("judge");
+  const [selectedJudge, setSelectedJudge] = useState("");
+
   const [selectedForBulk, setSelectedForBulk] = useState<number[]>([]);
   const [bulkAnchorId, setBulkAnchorId] = useState<number | null>(null);
-  const [bulkComment, setBulkComment] = useState("");
-  const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
+  const [bulkRangeIds, setBulkRangeIds] = useState<number[]>([]);
+  const [sidebarVisibleCounts, setSidebarVisibleCounts] = useState<Record<string, number>>({
+    pending: 100,
+    other: 100,
+    judged: 100,
+  });
+  const [collapsedDecisions, setCollapsedDecisions] = useState<Record<string, boolean>>({});
+  const [focusedArticleId, setFocusedArticleId] = useState<number | null>(null);
 
-  // Undo Toast State
-  const [undoItem, setUndoItem] = useState<UndoState | null>(null);
-  const [undoCountdown, setUndoCountdown] = useState<number>(100);
-  const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const undoIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Undo toast state
+  const [lastDecision, setLastDecision] = useState<{
+    seq: number;
+    articleId: number;
+    title: string;
+    decision: string;
+    comment: string;
+  } | null>(null);
+  const [isUndoing, setIsUndoing] = useState(false);
 
-  // Delete Article State
-  const [deleteConfirmArticle, setDeleteConfirmArticle] = useState<Article | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Keyboard Shortcuts Customization Modal
-  const [showShortcutHelp, setShowShortcutHelp] = useState<boolean>(false);
+  // Shortcuts
+  const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+  const [shortcuts, setShortcuts] = useState<Record<string, string>>({ ...DEFAULT_SHORTCUTS });
   const [capturingAction, setCapturingAction] = useState<string | null>(null);
-  const [shortcuts, setShortcuts] = useState<Record<string, string>>(() => {
-    if (typeof window === "undefined") return DEFAULT_SHORTCUTS;
+  const [shortcutError, setShortcutError] = useState("");
+
+  const [previewSrcdoc, setPreviewSrcdoc] = useState("");
+
+  const commentBoxRef = useRef<HTMLTextAreaElement>(null);
+  const previewRequestIdRef = useRef(0);
+  const undoExpiryTimerRef = useRef<any>(null);
+  const wikitextCopyTimerRef = useRef<any>(null);
+  const focusOpenTimerRef = useRef<any>(null);
+  const heldKeysRef = useRef<Set<string>>(new Set());
+  const awaitingFirstSelectionRef = useRef(true);
+
+  // Initial local storage hydration
+  useEffect(() => {
     try {
-      const saved = localStorage.getItem("feather_review_shortcuts");
-      if (saved) return { ...DEFAULT_SHORTCUTS, ...JSON.parse(saved) };
+      const savedWikitext = localStorage.getItem("review_queue_wikitext");
+      if (savedWikitext === "1") {
+        setShowWikitext(true);
+        setPreviewPane("wikitext");
+      }
+      const savedWidth = Number(localStorage.getItem("review_queue_panel_width"));
+      if (savedWidth && savedWidth >= PANEL_MIN && savedWidth <= PANEL_MAX) {
+        setPanelWidthState(savedWidth);
+      }
     } catch {}
-    return DEFAULT_SHORTCUTS;
-  });
-
-  const commentBoxRef = useRef<HTMLInputElement>(null);
-  const parentRef = useRef<HTMLDivElement>(null);
-  const currentlyLockedArticleIdRef = useRef<number | null>(null);
-
-  // 1. Fetch User Session & Contest (hydrated with SSR props)
-  const { data: me, isLoading: meLoading } = useQuery({
-    queryKey: ["me"],
-    queryFn: fetchMe,
-    initialData: initialUser || undefined,
-    staleTime: 60 * 1000,
-  });
-
-  const { data: contest, isLoading: contestLoading } = useQuery<Contest>({
-    queryKey: ["contest", code],
-    queryFn: () => fetchContest(code),
-    initialData: initialContest || undefined,
-  });
-
-  const myUsername = me?.wiki_username || "";
-
-  const isOwner = useMemo(() => {
-    if (!me?.is_authenticated) return false;
-    return me.role === "owner" || (contest?.created_by_id != null && me.user_id === contest.created_by_id);
-  }, [me, contest]);
-
-  const isJuryOrOrganizer = useMemo(() => {
-    if (!me?.is_authenticated) return false;
-    if (isOwner || me.role === "jury") return true;
-    if (contest?.juries && me.wiki_username && contest.juries.includes(me.wiki_username)) return true;
-    return false;
-  }, [me, contest, isOwner]);
-
-  const isDistributedMode = contest?.distribute_jury_queue === true;
-  const [selectedJudge, setSelectedJudge] = useState<string>("all");
-  const [titleCopied, setTitleCopied] = useState<boolean>(false);
-
-  const handleCopyTitle = useCallback(() => {
-    if (!selectedArticle?.title) return;
-    navigator.clipboard.writeText(selectedArticle.title);
-    setTitleCopied(true);
-    toast.success(t("feather-review-title-copied"));
-    setTimeout(() => setTitleCopied(false), 2000);
-  }, [selectedArticle?.title, t]);
-
-  // 2. Fetch All Articles in Contest
-  const { data: articlesData, isLoading: articlesLoading } = useQuery({
-    queryKey: ["articles", code],
-    queryFn: () => fetchArticles(code, undefined, undefined, 250),
-    enabled: isJuryOrOrganizer,
-    refetchInterval: 15 * 1000, // live auto-refresh
-  });
-
-  const allArticles = useMemo(() => articlesData?.items || [], [articlesData]);
-
-  // Review Lock Lifecycle: Release previous lock, acquire lock on open article
-  useEffect(() => {
-    if (!selectedArticle?.id) return;
-    const articleId = selectedArticle.id;
-
-    if (currentlyLockedArticleIdRef.current && currentlyLockedArticleIdRef.current !== articleId) {
-      releaseArticleLock(currentlyLockedArticleIdRef.current);
-    }
-    currentlyLockedArticleIdRef.current = articleId;
-
-    // Acquire lock
-    acquireArticleLock(articleId).catch(() => {});
-
-    // Refresh lock periodically every 3 minutes
-    const lockInterval = setInterval(() => {
-      acquireArticleLock(articleId).catch(() => {});
-    }, 3 * 60 * 1000);
-
-    return () => {
-      clearInterval(lockInterval);
-    };
-  }, [selectedArticle?.id]);
-
-  // Release lock on unmount or tab close
-  useEffect(() => {
-    const handleUnload = () => {
-      if (currentlyLockedArticleIdRef.current) {
-        releaseArticleLock(currentlyLockedArticleIdRef.current);
-      }
-    };
-    window.addEventListener("beforeunload", handleUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleUnload);
-      if (currentlyLockedArticleIdRef.current) {
-        releaseArticleLock(currentlyLockedArticleIdRef.current);
-      }
-    };
   }, []);
 
-  // Diacritics and case-normalized search helper
-  const normalizeText = useCallback((str: string) => {
-    return (str || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
-  }, []);
+  const myUsername = user?.wiki_username || "";
+  const isOwner = user?.role === "owner" || Boolean((user as any)?.is_owner);
+  const isJury = user?.role === "jury" || Boolean((user as any)?.is_jury);
+  const isAuthorized = isJury || isOwner;
 
-  const searchTokens = useMemo(() => {
-    return normalizeText(searchQuery).split(/\s+/).filter(Boolean);
-  }, [searchQuery, normalizeText]);
-
-  const matchesSearch = useCallback(
-    (a: Article, withSubmitter: boolean = false) => {
-      if (!searchTokens.length) return true;
-      const haystack = normalizeText(withSubmitter ? `${a.title} ${a.submitter_username}` : a.title);
-      return searchTokens.every((token) => haystack.includes(token));
-    },
-    [searchTokens, normalizeText]
+  // Shortcuts storage
+  const shortcutStorageKey = useCallback(
+    () => `review_queue_shortcuts:${myUsername || "anonymous"}`,
+    [myUsername]
   );
 
-  // Tab 1: Queue (Pending articles in the contest)
-  const queueArticles = useMemo(() => {
-    return allArticles.filter((a) => {
-      if (a.status !== "pending") return false;
-      // COI check: Juries cannot review their own submissions unless owner
-      if (!isOwner && myUsername && a.submitter_username === myUsername) return false;
-      // If distributed mode is active:
-      if (isDistributedMode) {
-        if (isOwner && selectedJudge !== "all") {
-          if (a.assigned_to_username !== selectedJudge) return false;
-        } else if (!isOwner && myUsername) {
-          if (a.assigned_to_username && a.assigned_to_username !== myUsername) return false;
-        }
-      }
-      return matchesSearch(a, false);
-    });
-  }, [allArticles, isOwner, myUsername, isDistributedMode, selectedJudge, matchesSearch]);
-
-  // Tab 2: Evaluated / Judged (All articles evaluated in the contest)
-  const judgedArticles = useMemo(() => {
-    return allArticles.filter((a) => {
-      if (a.status === "pending") return false;
-      return matchesSearch(a, true);
-    });
-  }, [allArticles, matchesSearch]);
-
-  // Grouped Evaluated blocks (Accepted, Rejected, Skipped)
-  const reReviewBlocks = useMemo(() => {
-    const blocks: {
-      accepted: Article[];
-      rejected: Article[];
-      skipped: Article[];
-    } = { accepted: [], rejected: [], skipped: [] };
-
-    for (const a of judgedArticles) {
-      if (a.status === "accepted") blocks.accepted.push(a);
-      else if (a.status === "rejected") blocks.rejected.push(a);
-      else blocks.skipped.push(a);
+  const loadShortcuts = useCallback(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(shortcutStorageKey()) || "null");
+      setShortcuts({
+        ...DEFAULT_SHORTCUTS,
+        ...Object.fromEntries(
+          Object.entries(saved || {})
+            .filter(
+              ([id, key]) =>
+                id in DEFAULT_SHORTCUTS &&
+                typeof key === "string" &&
+                isBindableKey(normalizeShortcutKey(key))
+            )
+            .map(([id, key]) => [id, normalizeShortcutKey(key as string)])
+        ),
+      });
+    } catch (error) {
+      console.warn("Could not read saved review shortcuts", error);
+      setShortcuts({ ...DEFAULT_SHORTCUTS });
     }
-    return blocks;
-  }, [judgedArticles]);
+  }, [shortcutStorageKey]);
 
-  // Current tab active list (Queue, Evaluated, All)
-  const activeTabArticles = useMemo(() => {
-    if (listTab === "queue") return queueArticles;
-    if (listTab === "rereview") return judgedArticles;
-    return allArticles.filter((a) => matchesSearch(a, true));
-  }, [listTab, queueArticles, judgedArticles, allArticles, matchesSearch]);
-
-  // Auto-select first article if none selected
   useEffect(() => {
-    if (!selectedArticle && queueArticles.length > 0) {
-      setSelectedArticle(queueArticles[0]);
-      setFocusedArticleId(queueArticles[0].id);
-    }
-  }, [queueArticles, selectedArticle]);
+    loadShortcuts();
+  }, [loadShortcuts]);
 
-  // 3. Fetch Real MediaWiki Preview
-  const { data: previewData, isLoading: previewLoading } = useQuery<ArticlePreview>({
-    queryKey: ["article-preview", code, selectedArticle?.id],
-    queryFn: () => fetchArticlePreview(code, selectedArticle!.id),
-    enabled: !!selectedArticle?.id,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Calculate Progress & Tallies
-  const statusStats = useMemo(() => {
-    const total = allArticles.length;
-    const accepted = allArticles.filter((a) => a.status === "accepted").length;
-    const rejected = allArticles.filter((a) => a.status === "rejected").length;
-    const pending = allArticles.filter((a) => a.status === "pending").length;
-    const judgeableTotal = pending + accepted + rejected;
-    const judged = accepted + rejected;
-    const percent = judgeableTotal > 0 ? Math.round((judged / judgeableTotal) * 100) : 0;
-    return { total, accepted, rejected, pending, judgeableTotal, judged, percent };
-  }, [allArticles]);
-
-  // 4. Review Mutation
-  const mutation = useMutation({
-    mutationFn: ({
-      articleId,
-      status,
-      decisionComment,
-    }: {
-      articleId: number;
-      status: "accepted" | "rejected" | "skipped" | "pending";
-      decisionComment: string;
-    }) => reviewArticle(articleId, status, decisionComment),
-    onSuccess: (_, variables) => {
-      if (variables.status !== "pending") {
-        const judged = activeTabArticles.find((a) => a.id === variables.articleId) || selectedArticle;
-        triggerUndoToast(variables.articleId, judged?.title || "Article", variables.status);
-      }
-
-      setComment("");
-
-      // Move to next article in flow
-      const currentIndex = activeTabArticles.findIndex((a) => a.id === variables.articleId);
-      if (currentIndex >= 0 && currentIndex < activeTabArticles.length - 1) {
-        setSelectedArticle(activeTabArticles[currentIndex + 1]);
-        setFocusedArticleId(activeTabArticles[currentIndex + 1].id);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["articles", code] });
-      queryClient.invalidateQueries({ queryKey: ["contest", code] });
-      queryClient.invalidateQueries({ queryKey: ["standings", code] });
-      queryClient.invalidateQueries({ queryKey: ["jury-stats", code] });
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to submit review");
-    },
-  });
-
-  // Trigger Undo Toast with 6-second window
-  const triggerUndoToast = (articleId: number, title: string, status: "accepted" | "rejected" | "skipped") => {
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    if (undoIntervalRef.current) clearInterval(undoIntervalRef.current);
-
-    setUndoItem({ articleId, title, status });
-    setUndoCountdown(100);
-
-    const startTime = Date.now();
-    const duration = 6000;
-
-    undoIntervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
-      setUndoCountdown(remaining);
-      if (remaining <= 0) {
-        if (undoIntervalRef.current) clearInterval(undoIntervalRef.current);
-      }
-    }, 50);
-
-    undoTimerRef.current = setTimeout(() => {
-      setUndoItem(null);
-    }, duration);
-  };
-
-  const handleUndo = async () => {
-    if (!undoItem) return;
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    if (undoIntervalRef.current) clearInterval(undoIntervalRef.current);
-
+  const persistShortcuts = (updated: Record<string, string>) => {
     try {
-      await undoArticleReview(undoItem.articleId);
-      toast.success(t("feather-review-undo-success", undoItem.title));
-      setUndoItem(null);
-      queryClient.invalidateQueries({ queryKey: ["articles", code] });
-      queryClient.invalidateQueries({ queryKey: ["contest", code] });
-    } catch {
-      toast.error("Failed to undo decision");
-    }
+      localStorage.setItem(shortcutStorageKey(), JSON.stringify(updated));
+    } catch {}
   };
 
-  // Delete Article Action
-  const handleDeleteArticle = async () => {
-    if (!deleteConfirmArticle) return;
-    setIsDeleting(true);
-    try {
-      await deleteArticle(deleteConfirmArticle.id);
-      toast.success(t("feather-review-delete-success", deleteConfirmArticle.title));
-      if (selectedArticle?.id === deleteConfirmArticle.id) {
-        setSelectedArticle(null);
-      }
-      setDeleteConfirmArticle(null);
-      queryClient.invalidateQueries({ queryKey: ["articles", code] });
-      queryClient.invalidateQueries({ queryKey: ["contest", code] });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete article");
-    } finally {
-      setIsDeleting(false);
-    }
+  const startShortcutCapture = (actionId: string) => {
+    setCapturingAction(actionId);
+    setShortcutError("");
   };
-
-  // Draggable Splitter Implementation
-  const startResize = useCallback(
-    (e: React.PointerEvent) => {
-      e.preventDefault();
-      setIsResizing(true);
-
-      const onPointerMove = (moveEvent: PointerEvent) => {
-        const newWidth = Math.max(260, Math.min(640, moveEvent.clientX));
-        setPanelWidth(newWidth);
-        localStorage.setItem("feather_review_panel_width", String(newWidth));
-      };
-
-      const onPointerUp = () => {
-        setIsResizing(false);
-        window.removeEventListener("pointermove", onPointerMove);
-        window.removeEventListener("pointerup", onPointerUp);
-      };
-
-      window.addEventListener("pointermove", onPointerMove);
-      window.addEventListener("pointerup", onPointerUp);
-    },
-    []
-  );
-
-  const resetPanelWidth = () => {
-    setPanelWidth(360);
-    localStorage.setItem("feather_review_panel_width", "360");
+  const cancelShortcutCapture = () => {
+    setCapturingAction(null);
+    setShortcutError("");
+  };
+  const resetShortcuts = () => {
+    setShortcuts({ ...DEFAULT_SHORTCUTS });
+    persistShortcuts(DEFAULT_SHORTCUTS);
+    setCapturingAction(null);
+    setShortcutError("");
   };
 
   const toggleWikitext = () => {
-    const nextVal = !showWikitext;
-    setShowWikitext(nextVal);
-    localStorage.setItem("feather_review_wikitext", nextVal ? "1" : "0");
-    if (nextVal) setMobilePreviewPane("wikitext");
-    else setMobilePreviewPane("visual");
+    setShowWikitext((prev) => {
+      const next = !prev;
+      localStorage.setItem("review_queue_wikitext", next ? "1" : "0");
+      if (next) setPreviewPane("wikitext");
+      else setPreviewPane("visual");
+      return next;
+    });
   };
 
-  const handleCopyWikitext = async () => {
-    if (!previewData?.wikitext) return;
+  const copyWikitext = async () => {
+    if (!wikitextSource) return;
     try {
-      await navigator.clipboard.writeText(previewData.wikitext);
+      await navigator.clipboard.writeText(wikitextSource);
       setWikitextCopied(true);
-      setTimeout(() => setWikitextCopied(false), 1600);
-      toast.success(t("feather-review-wikitext-copied-toast"));
-    } catch {
-      toast.error("Failed to copy wikitext");
+      clearTimeout(wikitextCopyTimerRef.current);
+      wikitextCopyTimerRef.current = setTimeout(() => {
+        setWikitextCopied(false);
+      }, 1600);
+    } catch (error) {
+      console.warn("Copy failed", error);
     }
   };
 
-  // Shift-Click and Checkbox Selection for Bulk Actions
-  const handleSelectClick = (articleId: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (e.shiftKey && bulkAnchorId !== null) {
-      const items = activeTabArticles;
-      const anchorIdx = items.findIndex((a) => a.id === bulkAnchorId);
-      const currentIdx = items.findIndex((a) => a.id === articleId);
-      if (anchorIdx !== -1 && currentIdx !== -1) {
-        const start = Math.min(anchorIdx, currentIdx);
-        const end = Math.max(anchorIdx, currentIdx);
-        const rangeIds = items.slice(start, end + 1).map((a) => a.id);
-        setSelectedForBulk((prev) => Array.from(new Set([...prev, ...rangeIds])));
-        return;
+  // Resize handling
+  const setPanelWidth = (px: number) => {
+    const clamped = Math.min(Math.max(Math.round(px), PANEL_MIN), PANEL_MAX);
+    setPanelWidthState(clamped);
+    try {
+      localStorage.setItem("review_queue_panel_width", String(clamped));
+    } catch {}
+  };
+
+  const startResize = (event: React.PointerEvent) => {
+    if (event.pointerType === "touch") return;
+    const startX = event.clientX;
+    const startWidth = panelWidth;
+    setIsResizing(true);
+    const onMove = (moveEvent: PointerEvent) => {
+      setPanelWidth(startWidth + moveEvent.clientX - startX);
+    };
+    const onUp = () => {
+      setIsResizing(false);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    event.preventDefault();
+  };
+
+  const resetPanelWidth = () => {
+    setPanelWidth(PANEL_DEFAULT);
+  };
+
+  // URL generator for wiki article
+  const wikiBase = contest?.wiki_url || "https://bn.wikipedia.org";
+  const articleUrl = (title: string) => `${wikiBase}/wiki/${encodeURIComponent(title)}`;
+
+  // Fetch article preview
+  const fetchPreview = useCallback(
+    async (title: string) => {
+      const requestId = ++previewRequestIdRef.current;
+      setIsLoadingPreview(true);
+      setPreviewSrcdoc("");
+      setWikitextSource("");
+      try {
+        const base = contest?.wiki_url || "https://bn.wikipedia.org";
+        const res = await fetch(
+          `${base}/w/api.php?action=parse&page=${encodeURIComponent(
+            title
+          )}&format=json&prop=text%7Cwikitext&origin=*`
+        );
+        const data = await res.json();
+        const body =
+          data.parse?.text?.["*"] ?? '<p style="color:#94a3b8">Preview not available.</p>';
+        if (requestId !== previewRequestIdRef.current) return;
+        const wikitext = data.parse?.wikitext?.["*"] ?? "";
+        setWikitextSource(wikitext);
+        setPreviewSrcdoc(`<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<base href="${base}/wiki/">
+<style>${LIGHT_CSS}</style>
+</head>
+<body class="mw-body mw-parser-output">
+${body}
+<script>${COLLAPSIBLE_JS}<\/script>
+</body>
+</html>`);
+      } catch (e) {
+        console.error(e);
+        if (requestId === previewRequestIdRef.current) {
+          setPreviewSrcdoc(
+            `<!DOCTYPE html><html><body style="color:#20364d;background:#f5f8fb;padding:24px">Error loading preview.</body></html>`
+          );
+        }
+      } finally {
+        if (requestId === previewRequestIdRef.current) setIsLoadingPreview(false);
+      }
+    },
+    [contest?.wiki_url]
+  );
+
+  const getMyLatestDecision = useCallback(
+    (article: any) => {
+      if (!article || !article.reviews) return null;
+      const myReviews = article.reviews.filter((r: any) => r.reviewer === myUsername);
+      if (!myReviews.length) return null;
+      return myReviews[myReviews.length - 1].decision || myReviews[myReviews.length - 1].status;
+    },
+    [myUsername]
+  );
+
+  const getMyLatestComment = useCallback(
+    (article: any) => {
+      if (!article || !article.reviews) return "";
+      const myReviews = article.reviews.filter((r: any) => r.reviewer === myUsername);
+      if (!myReviews.length) return "";
+      return myReviews[myReviews.length - 1].comment || "";
+    },
+    [myUsername]
+  );
+
+  // Select article
+  const selectArticle = useCallback(
+    (article: any) => {
+      clearTimeout(focusOpenTimerRef.current);
+      if (!article) return;
+      const canReReview = article?.reviews?.some((r: any) => r.reviewer === myUsername);
+      if (article.status !== "pending" && !canReReview) return;
+
+      awaitingFirstSelectionRef.current = false;
+      setReviewError("");
+
+      if (currentArticle?.article_id && currentArticle.article_id !== article.article_id) {
+        apiReleaseLock(currentArticle.article_id).catch(() => {});
+      }
+
+      setCurrentArticle(article);
+      setComment(getMyLatestComment(article));
+      fetchPreview(article.title);
+      acquireArticleLock(article.article_id).catch(() => {});
+      setMobileTab("review");
+    },
+    [currentArticle?.article_id, fetchPreview, getMyLatestComment, myUsername]
+  );
+
+  // Load contest & user data
+  useEffect(() => {
+    let active = true;
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const [cData, uData, aData] = await Promise.all([
+          initialContest ? Promise.resolve(initialContest) : fetchContest(code),
+          initialUser ? Promise.resolve(initialUser) : fetchMe(),
+          fetchArticles(code, 500),
+        ]);
+        if (!active) return;
+        setContest(cData);
+        setUser(uData);
+        const norm = (aData.items || []).map(normalizeArticle);
+        setArticles(norm);
+
+        if (cData?.juries && cData.juries.length > 0) {
+          setSelectedJudge(uData?.wiki_username || cData.juries[0]);
+        }
+      } catch (err) {
+        console.error("Failed to load review data", err);
+      } finally {
+        if (active) setIsLoading(false);
       }
     }
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, [code, initialContest, initialUser]);
 
-    setBulkAnchorId(articleId);
-    setSelectedForBulk((prev) =>
-      prev.includes(articleId) ? prev.filter((id) => id !== articleId) : [...prev, articleId]
+  // Available new articles
+  const newArticles = useMemo(() => {
+    if (!myUsername) return [];
+    return articles.filter(
+      (a) =>
+        a.status === "pending" &&
+        !(isJury && !isOwner && a.submitted_by === myUsername) &&
+        !a.reviews.some((r: any) => r.reviewer === myUsername)
     );
+  }, [articles, isJury, isOwner, myUsername]);
+
+  const availableNewArticles = useMemo(() => {
+    return newArticles.filter((a) => !a.locked_by || a.locked_by === myUsername);
+  }, [newArticles, myUsername]);
+
+  const judgedArticles = useMemo(() => {
+    if (!myUsername) return [];
+    return articles.filter((a) => a.reviews.some((r: any) => r.reviewer === myUsername));
+  }, [articles, myUsername]);
+
+  const otherReviewedArticles = useMemo(() => {
+    if (!myUsername || !isOwner) return [];
+    return articles.filter(
+      (a) =>
+        a.status !== "pending" &&
+        a.reviews.length > 0 &&
+        !a.reviews.some((r: any) => r.reviewer === myUsername)
+    );
+  }, [articles, isOwner, myUsername]);
+
+  // Auto select first article
+  useEffect(() => {
+    if (!awaitingFirstSelectionRef.current || currentArticle) return;
+    const next = availableNewArticles[0];
+    if (next) {
+      awaitingFirstSelectionRef.current = false;
+      selectArticle(next);
+      if (typeof window !== "undefined" && window.innerWidth <= 768) {
+        setMobileTab("list");
+      }
+    }
+  }, [availableNewArticles, currentArticle, selectArticle]);
+
+  // Status stats
+  const statusStats = useMemo(() => {
+    const accepted = articles.filter((a) => a.status === "accepted").length;
+    const rejected = articles.filter((a) => a.status === "rejected").length;
+    const pending = articles.filter((a) => a.status === "pending").length;
+    return {
+      total: articles.length,
+      accepted,
+      rejected,
+      pending,
+    };
+  }, [articles]);
+
+  const judgeableTotal = statusStats.pending + statusStats.accepted + statusStats.rejected;
+  const judgedCount = statusStats.accepted + statusStats.rejected;
+  const judgedPercent = judgeableTotal ? Math.round((judgedCount / judgeableTotal) * 100) : 0;
+
+  const isSingleSubmitter = useMemo(() => {
+    return new Set(articles.map((a) => a.submitted_by)).size <= 1;
+  }, [articles]);
+
+  // Search filtering
+  const searchTerms = useMemo(() => {
+    return normalizeText(searchQuery).split(/\s+/).filter(Boolean);
+  }, [searchQuery]);
+
+  const matchesSearch = useCallback(
+    (article: any, withSubmitter: boolean) => {
+      if (!searchTerms.length) return true;
+      const haystack = normalizeText(
+        withSubmitter ? `${article.title} ${article.submitted_by}` : article.title
+      );
+      return searchTerms.every((term) => haystack.includes(term));
+    },
+    [searchTerms]
+  );
+
+  const forSidebar = useCallback(
+    (list: any[], withSubmitter: boolean = false) =>
+      list.filter((a) => matchesSearch(a, withSubmitter)),
+    [matchesSearch]
+  );
+
+  const filteredNewArticles = useMemo(() => forSidebar(newArticles), [forSidebar, newArticles]);
+  const filteredJudgedArticles = useMemo(() => {
+    const list = [...forSidebar(judgedArticles, true)];
+    return list.sort((a, b) => {
+      const ra = DECISION_RANK[getMyLatestDecision(a)] ?? 9;
+      const rb = DECISION_RANK[getMyLatestDecision(b)] ?? 9;
+      return ra - rb;
+    });
+  }, [forSidebar, getMyLatestDecision, judgedArticles]);
+
+  const filteredOtherArticles = useMemo(
+    () => forSidebar(otherReviewedArticles),
+    [forSidebar, otherReviewedArticles]
+  );
+
+  const listTabs = useMemo(() => {
+    const tabs = [
+      { id: "queue", key: "pending", label: "Queue", list: filteredNewArticles },
+      { id: "rereview", key: "judged", label: "Re-review", list: filteredJudgedArticles },
+    ];
+    if (otherReviewedArticles.length > 0) {
+      tabs.push({ id: "others", key: "other", label: "Other judges", list: filteredOtherArticles });
+    }
+    return tabs;
+  }, [filteredJudgedArticles, filteredNewArticles, filteredOtherArticles, otherReviewedArticles.length]);
+
+  const activeTab = useMemo(() => {
+    return listTabs.find((t) => t.id === listTab) || listTabs[0];
+  }, [listTab, listTabs]);
+
+  const searchPlaceholder =
+    listTab === "rereview" ? "Search titles or submitter" : "Search titles";
+
+  const workingList = useMemo(() => {
+    return listTab === "rereview" ? filteredJudgedArticles : availableNewArticles;
+  }, [availableNewArticles, filteredJudgedArticles, listTab]);
+
+  const visibleRows = useMemo(() => {
+    const tab = activeTab;
+    if (tab.id !== "rereview") {
+      const count = sidebarVisibleCounts[tab.key] || screenful(44);
+      return tab.list.slice(0, count).map((article) => ({ article }));
+    }
+    const blocks = new Map<string, any[]>();
+    for (const article of tab.list) {
+      const decision = getMyLatestDecision(article) || "skipped";
+      if (!blocks.has(decision)) blocks.set(decision, []);
+      blocks.get(decision)!.push(article);
+    }
+    const rows: any[] = [];
+    let budget = sidebarVisibleCounts.judged || 100;
+    for (const [decision, articlesInBlock] of blocks) {
+      rows.push({ heading: decision, count: articlesInBlock.length });
+      if (collapsedDecisions[decision]) continue;
+      for (const article of articlesInBlock) {
+        if (budget <= 0) break;
+        rows.push({ article, decision });
+        budget -= 1;
+      }
+    }
+    return rows;
+  }, [activeTab, collapsedDecisions, getMyLatestDecision, sidebarVisibleCounts]);
+
+  const rowArticles = useMemo(() => {
+    return visibleRows.filter((r) => r.article).map((r) => r.article);
+  }, [visibleRows]);
+
+  const toggleDecision = (decision: string) => {
+    setCollapsedDecisions((prev) => ({ ...prev, [decision]: !prev[decision] }));
   };
 
-  // Handle Bulk Decision Submit
-  const handleBulkDecision = async (status: "accepted" | "rejected") => {
-    if (selectedForBulk.length === 0 || isBulkSubmitting) return;
-    setIsBulkSubmitting(true);
+  const onListScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight > 200) return;
+    setSidebarVisibleCounts((prev) => ({
+      ...prev,
+      [activeTab.key]: Math.min((prev[activeTab.key] || screenful(44)) + LIST_STEP, activeTab.list.length),
+    }));
+  };
+
+  // Bulk operations
+  const setBulkSelection = (ids: number[]) => {
+    setSelectedForBulk(ids);
+    if (ids.length < 2) setBulkComment("");
+  };
+
+  const toggleBulkSelection = (article_id: number) => {
+    const selected = selectedForBulk;
+    setBulkSelection(
+      selected.includes(article_id)
+        ? selected.filter((id) => id !== article_id)
+        : [...selected, article_id]
+    );
+    setBulkAnchorId(article_id);
+    setBulkRangeIds([]);
+  };
+
+  const selectBulkRange = (article_id: number) => {
+    const ids = visibleRows.filter((r) => r.article).map((r) => r.article.article_id);
+    const from = ids.indexOf(bulkAnchorId as any);
+    const to = ids.indexOf(article_id);
+    if (from === -1 || to === -1) {
+      toggleBulkSelection(article_id);
+      return;
+    }
+    const range = ids.slice(Math.min(from, to), Math.max(from, to) + 1);
+    const kept = selectedForBulk.filter((id) => !bulkRangeIds.includes(id));
+    setBulkRangeIds(range);
+    setBulkSelection([...new Set([...kept, ...range])]);
+    window.getSelection()?.removeAllRanges();
+  };
+
+  const handleSelectClick = (article_id: number, e: React.MouseEvent) => {
+    if (e.shiftKey) selectBulkRange(article_id);
+    else toggleBulkSelection(article_id);
+  };
+
+  const handleRowClick = (article: any, e: React.MouseEvent) => {
+    if (activeTab.id === "others") return;
+    setFocusedArticleId(article.article_id);
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      handleSelectClick(article.article_id, e);
+      return;
+    }
+    selectArticle(article);
+  };
+
+  const clearBulkSelection = () => {
+    setBulkSelection([]);
+    setBulkAnchorId(null);
+    setBulkRangeIds([]);
+  };
+
+  // Decisions
+  let decisionSeqRef = useRef(0);
+  const rememberDecision = (article: any, decision: string, commentText: string) => {
+    clearTimeout(undoExpiryTimerRef.current);
+    setLastDecision({
+      seq: ++decisionSeqRef.current,
+      articleId: article.article_id,
+      title: article.title,
+      decision,
+      comment: commentText,
+    });
+    undoExpiryTimerRef.current = setTimeout(() => {
+      setLastDecision(null);
+    }, UNDO_WINDOW_MS);
+  };
+
+  const dismissUndo = () => {
+    clearTimeout(undoExpiryTimerRef.current);
+    setLastDecision(null);
+  };
+
+  const undoLastDecision = async () => {
+    const pending = lastDecision;
+    if (!pending || isUndoing) return;
+    setIsUndoing(true);
+    setReviewError("");
     try {
-      const res = await bulkReviewArticles(selectedForBulk, status, bulkComment);
-      toast.success(t("feather-review-bulk-success", res.reviewed_count, status));
+      await undoArticleReview(pending.articleId);
+      setArticles((prev) =>
+        prev.map((article) =>
+          article.article_id === pending.articleId
+            ? {
+                ...article,
+                status: "pending",
+                reviews: (article.reviews || []).filter((r: any) => r.reviewer !== myUsername),
+              }
+            : article
+        )
+      );
+      dismissUndo();
+      const restored = articles.find((a) => a.article_id === pending.articleId);
+      if (restored) {
+        selectArticle(restored);
+        setComment(pending.comment || "");
+      }
+    } catch (error: any) {
+      setReviewError(error.message || "Undo failed");
+    } finally {
+      setIsUndoing(false);
+    }
+  };
+
+  const handleDecision = async (decision: "accepted" | "rejected") => {
+    if (!currentArticle || isSubmitting) return;
+    setIsSubmitting(true);
+    setReviewError("");
+    const reviewedArticleId = currentArticle.article_id;
+    const reviewedArticle = currentArticle;
+    const reviewComment = comment;
+
+    const previousQueueIndex = availableNewArticles.findIndex(
+      (article) => article.article_id === reviewedArticleId
+    );
+    const nextInWorkingList =
+      listTab === "queue"
+        ? null
+        : (() => {
+            const list = workingList;
+            const index = list.findIndex((a) => a.article_id === reviewedArticleId);
+            return index >= 0 ? list[index + 1] || null : null;
+          })();
+
+    try {
+      await reviewArticle(reviewedArticleId, decision, reviewComment);
+      rememberDecision(reviewedArticle, decision, reviewComment);
+      setComment("");
+
+      const optimisticReview = {
+        reviewer: myUsername,
+        decision,
+        comment: reviewComment,
+        reviewed_at: new Date().toISOString(),
+      };
+
+      setArticles((prev) =>
+        prev.map((article) =>
+          article.article_id === reviewedArticleId
+            ? { ...article, status: decision, reviews: [...(article.reviews || []), optimisticReview] }
+            : article
+        )
+      );
+
+      if (listTab !== "queue") {
+        if (nextInWorkingList) {
+          selectArticle(nextInWorkingList);
+        } else {
+          setCurrentArticle(
+            (prev: any) =>
+              articles.find((a) => a.article_id === reviewedArticleId) || prev
+          );
+        }
+      } else {
+        const remaining = availableNewArticles.filter(
+          (a) => a.article_id !== reviewedArticleId
+        );
+        const nextArticle = remaining.length
+          ? remaining[Math.min(Math.max(previousQueueIndex, 0), remaining.length - 1)]
+          : null;
+        if (nextArticle) {
+          selectArticle(nextArticle);
+        } else {
+          setCurrentArticle(null);
+          setMobileTab("list");
+        }
+      }
+    } catch (error: any) {
+      console.error("Error submitting review", error);
+      setReviewError(error.message || "Review failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const skipArticle = () => {
+    if (!currentArticle) return;
+    const previousArticleId = currentArticle.article_id;
+    const list = workingList;
+    if (list.length <= 1) return;
+    const currentIndex = list.findIndex((a) => a.article_id === previousArticleId);
+    const nextIndex = (currentIndex + 1) % list.length;
+    apiReleaseLock(previousArticleId).catch(() => {});
+    selectArticle(list[nextIndex]);
+  };
+
+  const handleRemove = async () => {
+    if (!currentArticle || isSubmitting) return;
+    if (!confirm(`Remove "${currentArticle.title}" from this contest?`)) return;
+    setIsSubmitting(true);
+    try {
+      await deleteArticle(currentArticle.article_id);
+      apiReleaseLock(currentArticle.article_id).catch(() => {});
+      const removedId = currentArticle.article_id;
+      setCurrentArticle(null);
+      setMobileTab("list");
+      setArticles((prev) => prev.filter((a) => a.article_id !== removedId));
+    } catch (error) {
+      console.error("Error removing article", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleBulkDecision = async (decision: "accepted" | "rejected") => {
+    if (isSubmitting || !selectedForBulk.length) return;
+    setIsSubmitting(true);
+    const selectedIds = [...selectedForBulk];
+    const currentWasSelected = selectedIds.includes(currentArticle?.article_id);
+    const reviewComment = bulkComment.trim() || "Bulk reviewed";
+
+    try {
+      const { succeeded, failed } = await postBulkInChunks("/api/articles/bulk-review", selectedIds, {
+        decision,
+        comment: reviewComment,
+      });
+
       setSelectedForBulk([]);
       setBulkComment("");
-      queryClient.invalidateQueries({ queryKey: ["articles", code] });
-      queryClient.invalidateQueries({ queryKey: ["contest", code] });
-    } catch (err: any) {
-      toast.error(err.message || "Bulk review failed");
-    } finally {
-      setIsBulkSubmitting(false);
-    }
-  };
 
-  const handleBulkDelete = async () => {
-    if (selectedForBulk.length === 0 || isBulkSubmitting) return;
-    if (!window.confirm(t("feather-review-delete-confirm-desc", `${selectedForBulk.length} articles`))) return;
-    setIsBulkSubmitting(true);
-    try {
-      for (const id of selectedForBulk) {
-        await deleteArticle(id).catch(() => {});
+      const optimisticReview = {
+        reviewer: myUsername,
+        decision,
+        comment: reviewComment,
+        reviewed_at: new Date().toISOString(),
+      };
+      const decided = new Set(succeeded);
+      setArticles((prev) =>
+        prev.map((article) =>
+          decided.has(article.article_id)
+            ? { ...article, status: decision, reviews: [...(article.reviews || []), optimisticReview] }
+            : article
+        )
+      );
+
+      const advanceAfter = listTab === "queue";
+      const currentWasSuccess = currentWasSelected && !failed.some((f) => f.article_id === currentArticle?.article_id);
+      if (advanceAfter && currentWasSuccess) {
+        const remaining = availableNewArticles.filter((a) => !decided.has(a.article_id));
+        if (remaining.length > 0) {
+          selectArticle(remaining[0]);
+        } else {
+          setCurrentArticle(null);
+          setMobileTab("list");
+        }
       }
-      toast.success(t("feather-review-bulk-delete-success", selectedForBulk.length));
-      setSelectedForBulk([]);
-      queryClient.invalidateQueries({ queryKey: ["articles", code] });
-    } catch {
-      toast.error("Bulk delete failed");
+    } catch (err) {
+      console.error("Bulk review failed", err);
     } finally {
-      setIsBulkSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
-  // Rebind shortcut key
-  const handleRebindKey = (actionId: string, newKey: string) => {
-    const updated = { ...shortcuts, [actionId]: newKey.toLowerCase() };
-    setShortcuts(updated);
-    localStorage.setItem("feather_review_shortcuts", JSON.stringify(updated));
-    setCapturingAction(null);
+  const handleBulkRemove = async () => {
+    if (isSubmitting || !selectedForBulk.length) return;
+    if (!confirm(`Remove ${selectedForBulk.length} article(s) from the contest?`)) return;
+    setIsSubmitting(true);
+    try {
+      const selectedIds = [...selectedForBulk];
+      const { failed } = await postBulkInChunks("/api/articles/bulk-delete", selectedIds);
+      const failedIds = failed.map((item) => item.article_id);
+      setSelectedForBulk(selectedIds.filter((id) => failedIds.includes(id)));
+      setBulkComment("");
+      const removedIds = new Set(selectedIds.filter((id) => !failedIds.includes(id)));
+      setArticles((prev) => prev.filter((a) => !removedIds.has(a.article_id)));
+      if (currentArticle && removedIds.has(currentArticle.article_id)) {
+        setCurrentArticle(null);
+        setMobileTab("list");
+      }
+    } catch (err) {
+      console.error("Bulk remove failed", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const resetShortcuts = () => {
-    setShortcuts(DEFAULT_SHORTCUTS);
-    localStorage.removeItem("feather_review_shortcuts");
-    setCapturingAction(null);
+  // Keyboard navigation & Shortcuts
+  const isTypingTarget = (target: any) => {
+    if (!target) return false;
+    const tag = target.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
   };
 
-  // Keyboard navigation & single-key hotkeys
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // If modal is actively capturing a key to rebind
-      if (capturingAction) {
-        e.preventDefault();
-        if (e.key === "Escape") {
-          setCapturingAction(null);
-          return;
+  const isInteractiveTarget = (el: any) => {
+    if (!el || el === document.body) return false;
+    const tag = el.tagName;
+    return (
+      tag === "BUTTON" ||
+      tag === "A" ||
+      tag === "INPUT" ||
+      tag === "SELECT" ||
+      tag === "TEXTAREA" ||
+      tag === "SUMMARY" ||
+      el.isContentEditable ||
+      el.getAttribute?.("role") === "button"
+    );
+  };
+
+  const applyCapturedKey = (rawKey: string) => {
+    const key = normalizeShortcutKey(rawKey);
+    if (!isBindableKey(key)) {
+      setShortcutError("Pick a single character, Enter or Space. Esc, Tab, / and ? are reserved.");
+      return;
+    }
+    const clash = Object.entries(shortcuts).find(
+      ([id, k]) => k === key && id !== capturingAction
+    );
+    if (clash) {
+      const actionItem = SHORTCUT_ACTIONS.find((a) => a.id === clash[0]);
+      setShortcutError(`"${shortcutKeyLabel(key)}" is already used for: ${actionItem?.label || clash[0]}.`);
+      return;
+    }
+    if (capturingAction) {
+      const updated = { ...shortcuts, [capturingAction]: key };
+      setShortcuts(updated);
+      persistShortcuts(updated);
+    }
+    setCapturingAction(null);
+    setShortcutError("");
+  };
+
+  const handleShortcut = useCallback(
+    (event: KeyboardEvent) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        !event.altKey &&
+        normalizeShortcutKey(event.key) === "a" &&
+        !sidebarCollapsed &&
+        !isTypingTarget(event.target) &&
+        activeTab.id !== "others"
+      ) {
+        const ids = rowArticles.map((a) => a.article_id);
+        if (ids.length) {
+          const allSelected = ids.every((id) => selectedForBulk.includes(id));
+          setBulkSelection(
+            allSelected
+              ? selectedForBulk.filter((id) => !ids.includes(id))
+              : [...new Set([...selectedForBulk, ...ids])]
+          );
+          setBulkRangeIds([]);
         }
-        if (e.key.length === 1 || e.key === "Enter" || e.key === " ") {
-          handleRebindKey(capturingAction, e.key);
-        }
+        event.preventDefault();
         return;
       }
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
 
-      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-      const isInput = tag === "textarea" || tag === "input" || (e.target as HTMLElement)?.isContentEditable;
-
-      if (e.key === "Escape") {
-        if (isInput) {
-          (e.target as HTMLElement).blur();
+      if (event.key === "Escape") {
+        if (capturingAction) {
+          cancelShortcutCapture();
+          event.preventDefault();
         } else if (showShortcutHelp) {
           setShowShortcutHelp(false);
-        } else if (selectedForBulk.length > 0) {
-          setSelectedForBulk([]);
-        } else if (!sidebarCollapsed && window.innerWidth >= 768) {
+          event.preventDefault();
+        } else if (isTypingTarget(event.target)) {
+          (event.target as HTMLElement).blur();
+        } else if (selectedForBulk.length) {
+          clearBulkSelection();
+          event.preventDefault();
+        } else if (!sidebarCollapsed) {
           setSidebarCollapsed(true);
+          event.preventDefault();
         }
         return;
       }
 
-      if (isInput) return;
-
-      // Handle modifier key combinations first
-      if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "A")) {
-        // Ctrl+A / Cmd+A selects or deselects all visible
-        e.preventDefault();
-        if (selectedForBulk.length === activeTabArticles.length) {
-          setSelectedForBulk([]);
-        } else {
-          setSelectedForBulk(activeTabArticles.map((a) => a.id));
-        }
+      if (capturingAction) {
+        event.preventDefault();
+        if (MODIFIER_KEYS.has(event.key)) return;
+        if (!event.repeat) applyCapturedKey(event.key);
         return;
       }
 
-      // Ignore any single-key shortcuts when modifier keys (Ctrl, Meta/Cmd, Alt) are pressed
-      // This protects standard browser shortcuts like Ctrl+R (reload), Ctrl+C (copy), Ctrl+W (close tab)
-      if (e.ctrlKey || e.metaKey || e.altKey) {
-        return;
-      }
+      if (isTypingTarget(event.target)) return;
 
-      const key = e.key.toLowerCase();
-
-      // Decision Hotkeys
-      if (key === shortcuts.accept) {
-        if (selectedArticle && !mutation.isPending) {
-          e.preventDefault();
-          mutation.mutate({ articleId: selectedArticle.id, status: "accepted", decisionComment: comment });
-        }
-      } else if (key === shortcuts.reject) {
-        if (selectedArticle && !mutation.isPending) {
-          e.preventDefault();
-          mutation.mutate({ articleId: selectedArticle.id, status: "rejected", decisionComment: comment });
-        }
-      } else if (key === shortcuts.skip) {
-        if (selectedArticle && !mutation.isPending) {
-          e.preventDefault();
-          mutation.mutate({ articleId: selectedArticle.id, status: "skipped", decisionComment: comment });
-        }
-      } else if (key === shortcuts.comment) {
-        e.preventDefault();
-        commentBoxRef.current?.focus();
-      } else if (key === shortcuts.queue) {
-        e.preventDefault();
-        setSidebarCollapsed((prev) => !prev);
-      } else if (key === shortcuts.wiki) {
-        if (selectedArticle) {
-          e.preventDefault();
-          const targetUrl = selectedArticle.wiki_url || contest?.wiki_url || "https://bn.wikipedia.org";
-          window.open(
-            `${targetUrl}/wiki/${encodeURIComponent(selectedArticle.title)}`,
-            "_blank",
-            "noopener,noreferrer"
-          );
-        }
-      } else if (key === shortcuts.undo) {
-        if (undoItem) {
-          e.preventDefault();
-          handleUndo();
-        }
-      } else if (e.key === "?" || e.key === "/") {
-        e.preventDefault();
+      if (event.key === "/" || event.key === "?") {
         setShowShortcutHelp((prev) => !prev);
-      } else if (e.key === "ArrowDown" || e.key === "j") {
-        e.preventDefault();
-        const items = activeTabArticles;
-        const curIdx = items.findIndex((a) => a.id === (focusedArticleId ?? selectedArticle?.id));
-        if (curIdx < items.length - 1) {
-          const next = items[curIdx + 1];
-          setFocusedArticleId(next.id);
-          setSelectedArticle(next);
-        }
-      } else if (e.key === "ArrowUp" || e.key === "k") {
-        e.preventDefault();
-        const items = activeTabArticles;
-        const curIdx = items.findIndex((a) => a.id === (focusedArticleId ?? selectedArticle?.id));
-        if (curIdx > 0) {
-          const prev = items[curIdx - 1];
-          setFocusedArticleId(prev.id);
-          setSelectedArticle(prev);
-        }
-      } else if (e.key === " ") {
-        // Space toggles selection of focused article for bulk
-        if (focusedArticleId) {
-          e.preventDefault();
-          setSelectedForBulk((prev) =>
-            prev.includes(focusedArticleId) ? prev.filter((id) => id !== focusedArticleId) : [...prev, focusedArticleId]
-          );
-        }
+        event.preventDefault();
+        return;
       }
+      if (showShortcutHelp) return;
+
+      if (normalizeShortcutKey(event.key) === shortcuts.queue) {
+        setSidebarCollapsed((prev) => !prev);
+        event.preventDefault();
+        return;
+      }
+
+      if (!currentArticle || isSubmitting) return;
+
+      const key = normalizeShortcutKey(event.key);
+      if (heldKeysRef.current.has(key)) return;
+      const action = SHORTCUT_ACTIONS.find((a) => shortcuts[a.id] === key)?.id;
+      if (!action) return;
+
+      if (ACTIVATION_KEYS.has(key) && isInteractiveTarget(document.activeElement)) return;
+      heldKeysRef.current.add(key);
+      event.preventDefault();
+
+      switch (action) {
+        case "accept":
+          handleDecision("accepted");
+          break;
+        case "reject":
+          handleDecision("rejected");
+          break;
+        case "skip":
+          skipArticle();
+          break;
+        case "comment":
+          commentBoxRef.current?.focus();
+          break;
+        case "undo":
+          undoLastDecision();
+          break;
+        case "wikitext":
+          toggleWikitext();
+          break;
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      activeTab.id,
+      capturingAction,
+      currentArticle,
+      isSubmitting,
+      rowArticles,
+      selectedForBulk,
+      shortcuts,
+      showShortcutHelp,
+      sidebarCollapsed,
+    ]
+  );
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => handleShortcut(e);
+    const onKeyUp = (e: KeyboardEvent) => heldKeysRef.current.delete(normalizeShortcutKey(e.key));
+    const onBlur = () => heldKeysRef.current.clear();
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+      clearTimeout(undoExpiryTimerRef.current);
+      clearTimeout(wikitextCopyTimerRef.current);
+      clearTimeout(focusOpenTimerRef.current);
     };
+  }, [handleShortcut]);
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    capturingAction,
-    shortcuts,
-    selectedArticle,
-    focusedArticleId,
-    activeTabArticles,
-    comment,
-    mutation,
-    sidebarCollapsed,
-    showShortcutHelp,
-    undoItem,
-    contest,
-    selectedForBulk,
-  ]);
-
-  // Virtualizer for high-throughput 50k queue
-  const rowVirtualizer = useVirtualizer({
-    count: activeTabArticles.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 60,
-    overscan: 6,
-  });
-
-  const activeWikiUrl = useMemo(() => {
-    return selectedArticle?.wiki_url || contest?.wiki_url || "https://bn.wikipedia.org";
-  }, [selectedArticle?.wiki_url, contest?.wiki_url]);
-
-  // Prepare iframe preview srcdoc
-  const previewSrcdoc = useMemo(() => {
-    return buildWikiPreviewSrcdoc(previewData?.html || "", activeWikiUrl);
-  }, [previewData?.html, activeWikiUrl]);
-
-  if (meLoading || contestLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span>{t("feather-ui-loading")}</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!me?.is_authenticated) {
-    return (
-      <div className="h-screen flex items-center justify-center px-4 bg-background">
-        <div className="max-w-md w-full p-6 sm:p-8 rounded-2xl border border-border bg-card shadow-lg text-center space-y-4">
-          <div className="h-14 w-14 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
-            <Lock className="h-7 w-7" />
-          </div>
-          <div className="space-y-1.5">
-            <h2 className="text-xl font-bold tracking-tight text-foreground">
-              {t("feather-review-access-restricted-title")}
-            </h2>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {t("feather-review-access-restricted-desc")}
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-3">
-            <Link href={`/contests/${code}`}>
-              <Button variant="outline" size="sm" className="text-xs gap-1.5 cursor-pointer">
-                <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
-                <span>{t("feather-nav-dashboard")}</span>
-              </Button>
-            </Link>
-            <a
-              href={`${AUTH_BASE}/login`}
-              className={buttonVariants({
-                variant: "default",
-                size: "sm",
-                className: "text-xs gap-1.5 font-semibold cursor-pointer",
-              })}
-            >
-              <WikimediaLogoIcon className="h-4 w-4" />
-              <span>{t("feather-nav-login")}</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isJuryOrOrganizer) {
-    return (
-      <div className="h-screen flex items-center justify-center px-4 bg-background">
-        <div className="max-w-md w-full p-6 sm:p-8 rounded-2xl border border-border bg-card shadow-lg text-center space-y-4">
-          <div className="h-14 w-14 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
-            <ShieldAlert className="h-7 w-7" />
-          </div>
-          <div className="space-y-1.5">
-            <h2 className="text-xl font-bold tracking-tight text-foreground">
-              {t("feather-review-access-restricted-title")}
-            </h2>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {t("feather-review-not-jury-desc", me.wiki_username || "Your account")}
-            </p>
-          </div>
-          <div className="flex items-center justify-center pt-3">
-            <Link href={`/contests/${code}`}>
-              <Button variant="outline" size="sm" className="text-xs gap-1.5 cursor-pointer">
-                <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
-                <span>{t("feather-nav-dashboard")}</span>
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const juryList = contest?.juries || [];
 
   return (
-    <div className="flex flex-col h-screen h-[100dvh] bg-background text-foreground overflow-hidden select-none">
-      {/* 1. UNIFIED COMMAND BAR (42px) */}
-      <header className="shrink-0 border-b border-border bg-card/95 backdrop-blur-md px-3 sm:px-4 h-11 flex items-center justify-between gap-2 z-20">
-        {/* Left: Nav, Queue toggle, & Current Article context */}
-        <div className="flex items-center gap-2 min-w-0">
-          <Link
-            href={`/contests/${code}`}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0"
-            title={t("feather-nav-dashboard")}
+    <div className="rq-app rq-theme-light">
+      {!isLoading && !isAuthorized ? (
+        <div className="rq-center-state">
+          <div className="rq-card-unauth">
+            <CdxIcon className="rq-icon-large" icon={cdxIconBlock} />
+            <h2>Access Denied</h2>
+            <p>This area is restricted to Contest Jury members and Owners.</p>
+          </div>
+        </div>
+      ) : isLoading || (isBackgroundLoading && !currentArticle) ? (
+        <div className="global-loader" role="status" aria-live="polite">
+          <div className="global-loader__mark" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <span className="global-loader__label">
+            {isBackgroundLoading && articles.length > 0
+              ? `Scanning (${articles.length} / ${statusStats.total || "?"} loaded)…`
+              : "Loading review queue…"}
+          </span>
+        </div>
+      ) : (
+        <div className={`rq-layout ${mobileTab === "review" ? "is-mobile-review" : ""}`}>
+          {/* LEFT COLUMN: QUEUE */}
+          <aside
+            className={`rq-panel rq-queue-panel ${mobileTab !== "list" ? "mobile-hidden" : ""} ${
+              sidebarCollapsed ? "is-collapsed" : ""
+            } ${isResizing ? "is-resizing" : ""} ${selectedForBulk.length > 0 ? "has-bulk" : ""}`}
+            style={{ "--rq-panel-w": `${panelWidth}px` } as React.CSSProperties}
           >
-            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
-          </Link>
-
-          {/* Collapse / Expand Drawer Toggle */}
-          <Button
-            variant={sidebarCollapsed ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setSidebarCollapsed((prev) => !prev)}
-            className="h-7 px-2 text-xs gap-1.5 cursor-pointer font-medium shadow-2xs shrink-0"
-            title={`${sidebarCollapsed ? t("feather-review-expand-drawer") : t("feather-review-collapse-drawer")} (${shortcuts.queue.toUpperCase()})`}
-          >
-            {sidebarCollapsed ? (
-              <PanelLeftOpen className="h-3.5 w-3.5 text-primary" />
-            ) : (
-              <PanelLeftClose className="h-3.5 w-3.5" />
-            )}
-            <Badge variant="secondary" className="text-[10px] font-mono px-1 py-0 h-4">
-              {activeTabArticles.length}
-            </Badge>
-          </Button>
-
-          <span className="text-border/80 hidden sm:inline">|</span>
-
-          {selectedArticle ? (
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-[11px] font-mono text-muted-foreground hidden lg:inline">
-                #{n(selectedArticle.id)}
-              </span>
-
-              <div className="flex items-center gap-1 min-w-0 max-w-[140px] sm:max-w-[220px] md:max-w-[320px] lg:max-w-[420px]">
-                <h1 className="text-xs sm:text-sm font-bold truncate text-foreground" title={selectedArticle.title}>
-                  {selectedArticle.title}
-                </h1>
-                <button
-                  type="button"
-                  onClick={handleCopyTitle}
-                  className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer shrink-0"
-                  title={t("feather-review-copy-title")}
-                >
-                  {titleCopied ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-500" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
+            <header className="rq-panel-header">
+              <div className="rq-panel-titlebar">
+                <span className="rq-live-dot" role="img" aria-label="Live: the queue refreshes on its own"></span>
+                <h2 className="rq-panel-title">Review Queue</h2>
+                <div className="rq-titlebar-actions">
+                  {isOwner && (
+                    <button
+                      className={`rq-icon-btn ${showQueueOptions ? "is-active" : ""}`}
+                      type="button"
+                      aria-expanded={showQueueOptions ? "true" : "false"}
+                      title="Queue options"
+                      onClick={() => setShowQueueOptions(!showQueueOptions)}
+                    >
+                      <CdxIcon icon={cdxIconSettings} />
+                    </button>
                   )}
-                </button>
+                  <button
+                    className="rq-icon-btn rq-desktop-only"
+                    title="Collapse the panel"
+                    onClick={() => setSidebarCollapsed(true)}
+                  >
+                    <CdxIcon icon={cdxIconCollapse} />
+                  </button>
+                </div>
               </div>
 
-              <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
-                <span className="flex items-center gap-1 truncate max-w-[120px]">
-                  <User className="h-3 w-3" />
-                  <strong className="text-foreground">{selectedArticle.submitter_username}</strong>
-                </span>
-
-                {selectedArticle.wiki_creator && selectedArticle.wiki_creator === selectedArticle.submitter_username && (
-                  <Badge variant="outline" className="text-[9px] text-emerald-600 bg-emerald-500/10 border-emerald-500/20 py-0 px-1 font-semibold gap-0.5">
-                    <CheckCircle2 className="h-2.5 w-2.5" />
-                    <span>Creator</span>
-                  </Badge>
-                )}
-
-                {selectedArticle.locked_by_username && selectedArticle.locked_by_username !== myUsername && (
-                  <Badge variant="outline" className="text-[9px] gap-0.5 text-amber-600 bg-amber-500/10 border-amber-500/20 py-0 px-1">
-                    <Lock className="h-2.5 w-2.5" />
-                    <span>{selectedArticle.locked_by_username}</span>
-                  </Badge>
-                )}
-
-                <Badge
-                  variant={
-                    selectedArticle.status === "accepted"
-                      ? "default"
-                      : selectedArticle.status === "rejected"
-                      ? "destructive"
-                      : "secondary"
-                  }
-                  className="text-[9px] uppercase font-bold px-1.5 py-0 h-4"
-                >
-                  {selectedArticle.status === "accepted"
-                    ? `✓ ${t("feather-contest-filter-accepted")}`
-                    : selectedArticle.status === "rejected"
-                    ? `✕ ${t("feather-contest-filter-rejected")}`
-                    : t("feather-contest-filter-pending")}
-                </Badge>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 min-w-0">
-              <h1 className="text-xs sm:text-sm font-bold truncate text-foreground">
-                {contest?.name || t("feather-nav-review-queue")}
-              </h1>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Quick Tools, Live Stats, Shortcuts */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Article Live Word / Byte Count Chip */}
-          {selectedArticle && (
-            <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50">
-              <span className="font-semibold text-foreground">
-                {t("feather-review-preview-words", previewData?.word_count ?? selectedArticle.word_count)}
-              </span>
-              <span>·</span>
-              <span>
-                {t("feather-review-preview-bytes", previewData?.byte_count ?? selectedArticle.byte_count)}
-              </span>
-            </div>
-          )}
-
-          {/* Micro Progress Chip */}
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded border border-border/40">
-            <span className="font-semibold text-foreground">
-              {n(statusStats.judged)}/{n(statusStats.judgeableTotal)}
-            </span>
-            <span className="text-primary font-mono text-[10px]">
-              ({statusStats.percent}%)
-            </span>
-          </div>
-
-          {/* If contest is distributed mode and user is owner, show judge switcher */}
-          {isDistributedMode && isOwner && contest?.juries?.length ? (
-            <select
-              value={selectedJudge}
-              onChange={(e) => setSelectedJudge(e.target.value)}
-              className="h-7 px-1.5 text-xs rounded border border-border bg-background text-foreground cursor-pointer font-medium max-w-[100px] sm:max-w-none"
-              title="Filter by assigned jury"
-            >
-              <option value="all">All Juries</option>
-              {contest.juries.map((jury) => (
-                <option key={jury} value={jury}>
-                  {jury} {jury === myUsername ? "(You)" : ""}
-                </option>
-              ))}
-            </select>
-          ) : null}
-
-          {/* Selected Article Tools (Wikitext split & External Wiki) */}
-          {selectedArticle && (
-            <>
-              <Button
-                variant={showWikitext ? "default" : "outline"}
-                size="sm"
-                onClick={toggleWikitext}
-                className="h-7 px-2 text-xs gap-1 cursor-pointer font-medium shadow-2xs"
-                title={`Toggle Wikitext Pane (${shortcuts.wiki.toUpperCase()})`}
-              >
-                <Code2 className="h-3.5 w-3.5" />
-                <span className="hidden xl:inline">{t("feather-review-wikitext-toggle")}</span>
-              </Button>
-
-              <a
-                href={`${activeWikiUrl}/wiki/${encodeURIComponent(selectedArticle.title)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={buttonVariants({
-                  variant: "outline",
-                  size: "sm",
-                  className: "h-7 px-2 text-xs gap-1 cursor-pointer shadow-2xs",
-                })}
-                title="Open article on Wikimedia wiki"
-              >
-                <span className="hidden xl:inline">{t("feather-review-open-wiki")}</span>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-
-              {/* Delete article button (owner or admin) */}
-              {(isOwner || me?.role === "owner" || me?.role === "admin") && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDeleteConfirmArticle(selectedArticle)}
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
-                  title={t("feather-review-btn-delete")}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </>
-          )}
-
-          {/* Link to Jury Hub */}
-          <Link
-            href={`/contests/${code}/jury`}
-            className={buttonVariants({
-              variant: "ghost",
-              size: "sm",
-              className: "h-7 w-7 sm:w-auto p-0 sm:px-2 text-xs gap-1 font-medium text-muted-foreground hover:text-foreground cursor-pointer",
-            })}
-            title="Open full Jury Statistics Hub"
-          >
-            <BarChart3 className="h-3.5 w-3.5 text-primary" />
-            <span className="hidden sm:inline">{t("feather-review-nav-hub")}</span>
-          </Link>
-
-          {/* Keyboard shortcuts modal trigger */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowShortcutHelp(true)}
-            className="h-7 px-1.5 sm:px-2 text-xs gap-1 font-mono cursor-pointer shadow-2xs"
-            title="Keyboard shortcuts (?)"
-          >
-            <Keyboard className="h-3.5 w-3.5 text-muted-foreground" />
-            <kbd className="hidden sm:inline-block px-1 rounded bg-muted text-[10px] border border-border/80">?</kbd>
-          </Button>
-        </div>
-      </header>
-
-      {/* Progress Track (2px high, zero clutter) */}
-      <div className="h-[2px] w-full bg-muted/40 overflow-hidden shrink-0">
-        <div
-          className="h-full bg-primary transition-all duration-300"
-          style={{ width: `${statusStats.percent}%` }}
-        />
-      </div>
-
-      {/* 2. MAIN SPLIT/FLOW WORKSPACE */}
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* LEFT COLUMN: RESIZABLE & COLLAPSIBLE QUEUE DRAWER */}
-        <aside
-          className={`border-r border-border bg-card/95 backdrop-blur-md flex flex-col z-10 transition-all duration-100 ${
-            mobileTab === "list" ? "w-full" : "hidden md:flex"
-          } ${sidebarCollapsed ? "md:w-0 md:opacity-0 md:overflow-hidden md:border-r-0" : "md:opacity-100"}`}
-          style={{ width: sidebarCollapsed ? 0 : `${panelWidth}px` }}
-        >
-          {/* Drawer Header: Search & Category Tabs */}
-          <div className="p-2.5 sm:p-3 border-b border-border space-y-2 shrink-0 bg-muted/10">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder={t("feather-review-search-placeholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 text-xs h-8 bg-background"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-
-            {/* Category Filter Tabs: Queue, Re-review, Other Judges */}
-            <div className="flex items-center rounded-md border border-border bg-muted/30 p-0.5 text-xs font-medium">
-              <button
-                type="button"
-                onClick={() => setListTab("queue")}
-                className={`flex-1 py-1 rounded text-center text-xs transition-colors cursor-pointer flex items-center justify-center gap-1 ${
-                  listTab === "queue"
-                    ? "bg-background text-foreground font-semibold shadow-2xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <span>{t("feather-review-tab-queue")}</span>
-                <span className="font-mono text-[10px] opacity-75">({queueArticles.length})</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setListTab("rereview")}
-                className={`flex-1 py-1 rounded text-center text-xs transition-colors cursor-pointer flex items-center justify-center gap-1 ${
-                  listTab === "rereview"
-                    ? "bg-background text-foreground font-semibold shadow-2xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <span>{t("feather-review-tab-rereview")}</span>
-                <span className="font-mono text-[10px] opacity-75">({judgedArticles.length})</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setListTab("all")}
-                className={`flex-1 py-1 rounded text-center text-xs transition-colors cursor-pointer flex items-center justify-center gap-1 ${
-                  listTab === "all"
-                    ? "bg-background text-foreground font-semibold shadow-2xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <span>{t("feather-review-tab-all")}</span>
-                <span className="font-mono text-[10px] opacity-75">({allArticles.length})</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Floating Bulk Action Bar */}
-          {selectedForBulk.length > 0 && (
-            <div className="p-2.5 sm:p-3 border-b border-border bg-primary/5 space-y-2 animate-in slide-in-from-top-2 duration-150">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-primary">
-                  {t("feather-review-bulk-selected", selectedForBulk.length)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedForBulk([])}
-                  className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  {t("feather-review-bulk-clear")}
-                </button>
-              </div>
-
-              {selectedForBulk.length > 1 && (
-                <Input
-                  placeholder={t("feather-review-bulk-note-placeholder")}
-                  value={bulkComment}
-                  onChange={(e) => setBulkComment(e.target.value)}
-                  className="text-xs h-7 bg-background"
-                />
-              )}
-
-              <div className="grid grid-cols-3 gap-1.5">
-                <Button
-                  size="sm"
-                  onClick={() => handleBulkDecision("accepted")}
-                  disabled={isBulkSubmitting}
-                  className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer gap-1"
-                >
-                  <CheckCircle2 className="h-3 w-3" />
-                  <span>{t("feather-review-bulk-accept", selectedForBulk.length)}</span>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleBulkDecision("rejected")}
-                  disabled={isBulkSubmitting}
-                  className="h-7 text-xs cursor-pointer gap-1"
-                >
-                  <XCircle className="h-3 w-3" />
-                  <span>{t("feather-review-bulk-reject", selectedForBulk.length)}</span>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleBulkDelete}
-                  disabled={isBulkSubmitting}
-                  className="h-7 text-xs cursor-pointer gap-1 text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  <span>{t("feather-review-bulk-delete", selectedForBulk.length)}</span>
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Virtualized Article List */}
-          <div ref={parentRef} className="flex-1 overflow-y-auto divide-y divide-border/60">
-            {articlesLoading ? (
-              <div className="divide-y divide-border/60">
-                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                  <div key={i} className="p-2.5 sm:p-3 flex items-center gap-2.5">
-                    <Skeleton className="h-4 w-4 rounded shrink-0" />
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <Skeleton className="h-4 w-32 rounded" />
-                        <Skeleton className="h-3.5 w-12 rounded" />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Skeleton className="h-3 w-20 rounded" />
-                        <Skeleton className="h-3 w-16 rounded" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : activeTabArticles.length === 0 ? (
-              <div className="p-8 text-center text-xs text-muted-foreground">
-                <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500 mb-2 opacity-60" />
-                <p className="font-semibold text-foreground">{t("feather-review-empty-title")}</p>
-                <p className="text-[11px] mt-0.5">{t("feather-review-empty-desc")}</p>
-              </div>
-            ) : listTab === "rereview" ? (
-              // Re-Review: Grouped into Collapsible Decision Blocks (Accepted, Rejected, Skipped)
-              <div className="divide-y divide-border/60">
-                {(["accepted", "rejected", "skipped"] as const).map((decision) => {
-                  const itemsInBlock = reReviewBlocks[decision];
-                  if (!itemsInBlock.length) return null;
-                  const isCollapsed = collapsedDecisions[decision];
-
-                  return (
-                    <div key={decision} className="border-b border-border/40">
+              {/* Queue Options disclosure */}
+              {showQueueOptions && isOwner && (
+                <div className="rq-queue-options">
+                  <div className="rq-owner-switcher">
+                    <span className="rq-owner-switcher-label">View as</span>
+                    <div className="rq-owner-mode-buttons">
                       <button
                         type="button"
-                        onClick={() =>
-                          setCollapsedDecisions((prev) => ({ ...prev, [decision]: !prev[decision] }))
-                        }
-                        className="w-full px-3 py-1.5 flex items-center justify-between text-xs font-semibold bg-muted/40 hover:bg-muted/60 transition-colors cursor-pointer"
+                        className={ownerViewMode === "judge" ? "is-active" : ""}
+                        onClick={() => setOwnerViewMode("judge")}
                       >
-                        <div className="flex items-center gap-1.5">
-                          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                          <span
-                            className={
-                              decision === "accepted"
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : decision === "rejected"
-                                ? "text-destructive"
-                                : "text-muted-foreground"
-                            }
-                          >
-                            {decision === "accepted"
-                              ? t("feather-review-block-accepted")
-                              : decision === "rejected"
-                              ? t("feather-review-block-rejected")
-                              : t("feather-review-block-skipped")}
-                          </span>
-                        </div>
-                        <Badge variant="outline" className="text-[10px] font-mono h-4 px-1.5">
-                          {itemsInBlock.length}
-                        </Badge>
+                        Judge
                       </button>
-
-                      {!isCollapsed && (
-                        <div className="divide-y divide-border/40">
-                          {itemsInBlock.map((article) => {
-                            const isSelected = selectedArticle?.id === article.id;
-                            const isChecked = selectedForBulk.includes(article.id);
-                            return (
-                              <div
-                                key={article.id}
-                                onClick={() => {
-                                  setSelectedArticle(article);
-                                  setFocusedArticleId(article.id);
-                                  setMobileTab("review");
-                                }}
-                                className={`p-2.5 sm:p-3 cursor-pointer transition-colors flex items-center gap-2.5 ${
-                                  isSelected ? "bg-primary/10 border-s-4 border-primary font-medium" : "hover:bg-muted/30"
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onClick={(e) => handleSelectClick(article.id, e)}
-                                  onChange={() => {}}
-                                  className="h-4 w-4 rounded border-border accent-primary cursor-pointer shrink-0"
-                                />
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center justify-between gap-1.5">
-                                    <span className="text-xs font-semibold truncate leading-snug">
-                                      {article.title}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-0.5">
-                                    <span className="truncate">by {article.submitter_username}</span>
-                                    <span className="font-mono text-[10px] shrink-0">
-                                      {t("feather-review-preview-words", article.word_count)}
-                                    </span>
-                                  </div>
-                                  {article.reviews && article.reviews.length > 0 && (
-                                    <div className="flex items-center gap-1 text-[10px] text-primary/90 mt-0.5 truncate font-medium">
-                                      <UserCheck className="h-2.5 w-2.5 shrink-0" />
-                                      <span className="truncate">
-                                        {t("feather-review-reviewed-by", article.reviews[article.reviews.length - 1].reviewer_username)}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              // Queue & Other Judges: Virtualized Row View
-              <div
-                style={{
-                  height: `${rowVirtualizer.getTotalSize()}px`,
-                  width: "100%",
-                  position: "relative",
-                }}
-              >
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const article = activeTabArticles[virtualRow.index];
-                  const isSelected = selectedArticle?.id === article.id;
-                  const isChecked = selectedForBulk.includes(article.id);
-                  const isLockedByOther =
-                    article.locked_by_username && article.locked_by_username !== myUsername;
-
-                  return (
-                    <div
-                      key={article.id}
-                      onClick={() => {
-                        setSelectedArticle(article);
-                        setFocusedArticleId(article.id);
-                        setMobileTab("review");
-                      }}
-                      className={`absolute top-0 left-0 w-full p-2.5 sm:p-3 border-b border-border/60 cursor-pointer transition-colors flex items-center gap-2.5 ${
-                        isSelected
-                          ? "bg-primary/10 border-s-4 border-primary font-medium"
-                          : "hover:bg-muted/30 text-foreground"
-                      }`}
-                      style={{
-                        height: `${virtualRow.size}px`,
-                        transform: `translateY(${virtualRow.start}px)`,
-                      }}
-                    >
-                      {/* Bulk Checkbox */}
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onClick={(e) => handleSelectClick(article.id, e)}
-                        onChange={() => {}}
-                        className="h-4 w-4 rounded border-border accent-primary cursor-pointer shrink-0"
-                      />
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1.5">
-                          <span className="text-xs font-semibold truncate text-foreground leading-snug">
-                            {article.title}
-                          </span>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {isLockedByOther && (
-                              <span
-                                title={t("feather-review-locked-by", article.locked_by_username!)}
-                                className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 bg-amber-500/10 px-1 rounded"
-                              >
-                                <Lock className="h-2.5 w-2.5" />
-                              </span>
-                            )}
-                            <Badge
-                              variant={
-                                article.status === "accepted"
-                                  ? "default"
-                                  : article.status === "rejected"
-                                  ? "destructive"
-                                  : "secondary"
-                              }
-                              className="text-[9px] uppercase px-1.5 py-0 h-4 font-bold"
-                            >
-                              {article.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-0.5">
-                          <span className="truncate">by {article.submitter_username}</span>
-                          <span className="font-mono text-[10px] shrink-0">
-                            {t("feather-review-preview-words", article.word_count)}
-                          </span>
-                        </div>
-                        {article.reviews && article.reviews.length > 0 && (
-                          <div className="flex items-center gap-1 text-[10px] text-primary/90 mt-0.5 truncate font-medium">
-                            <UserCheck className="h-2.5 w-2.5 shrink-0" />
-                            <span className="truncate">
-                              {t("feather-review-reviewed-by", article.reviews[article.reviews.length - 1].reviewer_username)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </aside>
-
-        {/* DRAGGABLE RESIZER HANDLE (Desktop only) */}
-        {!sidebarCollapsed && (
-          <div
-            onPointerDown={startResize}
-            onDoubleClick={resetPanelWidth}
-            className={`hidden md:flex w-1 hover:w-1.5 bg-border hover:bg-primary/60 cursor-col-resize transition-all z-20 shrink-0 ${
-              isResizing ? "bg-primary w-1.5" : ""
-            }`}
-            title="Drag to resize panel, double-click to reset"
-          />
-        )}
-
-        {/* RIGHT COLUMN: MAIN ARTICLE REVIEW CONSOLE */}
-        <main
-          className={`flex-1 flex flex-col h-full overflow-hidden bg-background ${
-            mobileTab === "list" ? "hidden md:flex" : "flex"
-          }`}
-        >
-          {selectedArticle ? (
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
-              {/* Mobile Back Button & Pane switch (Visual vs Wikitext) on mobile only */}
-              <div className="sm:hidden flex items-center justify-between border-b border-border bg-card px-3 py-1.5 text-xs shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setMobileTab("list")}
-                  className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
-                  <span>{t("feather-review-nav-queue")}</span>
-                </Button>
-                {showWikitext && (
-                  <div className="flex items-center gap-1 font-medium">
-                    <button
-                      type="button"
-                      onClick={() => setMobilePreviewPane("visual")}
-                      className={`px-2 py-0.5 rounded ${
-                        mobilePreviewPane === "visual" ? "bg-muted font-bold text-foreground" : "text-muted-foreground"
-                      }`}
-                    >
-                      {t("feather-review-mobile-tab-visual")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMobilePreviewPane("wikitext")}
-                      className={`px-2 py-0.5 rounded ${
-                        mobilePreviewPane === "wikitext" ? "bg-muted font-bold text-foreground" : "text-muted-foreground"
-                      }`}
-                    >
-                      {t("feather-review-mobile-tab-wikitext")}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* MediaWiki Sandboxed Iframe Preview & Raw Wikitext Split Pane */}
-              <div className="flex-1 overflow-hidden flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-border">
-                {/* Visual Preview Iframe Pane */}
-                <div
-                  className={`flex-1 flex flex-col h-full overflow-hidden ${
-                    showWikitext && mobilePreviewPane === "wikitext" ? "hidden md:flex" : "flex"
-                  }`}
-                >
-                  {previewLoading ? (
-                    <div className="flex-1 p-6 space-y-4 bg-background">
-                      <div className="flex items-center justify-between border-b border-border/40 pb-3">
-                        <Skeleton className="h-7 w-1/2 rounded" />
-                        <Skeleton className="h-4 w-24 rounded" />
-                      </div>
-                      <div className="space-y-2.5 pt-2">
-                        <Skeleton className="h-4 w-full rounded" />
-                        <Skeleton className="h-4 w-11/12 rounded" />
-                        <Skeleton className="h-4 w-4/5 rounded" />
-                      </div>
-                      <div className="space-y-2.5 pt-4">
-                        <Skeleton className="h-5 w-1/3 rounded" />
-                        <Skeleton className="h-4 w-full rounded" />
-                        <Skeleton className="h-4 w-5/6 rounded" />
-                        <Skeleton className="h-4 w-2/3 rounded" />
-                      </div>
-                    </div>
-                  ) : previewData?.html &&
-                    !previewData.html.includes("Failed to load preview") &&
-                    !previewData.html.includes("doesn't exist") &&
-                    !previewData.html.includes("mediawiki parse error") ? (
-                    <iframe
-                      className="w-full flex-1 border-0 bg-white"
-                      sandbox="allow-scripts"
-                      srcDoc={previewSrcdoc}
-                      referrerPolicy="no-referrer"
-                      title={selectedArticle.title}
-                    />
-                  ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto space-y-3.5">
-                      <div className="h-12 w-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-500/20 shadow-xs">
-                        <AlertTriangle className="h-6 w-6" />
-                      </div>
-                      <div className="space-y-1">
-                        <h3 className="font-bold text-sm text-foreground">
-                          {t("feather-review-preview-fallback-title")}
-                        </h3>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          {t(
-                            "feather-review-preview-fallback-desc",
-                            selectedArticle.title,
-                            contest?.wiki_dbname || contest?.wiki_url || "the target wiki"
-                          )}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 pt-1 flex-wrap justify-center">
-                        <a
-                          href={`${activeWikiUrl}/wiki/${encodeURIComponent(
-                            selectedArticle.title
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={buttonVariants({
-                            variant: "outline",
-                            size: "sm",
-                            className: "h-8 text-xs gap-1.5 cursor-pointer shadow-2xs",
-                          })}
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          <span>{t("feather-review-open-wiki")}</span>
-                        </a>
-                        <a
-                          href={`${activeWikiUrl}/w/index.php?title=${encodeURIComponent(
-                            selectedArticle.title
-                          )}&action=edit`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={buttonVariants({
-                            variant: "outline",
-                            size: "sm",
-                            className: "h-8 text-xs gap-1.5 cursor-pointer shadow-2xs",
-                          })}
-                        >
-                          <BookOpen className="h-3.5 w-3.5" />
-                          <span>{t("feather-review-create-on-wiki")}</span>
-                        </a>
-                        {previewData?.wikitext && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setShowWikitext(true)}
-                            className="h-8 text-xs gap-1.5 cursor-pointer"
-                          >
-                            <Code2 className="h-3.5 w-3.5" />
-                            <span>{t("feather-review-wikitext-toggle")}</span>
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Raw Wikitext Code Pane */}
-                {showWikitext && (
-                  <div
-                    className={`flex-1 md:w-1/2 overflow-hidden bg-muted/10 flex flex-col ${
-                      mobilePreviewPane === "visual" ? "hidden md:flex" : "flex"
-                    }`}
-                  >
-                    <div className="p-2 sm:p-2.5 border-b border-border bg-card flex items-center justify-between gap-2 shrink-0">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <Code2 className="h-3.5 w-3.5 text-primary" />
-                        {t("feather-review-raw-wikitext")}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCopyWikitext}
-                        disabled={!previewData?.wikitext}
-                        className="h-7 text-xs gap-1.5 cursor-pointer shadow-2xs"
+                      <button
+                        type="button"
+                        className={ownerViewMode === "owner" ? "is-active" : ""}
+                        onClick={() => setOwnerViewMode("owner")}
                       >
-                        {wikitextCopied ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-500" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                        <span>
-                          {wikitextCopied
-                            ? t("feather-review-wikitext-copied")
-                            : t("feather-review-wikitext-copy")}
-                        </span>
-                      </Button>
+                        Owner
+                      </button>
                     </div>
-
-                    <div className="p-4 flex-1 overflow-auto bg-card/40">
-                      {previewData?.wikitext ? (
-                        <pre className="font-mono text-xs leading-relaxed text-foreground whitespace-pre-wrap select-text">
-                          {previewData.wikitext}
-                        </pre>
-                      ) : (
-                        <div className="py-12 text-center text-xs text-muted-foreground">
-                          {t("feather-review-wikitext-unavailable")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Previous Evaluation Banner (Compact 1-liner if re-reviewing) */}
-              {selectedArticle.reviews && selectedArticle.reviews.length > 0 && (
-                <div className="px-3 sm:px-4 py-1.5 border-t border-border bg-muted/40 flex items-center justify-between gap-2 text-xs shrink-0 animate-in fade-in-0 duration-150">
-                  <div className="flex items-center gap-2 min-w-0 truncate">
-                    <MessageSquareQuote className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span className="text-muted-foreground text-[11px] shrink-0 font-medium">
-                      {t("feather-review-previous-decision")}:
-                    </span>
-                    <Badge
-                      variant={
-                        selectedArticle.reviews[selectedArticle.reviews.length - 1].status === "accepted"
-                          ? "default"
-                          : selectedArticle.reviews[selectedArticle.reviews.length - 1].status === "rejected"
-                          ? "destructive"
-                          : "secondary"
-                      }
-                      className="text-[9px] font-bold uppercase py-0 px-1.5 h-4 shrink-0"
-                    >
-                      {selectedArticle.reviews[selectedArticle.reviews.length - 1].status}
-                    </Badge>
-                    <span className="text-muted-foreground font-medium text-[11px] truncate">
-                      by {selectedArticle.reviews[selectedArticle.reviews.length - 1].reviewer_username}
-                    </span>
-                    {selectedArticle.reviews[selectedArticle.reviews.length - 1].comment && (
-                      <span className="text-foreground/90 italic truncate max-w-xs sm:max-w-md">
-                        "{selectedArticle.reviews[selectedArticle.reviews.length - 1].comment}"
-                      </span>
+                    {ownerViewMode === "judge" && (
+                      <select
+                        value={selectedJudge}
+                        onChange={(e) => setSelectedJudge(e.target.value)}
+                        className="rq-owner-judge-select"
+                        aria-label="Choose jury member"
+                      >
+                        {juryList.map((j) => (
+                          <option key={j} value={j}>
+                            {j}
+                          </option>
+                        ))}
+                      </select>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* 3. DECISION DOCK (Compact 48px Sticky Bar) */}
-              <div className="px-3 sm:px-4 py-2 border-t border-border bg-card/95 backdrop-blur-md shrink-0 shadow-lg flex items-center justify-between gap-2 sm:gap-3">
-                {/* Note for submitter */}
-                <div className="relative flex-1 max-w-xs sm:max-w-sm md:max-w-md">
-                  <Input
-                    ref={commentBoxRef}
+              {/* Search box with start icon and clear button */}
+              <div className="cdx-text-input cdx-text-input--has-start-icon rq-panel-search">
+                <div className="cdx-text-input__input-wrapper">
+                  <span className="cdx-text-input__icon cdx-text-input__start-icon">
+                    <CdxIcon icon={cdxIconSearch} />
+                  </span>
+                  <input
+                    className="cdx-text-input__input"
                     type="text"
-                    placeholder={t("feather-review-comment-placeholder")}
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className="h-8 text-xs bg-background pr-7"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={searchPlaceholder}
+                    aria-label={searchPlaceholder}
                   />
-                  <kbd className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[9px] font-mono text-muted-foreground bg-muted px-1 rounded border border-border/60 hidden sm:inline-block">
-                    {shortcuts.comment.toUpperCase()}
-                  </kbd>
-                </div>
-
-                <span className="hidden xl:inline text-[11px] text-muted-foreground">
-                  {t("feather-review-action-instant-hint")}
-                </span>
-
-                {/* Instant Action Buttons Row */}
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  {/* Skip Button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      mutation.mutate({
-                        articleId: selectedArticle.id,
-                        status: "skipped",
-                        decisionComment: comment,
-                      })
-                    }
-                    disabled={mutation.isPending}
-                    className="h-8 gap-1 sm:gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer shadow-2xs px-2 sm:px-3"
-                    title={`Skip article (${shortcuts.skip.toUpperCase()})`}
-                  >
-                    <SkipForward className="h-3.5 w-3.5" />
-                    <span>{t("feather-review-btn-skip")}</span>
-                    <kbd className="hidden sm:inline-block px-1 rounded bg-muted text-[10px] font-mono border">
-                      {shortcuts.skip.toUpperCase()}
-                    </kbd>
-                  </Button>
-
-                  {/* Reject Button */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() =>
-                      mutation.mutate({
-                        articleId: selectedArticle.id,
-                        status: "rejected",
-                        decisionComment: comment,
-                      })
-                    }
-                    disabled={mutation.isPending}
-                    className="h-8 gap-1 sm:gap-1.5 text-xs cursor-pointer shadow-2xs font-semibold px-2.5 sm:px-3"
-                    title={`Reject article (${shortcuts.reject.toUpperCase()})`}
-                  >
-                    <XCircle className="h-3.5 w-3.5" />
-                    <span>{t("feather-review-btn-reject")}</span>
-                    <kbd className="hidden sm:inline-block px-1 rounded bg-destructive-foreground/20 text-[10px] font-mono">
-                      {shortcuts.reject.toUpperCase()}
-                    </kbd>
-                  </Button>
-
-                  {/* Accept Button */}
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      mutation.mutate({
-                        articleId: selectedArticle.id,
-                        status: "accepted",
-                        decisionComment: comment,
-                      })
-                    }
-                    disabled={mutation.isPending}
-                    className="h-8 gap-1 sm:gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-2xs font-semibold px-2.5 sm:px-3"
-                    title={`Accept article (${shortcuts.accept.toUpperCase()})`}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>{t("feather-review-btn-accept")}</span>
-                    <kbd className="hidden sm:inline-block px-1 rounded bg-white/20 text-[10px] font-mono">
-                      {shortcuts.accept.toUpperCase()}
-                    </kbd>
-                  </Button>
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      className="cdx-text-input__clear-button"
+                      aria-label="Clear input"
+                      onClick={() => setSearchQuery("")}
+                    >
+                      <CdxIcon icon={cdxIconClear} />
+                    </button>
+                  )}
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground gap-3">
-              <BookOpen className="h-10 w-10 text-muted-foreground opacity-40" />
-              <p className="font-semibold text-sm text-foreground">{t("feather-review-no-selection-title")}</p>
-              <p className="text-xs">{t("feather-review-no-selection-desc")}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSidebarCollapsed(false)}
-                className="mt-2 text-xs cursor-pointer"
-              >
-                {t("feather-review-open-queue-btn")}
-              </Button>
-            </div>
-          )}
-        </main>
-      </div>
 
-      {/* 4. MOBILE NAVIGATION BAR (Fixed Bottom) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-card border-t border-border flex items-center justify-around z-40 pb-safe">
-        <button
-          type="button"
-          onClick={() => setMobileTab("list")}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer relative ${
-            mobileTab === "list" ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <div className="relative">
-            <Layers className="h-4 w-4" />
-            {activeTabArticles.length > 0 && (
-              <span className="absolute -top-1 -end-2.5 h-3.5 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-mono font-bold flex items-center justify-center">
-                {n(activeTabArticles.length)}
-              </span>
+              {/* Tabs */}
+              <div className="rq-tabs" role="tablist" aria-label="Queue lists">
+                {listTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab.id === tab.id ? "true" : "false"}
+                    className={activeTab.id === tab.id ? "is-active" : ""}
+                    onClick={() => setListTab(tab.id as any)}
+                  >
+                    {tab.label}
+                    <span className="rq-tab-count">{tab.list.length.toLocaleString()}</span>
+                  </button>
+                ))}
+              </div>
+            </header>
+
+            {/* Bulk Action Bar */}
+            {selectedForBulk.length > 0 && (
+              <div className="rq-bulk-bar">
+                <div className="rq-bulk-banner">
+                  <span className="rq-bulk-count">{selectedForBulk.length} selected</span>
+                  <div className="rq-bulk-actions">
+                    <button
+                      type="button"
+                      className="rq-bbtn rq-bbtn-accept"
+                      onClick={() => handleBulkDecision("accepted")}
+                      title="Accept"
+                    >
+                      <CdxIcon icon={cdxIconCheck} />
+                    </button>
+                    <button
+                      type="button"
+                      className="rq-bbtn rq-bbtn-reject"
+                      onClick={() => handleBulkDecision("rejected")}
+                      title="Reject"
+                    >
+                      <CdxIcon icon={cdxIconClear} />
+                    </button>
+                    <button
+                      type="button"
+                      className="rq-bbtn rq-bbtn-remove"
+                      onClick={handleBulkRemove}
+                      title="Remove"
+                    >
+                      <CdxIcon icon={cdxIconTrash} />
+                    </button>
+                  </div>
+                </div>
+                {selectedForBulk.length > 1 && (
+                  <div className="rq-bulk-comment-panel">
+                    <textarea
+                      value={bulkComment}
+                      onChange={(e) => setBulkComment(e.target.value)}
+                      className="rq-input rq-bulk-comment-input"
+                      rows={1}
+                      placeholder={`Comment on all ${selectedForBulk.length} (optional)`}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Scrollable list */}
+            <div
+              className="rq-panel-scroll"
+              role="tabpanel"
+              aria-label={activeTab.label}
+              onScroll={onListScroll}
+            >
+              <ul
+                className="rq-list"
+                role="listbox"
+                tabIndex={0}
+                aria-multiselectable="true"
+                aria-label="Articles"
+                aria-activedescendant={focusedArticleId ? `rq-row-${focusedArticleId}` : undefined}
+              >
+                {visibleRows.map((row: any) => {
+                  if (row.heading) {
+                    return (
+                      <li
+                        key={`heading-${row.heading}`}
+                        role="presentation"
+                        className={`rq-decision-head is-${row.heading}`}
+                      >
+                        <button
+                          type="button"
+                          className="rq-decision-toggle"
+                          aria-expanded={collapsedDecisions[row.heading] ? "false" : "true"}
+                          onClick={() => toggleDecision(row.heading)}
+                        >
+                          <CdxIcon
+                            icon={cdxIconDownTriangle}
+                            className={`rq-decision-chevron ${
+                              collapsedDecisions[row.heading] ? "is-collapsed" : ""
+                            }`}
+                          />
+                          {DECISION_LABEL[row.heading] || row.heading}
+                          <span className="rq-decision-count">{row.count.toLocaleString()}</span>
+                        </button>
+                      </li>
+                    );
+                  }
+                  const article = row.article;
+                  const isSelected = selectedForBulk.includes(article.article_id);
+                  const isCurrent =
+                    currentArticle?.article_id === article.article_id && activeTab.id !== "others";
+                  const isFocused = article.article_id === focusedArticleId;
+                  const isLocked =
+                    activeTab.id === "queue" &&
+                    article.locked_by &&
+                    article.locked_by !== myUsername;
+
+                  return (
+                    <li
+                      key={`row-${article.article_id}`}
+                      id={`rq-row-${article.article_id}`}
+                      role="option"
+                      aria-selected={isSelected ? "true" : "false"}
+                      aria-current={isCurrent ? "true" : undefined}
+                      className={`rq-list-item ${
+                        activeTab.id === "queue" ? "rq-item-pending" : ""
+                      } ${activeTab.id === "others" ? "rq-item-readonly" : ""} ${
+                        row.decision ? "rq-item-" + row.decision : ""
+                      } ${isCurrent ? "is-active" : ""} ${isFocused ? "is-focused" : ""} ${
+                        isLocked ? "is-locked" : ""
+                      }`}
+                      onClick={(e) => handleRowClick(article, e)}
+                    >
+                      {activeTab.id !== "others" && (
+                        <label className="rq-cb-wrapper" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${article.title}`}
+                            checked={isSelected}
+                            onChange={(e) => handleSelectClick(article.article_id, e as any)}
+                            className="rq-cb"
+                          />
+                        </label>
+                      )}
+                      <div className="rq-item-content">
+                        <span className="rq-item-title">{article.title}</span>
+                        {(activeTab.id === "others" || !isSingleSubmitter) && (
+                          <span className="rq-item-meta">
+                            {activeTab.id === "others"
+                              ? article.reviews?.map((r: any) => r.reviewer).join(", ")
+                              : article.submitted_by}
+                          </span>
+                        )}
+                      </div>
+                      {isLocked && (
+                        <CdxIcon
+                          icon={cdxIconLock}
+                          className="rq-icon-lock"
+                          title="Being reviewed by someone"
+                        />
+                      )}
+                    </li>
+                  );
+                })}
+
+                {!activeTab.list.length && (
+                  <li role="presentation" className="rq-list-empty">
+                    {activeTab.id === "queue" && !searchQuery && (
+                      <CdxIcon icon={cdxIconArticleCheck} className="rq-empty-icon" />
+                    )}
+                    {searchQuery ? (
+                      <span>Nothing here matches &ldquo;{searchQuery}&rdquo;</span>
+                    ) : activeTab.id === "queue" ? (
+                      <span>All caught up</span>
+                    ) : activeTab.id === "rereview" ? (
+                      <span>Judge an article and it turns up here</span>
+                    ) : (
+                      <span>No decisions by other judges yet</span>
+                    )}
+                  </li>
+                )}
+
+                {isBackgroundLoading && (
+                  <li role="presentation" className="rq-list-loading">
+                    Loading more…
+                  </li>
+                )}
+              </ul>
+            </div>
+          </aside>
+
+          {/* Resize handle */}
+          {!sidebarCollapsed && (
+            <div
+              className={`rq-resize-handle rq-desktop-only ${isResizing ? "is-resizing" : ""}`}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize the queue panel"
+              aria-valuenow={panelWidth}
+              aria-valuemin={260}
+              aria-valuemax={640}
+              tabIndex={0}
+              onPointerDown={startResize}
+              onDoubleClick={resetPanelWidth}
+            />
+          )}
+
+          {/* CENTER AREA (Preview + Decision) */}
+          <div className={`rq-review-area ${mobileTab !== "review" ? "mobile-hidden" : ""}`}>
+            {!currentArticle ? (
+              <div className="rq-center-state rq-center-full rq-panel">
+                <div className="rq-card-done">
+                  <div className="rq-done-icon">
+                    <CdxIcon icon={cdxIconArticleCheck} />
+                  </div>
+                  {availableNewArticles.length ? (
+                    <>
+                      <h3>Nothing open</h3>
+                      <p>
+                        {availableNewArticles.length} article
+                        {availableNewArticles.length === 1 ? "" : "s"} still waiting in your queue —
+                        pick one from the sidebar to carry on.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3>Queue is Clear</h3>
+                      <p>You have reviewed all available articles in your queue.</p>
+                    </>
+                  )}
+                  <button
+                    className="rq-btn-secondary"
+                    onClick={() => setSidebarCollapsed(false)}
+                    style={{ marginTop: "16px" }}
+                  >
+                    <CdxIcon icon={cdxIconMenu} /> Open Sidebar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* PREVIEW (Top) */}
+                <main className="rq-panel rq-preview-panel">
+                  <div className="rq-flow-stats">
+                    <div
+                      className="rq-progress"
+                      role="progressbar"
+                      aria-valuenow={judgedPercent}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`${judgedCount} of ${judgeableTotal} judged`}
+                    >
+                      <div className="rq-progress-track">
+                        <div className="rq-progress-fill" style={{ width: `${judgedPercent}%` }}></div>
+                      </div>
+                      <span className="rq-progress-text">
+                        {judgedCount.toLocaleString()} of {judgeableTotal.toLocaleString()} judged ·{" "}
+                        {judgedPercent}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <header className="rq-article-header">
+                    {/* Sidebar Toggle (Desktop) */}
+                    {sidebarCollapsed && (
+                      <button
+                        className="rq-hamburger-btn rq-desktop-only"
+                        onClick={() => setSidebarCollapsed(false)}
+                        title="Open Sidebar"
+                      >
+                        <CdxIcon icon={cdxIconMenu} />
+                      </button>
+                    )}
+
+                    <button className="rq-back-btn rq-mobile-only" onClick={() => setMobileTab("list")}>
+                      <CdxIcon icon={cdxIconArrowPrevious} />
+                    </button>
+
+                    <div className="rq-article-meta-area">
+                      <a
+                        href={articleUrl(currentArticle.title)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rq-article-title-link"
+                        title={currentArticle.title}
+                      >
+                        {currentArticle.title}
+                      </a>
+                      <div className="rq-tags">
+                        <span className="rq-tag">by {currentArticle.submitted_by}</span>
+                        {currentArticle.wiki_creation_date && (
+                          <span className="rq-tag rq-tag-date">
+                            {formatDateDayFirst(currentArticle.wiki_creation_date)}
+                          </span>
+                        )}
+                        {currentArticle.locked_by && currentArticle.locked_by !== myUsername && (
+                          <span className="rq-tag rq-tag-locked">
+                            <CdxIcon icon={cdxIconLock} /> {currentArticle.locked_by} reviewing
+                          </span>
+                        )}
+                        {getMyLatestDecision(currentArticle) && (
+                          <span
+                            className={`rq-tag rq-tag-verdict rq-tag-${getMyLatestDecision(
+                              currentArticle
+                            )}`}
+                          >
+                            {getMyLatestDecision(currentArticle) === "accepted"
+                              ? "✓ Accepted"
+                              : getMyLatestDecision(currentArticle) === "rejected"
+                              ? "✕ Rejected"
+                              : "→ Skipped"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rq-header-tools">
+                      <button
+                        type="button"
+                        className={`rq-wikitext-switch ${showWikitext ? "is-on" : ""}`}
+                        role="switch"
+                        aria-checked={showWikitext ? "true" : "false"}
+                        title={`Show raw wikitext (${shortcutKeyLabel(shortcuts.wikitext)})`}
+                        onClick={toggleWikitext}
+                      >
+                        <span className="rq-switch-label">Wikitext</span>
+                        <span className="rq-switch-track">
+                          <span className="rq-switch-knob"></span>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="rq-btn-secondary rq-help-btn rq-desktop-only"
+                        title="Keyboard shortcuts (/)"
+                        aria-label="Keyboard shortcuts"
+                        onClick={() => setShowShortcutHelp(true)}
+                      >
+                        ?
+                      </button>
+
+                      <a
+                        href={articleUrl(currentArticle.title)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rq-btn-secondary rq-wiki-link-btn"
+                        title="Open on Wiki"
+                      >
+                        <CdxIcon icon={cdxIconLinkExternal} />{" "}
+                        <span className="rq-desktop-only">Wiki</span>
+                      </a>
+                    </div>
+                  </header>
+
+                  {/* Mobile pane tabs */}
+                  {showWikitext && (
+                    <div className="rq-pane-tabs rq-mobile-only">
+                      <button
+                        type="button"
+                        className={previewPane === "visual" ? "is-active" : ""}
+                        onClick={() => setPreviewPane("visual")}
+                      >
+                        Visual
+                      </button>
+                      <button
+                        type="button"
+                        className={previewPane === "wikitext" ? "is-active" : ""}
+                        onClick={() => setPreviewPane("wikitext")}
+                      >
+                        Wikitext
+                      </button>
+                    </div>
+                  )}
+
+                  <div
+                    className={`rq-preview-container ${
+                      showWikitext ? "is-split is-showing-" + previewPane : ""
+                    }`}
+                  >
+                    {isLoadingPreview ? (
+                      <div className="rq-center-state">
+                        <div className="rq-spinner rq-spinner-sm"></div>
+                        <span className="rq-loading-text">Loading Wikipedia preview…</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="rq-preview-pane rq-visual-pane">
+                          <iframe
+                            className="rq-wiki-iframe"
+                            sandbox="allow-scripts"
+                            srcDoc={previewSrcdoc}
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        {showWikitext && (
+                          <section
+                            className="rq-preview-pane rq-wikitext-pane"
+                            aria-label="Raw wikitext"
+                          >
+                            <header className="rq-wikitext-bar">
+                              <span className="rq-wikitext-heading">Raw wikitext</span>
+                              <button
+                                type="button"
+                                className="rq-wikitext-copy"
+                                disabled={!wikitextSource}
+                                onClick={copyWikitext}
+                              >
+                                <CdxIcon icon={cdxIconCopy} />{" "}
+                                {wikitextCopied ? "Copied" : "Copy"}
+                              </button>
+                            </header>
+                            <div className="rq-wikitext-scroll">
+                              {wikitextSource ? (
+                                <pre className="rq-wikitext-code">{wikitextSource}</pre>
+                              ) : (
+                                <p className="rq-wikitext-empty">Wikitext not available.</p>
+                              )}
+                            </div>
+                          </section>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </main>
+
+                {/* DECISION PANEL (Bottom) */}
+                <footer className="rq-panel rq-decision-panel">
+                  <div className="rq-decision-body">
+                    {reviewError && <div className="rq-error-msg">{reviewError}</div>}
+                    <div className="rq-decision-form">
+                      <textarea
+                        ref={commentBoxRef}
+                        className="rq-input rq-textarea"
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder="Leave a note for the submitter (optional)… (C)"
+                        rows={2}
+                      />
+
+                      <div className="rq-actions-wrapper">
+                        <div className="rq-primary-actions">
+                          <button
+                            type="button"
+                            className="rq-btn rq-btn-accept"
+                            disabled={isSubmitting}
+                            onClick={() => handleDecision("accepted")}
+                            title="Accept (A)"
+                          >
+                            <CdxIcon icon={cdxIconCheck} /> <span>Accept</span>
+                            <kbd className="rq-kbd rq-desktop-only">
+                              {shortcutKeyLabel(shortcuts.accept)}
+                            </kbd>
+                          </button>
+                          <button
+                            type="button"
+                            className="rq-btn rq-btn-reject"
+                            disabled={isSubmitting}
+                            onClick={() => handleDecision("rejected")}
+                            title="Reject (R)"
+                          >
+                            <CdxIcon icon={cdxIconClear} /> <span>Reject</span>
+                            <kbd className="rq-kbd rq-desktop-only">
+                              {shortcutKeyLabel(shortcuts.reject)}
+                            </kbd>
+                          </button>
+                        </div>
+
+                        <div className="rq-secondary-actions">
+                          <button
+                            type="button"
+                            className="rq-btn-ghost rq-btn-skip"
+                            disabled={isSubmitting}
+                            onClick={skipArticle}
+                            title="Skip (S)"
+                          >
+                            <CdxIcon icon={cdxIconNext} />{" "}
+                            <span className="rq-desktop-only">Skip</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="rq-btn-ghost rq-btn-remove"
+                            disabled={isSubmitting}
+                            onClick={handleRemove}
+                            title="Delete article"
+                          >
+                            <CdxIcon icon={cdxIconTrash} />{" "}
+                            <span className="rq-desktop-only">Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </footer>
+              </>
             )}
           </div>
-          <span className="text-[10px] mt-0.5">{t("feather-review-mobile-nav-queue")}</span>
-        </button>
+        </div>
+      )}
 
+      {/* Mobile Nav Tabs */}
+      <nav className="rq-mobile-nav">
         <button
-          type="button"
-          onClick={() => setMobileTab("review")}
-          disabled={!selectedArticle}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
-            mobileTab === "review" ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
-          } ${!selectedArticle ? "opacity-40 cursor-not-allowed" : ""}`}
+          className={`rq-nav-btn ${mobileTab === "list" ? "is-active" : ""}`}
+          onClick={() => setMobileTab("list")}
         >
-          <BookOpen className="h-4 w-4" />
-          <span className="text-[10px] mt-0.5">{t("feather-review-mobile-nav-review")}</span>
+          <CdxIcon icon={cdxIconMenu} className="rq-nav-icon" />
+          <span className="rq-nav-label">Queue</span>
+          {newArticles.length > 0 && <span className="rq-nav-badge">{newArticles.length}</span>}
+        </button>
+        <button
+          className={`rq-nav-btn ${mobileTab === "review" ? "is-active" : ""}`}
+          onClick={() => setMobileTab("review")}
+          disabled={!currentArticle}
+        >
+          <CdxIcon icon={cdxIconArticle} className="rq-nav-icon" />
+          <span className="rq-nav-label">Review</span>
         </button>
       </nav>
 
-      {/* 5. FLOATING UNDO TOAST (Animated 6-Second Window) */}
-      {undoItem && (
-        <div className="fixed bottom-16 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-foreground text-background px-4 py-2.5 rounded-lg shadow-2xl flex items-center gap-3 text-xs animate-in fade-in slide-in-from-bottom-2 duration-150 max-w-[90vw] overflow-hidden">
-          <div className="flex items-center gap-2 truncate">
-            <Badge
-              variant="outline"
-              className={`text-[9px] uppercase px-1.5 py-0 font-bold border-background/30 text-background ${
-                undoItem.status === "accepted" ? "bg-emerald-500/20" : "bg-destructive/20"
-              }`}
-            >
-              {undoItem.status}
-            </Badge>
-            <span className="truncate max-w-xs">{undoItem.title}</span>
-          </div>
-
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleUndo}
-            className="h-7 px-2.5 text-xs gap-1 font-semibold cursor-pointer shrink-0"
+      {/* Undo toast */}
+      {lastDecision && (
+        <div key={lastDecision.seq} className="rq-undo-toast" role="status">
+          <span className="rq-undo-text">
+            <strong className={`rq-undo-decision rq-undo-${lastDecision.decision}`}>
+              {lastDecision.decision}
+            </strong>
+            <span className="rq-undo-title">{lastDecision.title}</span>
+          </span>
+          <button
+            type="button"
+            className="rq-undo-btn"
+            disabled={isUndoing}
+            onClick={undoLastDecision}
           >
-            <Undo2 className="h-3 w-3" />
-            <span>{t("feather-review-undo-btn")}</span>
-            <kbd className="hidden sm:inline-block px-1 rounded bg-muted text-[9px] font-mono">
-              {shortcuts.undo.toUpperCase()}
-            </kbd>
-          </Button>
-
-          {/* Animated Countdown Track */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-background/20">
-            <div
-              className="h-full bg-primary transition-all duration-75"
-              style={{ width: `${undoCountdown}%` }}
-            />
-          </div>
+            {isUndoing ? "Undoing…" : "Undo"}{" "}
+            <kbd className="rq-kbd">{shortcutKeyLabel(shortcuts.undo)}</kbd>
+          </button>
+          <button
+            type="button"
+            className="rq-undo-dismiss"
+            aria-label="Dismiss"
+            onClick={dismissUndo}
+          >
+            ×
+          </button>
+          <span
+            className="rq-undo-progress"
+            style={{ animationDuration: `${UNDO_WINDOW_MS}ms` }}
+          />
         </div>
       )}
 
-      {/* 6. KEYBOARD SHORTCUTS REFERENCE & CUSTOMIZATION MODAL */}
+      {/* Keyboard shortcut reference modal */}
       {showShortcutHelp && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-100"
-          onClick={() => {
-            setShowShortcutHelp(false);
-            setCapturingAction(null);
-          }}
-        >
+        <div className="rq-help-backdrop" onClick={() => setShowShortcutHelp(false)}>
           <div
-            className="bg-card text-card-foreground border border-border rounded-xl shadow-2xl max-w-md w-full p-5 space-y-4 animate-in zoom-in-95 duration-150"
+            className="rq-help-panel"
+            role="dialog"
+            aria-label="Keyboard shortcuts"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Keyboard className="h-4 w-4 text-primary" />
-                <h3 className="font-bold text-sm text-foreground">{t("feather-review-modal-title")}</h3>
-              </div>
+            <div className="rq-help-header">
+              <h3>Keyboard shortcuts</h3>
               <button
                 type="button"
-                onClick={() => {
-                  setShowShortcutHelp(false);
-                  setCapturingAction(null);
-                }}
-                className="text-muted-foreground hover:text-foreground cursor-pointer p-1"
+                className="rq-help-close"
+                aria-label="Close"
+                onClick={() => setShowShortcutHelp(false)}
               >
-                <X className="h-4 w-4" />
+                ×
               </button>
             </div>
-
-            <div className="space-y-2 text-xs divide-y divide-border/60">
+            <dl className="rq-help-list">
               {SHORTCUT_ACTIONS.map((action) => (
-                <div key={action.id} className="flex items-center justify-between pt-2">
-                  <span>{t(action.labelKey)}</span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCapturingAction(capturingAction === action.id ? null : action.id)
-                    }
-                    className={`px-2 py-0.5 rounded font-mono font-bold text-xs border cursor-pointer transition-colors ${
-                      capturingAction === action.id
-                        ? "bg-primary text-primary-foreground border-primary animate-pulse"
-                        : "bg-muted text-foreground border-border hover:bg-muted/80"
-                    }`}
-                  >
-                    {capturingAction === action.id ? "…" : (shortcuts[action.id] || action.defaultKey).toUpperCase()}
-                  </button>
+                <div key={action.id} className="rq-help-row">
+                  <dt>
+                    <button
+                      type="button"
+                      className={`rq-kbd rq-kbd-editable ${
+                        capturingAction === action.id ? "is-capturing" : ""
+                      }`}
+                      aria-label={`Change the key for: ${action.label}`}
+                      onClick={() =>
+                        capturingAction === action.id
+                          ? cancelShortcutCapture()
+                          : startShortcutCapture(action.id)
+                      }
+                    >
+                      {capturingAction === action.id
+                        ? "…"
+                        : shortcutKeyLabel(shortcuts[action.id])}
+                    </button>
+                  </dt>
+                  <dd className={capturingAction === action.id ? "is-capturing" : ""}>
+                    {capturingAction === action.id
+                      ? "Press a letter, number, Enter or Space — Esc to cancel"
+                      : action.label}
+                  </dd>
                 </div>
               ))}
-
-              <div className="flex items-center justify-between pt-2">
-                <span>{t("feather-review-shortcut-nav")}</span>
-                <div className="flex items-center gap-1 font-mono text-xs">
-                  <kbd className="px-1.5 py-0.5 rounded bg-muted border">↑</kbd>
-                  <kbd className="px-1.5 py-0.5 rounded bg-muted border">↓</kbd>
-                </div>
+              <div className="rq-help-row">
+                <dt>
+                  <kbd className="rq-kbd">↑ ↓</kbd>
+                </dt>
+                <dd>Move through the queue list and open what you land on</dd>
               </div>
-              <div className="flex items-center justify-between pt-2">
-                <span>{t("feather-review-shortcut-esc")}</span>
-                <kbd className="px-2 py-0.5 rounded bg-muted font-mono font-bold text-xs border">Esc</kbd>
+              <div className="rq-help-row">
+                <dt>
+                  <kbd className="rq-kbd">PgUp PgDn</kbd>
+                </dt>
+                <dd>Jump ten rows at a time (Home / End for the ends)</dd>
               </div>
-            </div>
-
-            {capturingAction && (
-              <p className="text-[11px] text-primary font-medium bg-primary/10 p-2 rounded text-center">
-                {t("feather-review-shortcut-rebind-prompt")}
+              <div className="rq-help-row">
+                <dt>
+                  <kbd className="rq-kbd">⇧ ↑ ↓</kbd>
+                </dt>
+                <dd>Select as you move, or unselect on the way back</dd>
+              </div>
+              <div className="rq-help-row">
+                <dt>
+                  <kbd className="rq-kbd">Space</kbd>
+                </dt>
+                <dd>Select or unselect the row you are on</dd>
+              </div>
+              <div className="rq-help-row">
+                <dt>
+                  <kbd className="rq-kbd">Ctrl A</kbd>
+                </dt>
+                <dd>Select every row on screen, or clear them</dd>
+              </div>
+              <div className="rq-help-row">
+                <dt>
+                  <kbd className="rq-kbd">Enter</kbd>
+                </dt>
+                <dd>Open the article you are on</dd>
+              </div>
+              <div className="rq-help-row">
+                <dt>
+                  <kbd className="rq-kbd">Esc</kbd>
+                </dt>
+                <dd>Leave the comment box / clear the selection / close the queue</dd>
+              </div>
+              <div className="rq-help-row">
+                <dt>
+                  <kbd className="rq-kbd">/</kbd>
+                </dt>
+                <dd>Show or hide this panel</dd>
+              </div>
+            </dl>
+            {shortcutError && <p className="rq-help-error">{shortcutError}</p>}
+            <div className="rq-help-footer">
+              <p className="rq-help-note">
+                Click a key to rebind it. Saved for {myUsername || "this browser"} only. Shortcuts
+                are ignored while you&apos;re typing in a text field, and a held key acts once.
               </p>
-            )}
-
-            <div className="pt-3 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetShortcuts}
-                className="text-xs h-7 gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+              <a
+                className="rq-help-guide"
+                href="https://github.com/RIFAT712/Feather/blob/main/docs/JURY_GUIDE.md"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <RotateCcw className="h-3 w-3" />
-                <span>{t("feather-review-shortcut-reset")}</span>
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setShowShortcutHelp(false);
-                  setCapturingAction(null);
-                }}
-                className="text-xs h-7 cursor-pointer"
-              >
-                {t("feather-review-shortcut-gotit")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 7. DELETE ARTICLE CONFIRMATION MODAL */}
-      {deleteConfirmArticle && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-100"
-          onClick={() => setDeleteConfirmArticle(null)}
-        >
-          <div
-            className="bg-card text-card-foreground border border-border rounded-xl shadow-2xl max-w-sm w-full p-5 space-y-4 animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="space-y-1.5 text-center">
-              <div className="h-12 w-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
-                <Trash2 className="h-6 w-6" />
-              </div>
-              <h3 className="font-bold text-base text-foreground">
-                {t("feather-review-delete-confirm-title")}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {t("feather-review-delete-confirm-desc", deleteConfirmArticle.title)}
-              </p>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDeleteConfirmArticle(null)}
-                className="text-xs h-8 cursor-pointer"
-              >
-                {t("feather-wizard-btn-cancel")}
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDeleteArticle}
-                disabled={isDeleting}
-                className="text-xs h-8 cursor-pointer gap-1"
-              >
-                {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                <span>{t("feather-review-btn-delete")}</span>
-              </Button>
+                Full jury panel guide
+              </a>
+              <button type="button" className="rq-help-reset" onClick={resetShortcuts}>
+                Reset to defaults
+              </button>
             </div>
           </div>
         </div>

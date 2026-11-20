@@ -168,10 +168,17 @@ All agents modifying code in this repository must uphold the following rules:
   * Unicode Bengali punctuation (`।`, `॥`, etc.) and multi-script boundaries must be preserved.
 
 ### D. Jury Load Balancing & Review Workflow
+* **1:1 Feather Review Console (`/contests/[code]/review`):**
+  * Exact 1:1 pixel-perfect port of Feather v1 (`ReviewQueue.vue` + `ReviewQueue.css`, originally deployed at `https://feather.toolforge.org/86be15/jury/review-v2`).
+  * Utilizes `@wikimedia/codex` stylesheets and `@wikimedia/codex-icons` (`<CdxIcon />`) for native Wikimedia styling.
+  * Desktop features: Resizable drawer (`--rq-panel-w`, 260px–640px, default 340px) with splitter handle, queue tabs (`Queue`, `Re-review`, `Other judges`), search filtering with diacritic normalization, bulk selection with shift-click ranges, sandboxed Wikipedia preview iframe with `LIGHT_CSS` & `COLLAPSIBLE_JS`, split-pane raw wikitext with copy-to-clipboard, flow progress bar (`X of Y judged · Z%`), and 2-second animated undo toast.
+  * Mobile features: Fixed bottom docking with `.rq-decision-panel` positioned at `bottom: 60px` immediately above the 60px `.rq-mobile-nav`. 4-column compact touch actions (`Accept`, `Reject`, `Skip`, `Delete`) without obscuring the article preview. Tab switching between `Queue` (with badge count) and `Review`.
+  * Top navigation bar and footer are hidden on the review route (`pathname.includes('/review')`) so the review console occupies the entire viewport (`100dvh`).
 * **Scarcity-First Balancer:** Assignment of pending articles to juries is handled via `balancer.PlanScarcityFirst`.
 * **Conflict of Interest (COI):** Juries must not review their own articles unless explicitly permitted by contest settings.
 * **Review Locking:** Juries acquire a soft lock on an article (`acquireArticleLock`) while reviewing to prevent collision.
-* **Keyboard Navigation:** Review screen supports rapid keyboard shortcuts (`A` accept, `R` reject, `S` skip, `C` comment, `Q` queue toggle, `U` undo).
+* **Keyboard Navigation:** Review screen supports rapid customizable keyboard shortcuts (`A` accept, `R` reject, `S` skip, `C` comment, `Q` queue toggle, `U` undo, `W` wikitext toggle, `↑/↓` arrow queue list navigation, `PgUp/PgDn`, `Space` toggle selection, `Ctrl+A` select all, `Enter` open focused article, `Esc` cancel/close, `/` or `?` shortcut modal).
+* **Bulk Review & Bulk Delete API:** Go backend endpoints `POST /api/articles/bulk-review` and `POST /api/articles/bulk-delete` handle batched operations returning `succeeded` and `failed` lists.
 
 ### E. Translatewiki-Compliant i18n
 * **No hardcoded text** in UI components.

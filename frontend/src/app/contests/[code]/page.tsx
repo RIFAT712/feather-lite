@@ -1,5 +1,10 @@
 import { Metadata } from "next";
-import { getServerContest, getServerMe } from "@/lib/server-api";
+import {
+  getServerContest,
+  getServerMe,
+  getServerStandings,
+  getServerContestArticles,
+} from "@/lib/server-api";
 import ContestDashboardClient from "./ContestDashboardClient";
 
 interface PageProps {
@@ -29,9 +34,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ContestDashboardPage({ params }: PageProps) {
   const { code } = await params;
-  const [contest, me] = await Promise.all([
+  const [contest, me, standings, articles] = await Promise.all([
     getServerContest(code),
     getServerMe(),
+    getServerStandings(code),
+    getServerContestArticles(code, 50),
   ]);
 
   return (
@@ -39,6 +46,8 @@ export default async function ContestDashboardPage({ params }: PageProps) {
       code={code}
       initialContest={contest}
       initialMe={me}
+      initialStandings={standings}
+      initialArticles={articles}
     />
   );
 }

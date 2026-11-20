@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getServerContest, getServerMe } from "@/lib/server-api";
+import { getServerContest, getServerMe, getServerContestArticles } from "@/lib/server-api";
 import ReviewQueueClient from "./ReviewQueueClient";
 
 interface PageProps {
@@ -29,9 +29,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ReviewPage({ params }: PageProps) {
   const { code } = await params;
-  const [contest, user] = await Promise.all([
+  const [contest, user, articles] = await Promise.all([
     getServerContest(code),
     getServerMe(),
+    getServerContestArticles(code, 500),
   ]);
 
   return (
@@ -39,6 +40,7 @@ export default async function ReviewPage({ params }: PageProps) {
       code={code}
       initialContest={contest}
       initialUser={user}
+      initialArticles={articles}
     />
   );
 }

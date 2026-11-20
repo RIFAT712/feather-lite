@@ -1,16 +1,16 @@
 .rq-app {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   
-  /* Feather Zinc dark palette: matches Feather platform theme */
-  --rq-bg: #09090b;
-  --rq-surface: #121215;
-  --rq-surface-alt: #18181b;
-  --rq-surface-hover: #27272a;
-  --rq-border: #27272a;
-  --rq-border-light: #1f1f23;
+  /* Feather relaxed dark palette: comfortable, non-glare reading */
+  --rq-bg: #0b0d10;
+  --rq-surface: #121418;
+  --rq-surface-alt: #171a20;
+  --rq-surface-hover: #21252d;
+  --rq-border: #282c35;
+  --rq-border-light: #1f2229;
   
-  --rq-text: #f4f4f5;
-  --rq-text-muted: #a1a1aa;
+  --rq-text: #d1d5db;
+  --rq-text-muted: #9ca3af;
   
   --rq-accent: #3b82f6;
   --rq-accent-hover: #60a5fa;
@@ -26,42 +26,34 @@
 }
 
 .rq-app.rq-theme-light {
-  /* The Feather palette from docs/STYLE_GUIDE.md "Core tokens", mapped by role
-     rather than by name -- this route's --rq-surface is the panel body where
-     Feather's --feather-surface is a card, so the names do not line up even
-     though the colours must. Before this, the review shell ran a parallel
-     oklch palette that landed near the Feather values without matching them
-     (--rq-text was #12203a against Feather's #20364d) while a dozen rules
-     hard-coded the real Feather hexes. Two palettes, one drifting. */
-  --rq-bg: #e7f0f8;              /* --feather-bg: the canvas behind the panels */
-  --rq-surface: #f4f8fb;         /* --feather-surface-alt: panel body, chrome bands */
-  --rq-surface-alt: #ffffff;     /* --feather-surface: list rows, cards */
-  --rq-surface-hover: #eaf1f8;
-  --rq-border: #c7d6e3;          /* --feather-border */
-  --rq-border-light: #dde7f0;    /* hairline between rows */
-  --rq-text: #20364d;            /* --feather-text */
-  --rq-text-muted: #47637c;      /* --feather-muted */
-  --rq-accent: #355b80;          /* --feather-accent */
-  --rq-accent-hover: #27455f;
-  --rq-accent-bg: #e2ecf6;
-  /* Status stays pale-background / dark-text, per the style guide's rule that
-     semantic colour carries meaning only. */
-  --rq-success: #22a05a;
-  --rq-success-dark: #1a6e3f;
-  --rq-danger: #d94b4b;
-  --rq-danger-dark: #a33a3a;
-  --rq-warning: #d99322;
+  /* Synchronized with Feather platform light theme */
+  --rq-bg: #f4f4f5;              /* Feather canvas */
+  --rq-surface: #ffffff;         /* Cards and panel background */
+  --rq-surface-alt: #ffffff;     /* List rows */
+  --rq-surface-hover: #f4f4f5;   /* Row hover */
+  --rq-border: #e4e4e7;          /* Feather card border */
+  --rq-border-light: #f4f4f5;    /* Hairline between rows */
+  --rq-text: #18181b;            /* Feather text */
+  --rq-text-muted: #71717a;      /* Feather muted text */
+  --rq-accent: #2563eb;          /* Feather primary blue */
+  --rq-accent-hover: #1d4ed8;
+  --rq-accent-bg: #eff6ff;
+  --rq-success: #10b981;
+  --rq-success-dark: #059669;
+  --rq-danger: #ef4444;
+  --rq-danger-dark: #dc2626;
+  --rq-warning: #f59e0b;
 }
 
 .rq-app.rq-theme-dark {
-  --rq-bg: #09090b;
-  --rq-surface: #121215;
-  --rq-surface-alt: #18181b;
-  --rq-surface-hover: #27272a;
-  --rq-border: #27272a;
-  --rq-border-light: #1f1f23;
-  --rq-text: #f4f4f5;
-  --rq-text-muted: #a1a1aa;
+  --rq-bg: #0b0d10;
+  --rq-surface: #121418;
+  --rq-surface-alt: #171a20;
+  --rq-surface-hover: #21252d;
+  --rq-border: #282c35;
+  --rq-border-light: #1f2229;
+  --rq-text: #d1d5db;
+  --rq-text-muted: #9ca3af;
   --rq-accent: #3b82f6;
   --rq-accent-hover: #60a5fa;
   --rq-accent-bg: #1e293b;

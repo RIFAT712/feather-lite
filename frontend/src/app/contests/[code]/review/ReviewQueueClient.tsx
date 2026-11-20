@@ -37,6 +37,7 @@ import {
   deleteArticle,
   Contest,
   UserSession,
+  KeysetResponse,
 } from "@/lib/api";
 
 const COLLAPSIBLE_JS = `
@@ -155,62 +156,62 @@ const COLLAPSIBLE_JS = `
 const LIGHT_CSS = `
   :root { color-scheme: light; }
   html, body {
-    background: #f5f8fb !important;
-    color: #20364d !important;
+    background: #ffffff !important;
+    color: #202122 !important;
     font-family: 'Linux Libertine', Georgia, Times, serif;
     font-size: 15px;
     line-height: 1.6;
     margin: 0;
-    padding: 10px 14px 28px;
+    padding: 12px 18px 36px;
     max-width: 860px;
   }
-  a { color: #1769aa !important; }
-  a:visited { color: #7253a8 !important; }
-  a.new, a.new:visited { color: #b42332 !important; }
+  a { color: #3366cc !important; }
+  a:visited { color: #6b4ba1 !important; }
+  a.new, a.new:visited { color: #d73333 !important; }
   a:hover { text-decoration: underline; }
   * { background-color: unset !important; }
-  table, .wikitable { border-collapse: collapse; background: #ffffff !important; color: #20364d !important; }
-  th, td { border: 1px solid #c7d6e3 !important; padding: 6px 10px; color: #20364d !important; }
-  th { background: #e7f0f7 !important; }
-  tr:nth-child(even) td { background: #f4f8fb !important; }
-  .NavFrame { border: 1px solid #c7d6e3 !important; border-radius: 6px; background: #ffffff !important; margin: 12px 0; overflow: hidden; }
-  .NavHead { background: #e7f0f7 !important; color: #20364d !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
+  table, .wikitable { border-collapse: collapse; background: #ffffff !important; color: #202122 !important; }
+  th, td { border: 1px solid #eaecf0 !important; padding: 6px 10px; color: #202122 !important; }
+  th { background: #f8f9fa !important; font-weight: 600; }
+  tr:nth-child(even) td { background: #fcfdfe !important; }
+  .NavFrame { border: 1px solid #eaecf0 !important; border-radius: 6px; background: #ffffff !important; margin: 12px 0; overflow: hidden; }
+  .NavHead { background: #f8f9fa !important; color: #202122 !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
   .NavContent { background: #ffffff !important; }
-  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #e7f0f7 !important; color: #20364d !important; }
-  .mw-collapsible-toggle { cursor: pointer; color: #47637c !important; }
-  h1, h2, h3, h4, h5 { color: #20364d !important; border-bottom: 1px solid #c7d6e3 !important; padding-bottom: 4px; }
-  #toc, .toc, .infobox { background: #ffffff !important; border: 1px solid #c7d6e3 !important; border-radius: 6px; }
+  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #f8f9fa !important; color: #202122 !important; }
+  .mw-collapsible-toggle { cursor: pointer; color: #54595d !important; }
+  h1, h2, h3, h4, h5 { color: #202122 !important; border-bottom: 1px solid #eaecf0 !important; padding-bottom: 4px; }
+  #toc, .toc, .infobox { background: #f8f9fa !important; border: 1px solid #a2a9b1 !important; border-radius: 6px; }
   .mw-editsection, .mw-editsection-bracket { display: none !important; }
 `;
 
 const DARK_CSS = `
   :root { color-scheme: dark; }
   html, body {
-    background: #09090b !important;
-    color: #f4f4f5 !important;
+    background: #111317 !important;
+    color: #d1d5db !important;
     font-family: 'Linux Libertine', Georgia, Times, serif;
     font-size: 15px;
-    line-height: 1.6;
+    line-height: 1.65;
     margin: 0;
-    padding: 10px 14px 28px;
+    padding: 12px 18px 36px;
     max-width: 860px;
   }
-  a { color: #60a5fa !important; }
-  a:visited { color: #c084fc !important; }
+  a { color: #6cb8ff !important; }
+  a:visited { color: #b392f0 !important; }
   a.new, a.new:visited { color: #f87171 !important; }
   a:hover { text-decoration: underline; }
   * { background-color: unset !important; }
-  table, .wikitable { border-collapse: collapse; background: #121215 !important; color: #f4f4f5 !important; }
-  th, td { border: 1px solid #27272a !important; padding: 6px 10px; color: #f4f4f5 !important; }
-  th { background: #18181b !important; }
-  tr:nth-child(even) td { background: #121215 !important; }
-  .NavFrame { border: 1px solid #27272a !important; border-radius: 6px; background: #121215 !important; margin: 12px 0; overflow: hidden; }
-  .NavHead { background: #18181b !important; color: #f4f4f5 !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
-  .NavContent { background: #121215 !important; }
-  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #18181b !important; color: #f4f4f5 !important; }
-  .mw-collapsible-toggle { cursor: pointer; color: #a1a1aa !important; }
-  h1, h2, h3, h4, h5 { color: #f4f4f5 !important; border-bottom: 1px solid #27272a !important; padding-bottom: 4px; }
-  #toc, .toc, .infobox { background: #121215 !important; border: 1px solid #27272a !important; border-radius: 6px; }
+  table, .wikitable { border-collapse: collapse; background: #16191f !important; color: #d1d5db !important; }
+  th, td { border: 1px solid #282c35 !important; padding: 6px 10px; color: #d1d5db !important; }
+  th { background: #1d2128 !important; color: #e5e7eb !important; font-weight: 600; }
+  tr:nth-child(even) td { background: #14161b !important; }
+  .NavFrame { border: 1px solid #282c35 !important; border-radius: 6px; background: #16191f !important; margin: 12px 0; overflow: hidden; }
+  .NavHead { background: #1d2128 !important; color: #e5e7eb !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
+  .NavContent { background: #16191f !important; }
+  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #1d2128 !important; color: #e5e7eb !important; }
+  .mw-collapsible-toggle { cursor: pointer; color: #9ca3af !important; }
+  h1, h2, h3, h4, h5 { color: #e5e7eb !important; border-bottom: 1px solid #282c35 !important; padding-bottom: 4px; }
+  #toc, .toc, .infobox { background: #16191f !important; border: 1px solid #282c35 !important; border-radius: 6px; color: #d1d5db !important; }
   .mw-editsection, .mw-editsection-bracket { display: none !important; }
 `;
 
@@ -322,12 +323,14 @@ interface ReviewQueueClientProps {
   code: string;
   initialContest?: Contest | null;
   initialUser?: UserSession | null;
+  initialArticles?: KeysetResponse | null;
 }
 
 export default function ReviewQueueClient({
   code,
   initialContest,
   initialUser,
+  initialArticles,
 }: ReviewQueueClientProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -335,11 +338,18 @@ export default function ReviewQueueClient({
   const [contest, setContest] = useState<Contest | null>(initialContest || null);
   const [user, setUser] = useState<UserSession | null>(initialUser || null);
 
-  const [articles, setArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<any[]>(() => {
+    if (initialArticles?.items && initialArticles.items.length > 0) {
+      return initialArticles.items.map(normalizeArticle);
+    }
+    return [];
+  });
   const [currentArticle, setCurrentArticle] = useState<any | null>(null);
   const [comment, setComment] = useState("");
   const [bulkComment, setBulkComment] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    return !(initialContest && initialArticles?.items);
+  });
   const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
@@ -648,7 +658,9 @@ ${body}
   useEffect(() => {
     let active = true;
     async function loadData() {
-      setIsLoading(true);
+      if (!initialArticles?.items) {
+        setIsLoading(true);
+      }
       try {
         const cDataPromise = initialContest
           ? Promise.resolve(initialContest)
@@ -659,7 +671,10 @@ ${body}
             : fetchMe().catch(
                 () => ({ is_authenticated: false, role: "anonymous" } as UserSession)
               );
-        const aDataPromise = fetchArticles(code, undefined, undefined, 500).catch(() => ({ items: [], total: 0 }));
+        const aDataPromise =
+          initialArticles?.items && initialArticles.items.length > 0
+            ? Promise.resolve(initialArticles)
+            : fetchArticles(code, undefined, undefined, 500).catch(() => ({ items: [], total: 0 }));
 
         const [cData, uData, aData] = await Promise.all([
           cDataPromise,

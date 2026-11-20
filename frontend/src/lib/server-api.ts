@@ -6,6 +6,8 @@ import {
   PlatformOverview,
   GlobalUserProfile,
   ContestUserProfile,
+  StandingEntry,
+  KeysetResponse,
 } from "./api";
 
 const INTERNAL_API_URL = process.env.INTERNAL_API_URL || "http://127.0.0.1:8081";
@@ -122,6 +124,47 @@ export async function getServerContestUserProfile(
     const headers = await getAuthHeader();
     const res = await fetch(
       `${INTERNAL_API_URL}/api/contests/${encodeURIComponent(code)}/users/${encodeURIComponent(username)}`,
+      {
+        headers,
+        next: { revalidate: 15 },
+      }
+    );
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function getServerStandings(code: string): Promise<StandingEntry[]> {
+  try {
+    const headers = await getAuthHeader();
+    const res = await fetch(`${INTERNAL_API_URL}/api/contests/${encodeURIComponent(code)}/standings`, {
+      headers,
+      next: { revalidate: 15 },
+    });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function getServerContestArticles(
+  code: string,
+  limit: number = 50,
+  beforeId?: number,
+  status?: string
+): Promise<KeysetResponse | null> {
+  try {
+    const headers = await getAuthHeader();
+    const params = new URLSearchParams();
+    params.set("limit", limit.toString());
+    if (beforeId) params.set("before_id", beforeId.toString());
+    if (status) params.set("status", status);
+
+    const res = await fetch(
+      `${INTERNAL_API_URL}/api/contests/${encodeURIComponent(code)}/articles?${params.toString()}`,
       {
         headers,
         next: { revalidate: 15 },

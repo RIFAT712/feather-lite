@@ -9,7 +9,7 @@ import {
   fetchAvailableContests, attachContestToCampaign, detachContestFromCampaign,
   updateContest, fetchMe, approveContest, deleteContest,
   Contest, StandingEntry, Article, SubContestSummary, AvailableContestSummary,
-  UpdateContestPayload, UserSession
+  UpdateContestPayload, UserSession, KeysetResponse
 } from "@/lib/api";
 import TimezoneSelector from "@/components/contests/TimezoneSelector";
 import { useI18n } from "@/i18n/I18nContext";
@@ -53,12 +53,16 @@ interface ContestDashboardClientProps {
   code: string;
   initialContest?: Contest | null;
   initialMe?: UserSession | null;
+  initialStandings?: StandingEntry[];
+  initialArticles?: KeysetResponse | null;
 }
 
 export default function ContestDashboardClient({
   code,
   initialContest,
   initialMe,
+  initialStandings,
+  initialArticles,
 }: ContestDashboardClientProps) {
   const { t, n, formatDate, locale, isRtl } = useI18n();
   const router = useRouter();
@@ -140,11 +144,13 @@ export default function ContestDashboardClient({
   const { data: standings, isLoading: standingsLoading } = useQuery<StandingEntry[]>({
     queryKey: ["standings", code, communityFilter],
     queryFn: () => fetchStandings(code, communityFilter === "all" ? undefined : communityFilter),
+    initialData: communityFilter === "all" && initialStandings?.length ? initialStandings : undefined,
   });
 
-  const { data: articlesData, isLoading: articlesLoading } = useQuery({
+  const { data: articlesData, isLoading: articlesLoading } = useQuery<KeysetResponse>({
     queryKey: ["articles", code, statusFilter],
     queryFn: () => fetchArticles(code, undefined, statusFilter === "all" ? undefined : statusFilter, 100),
+    initialData: statusFilter === "all" && initialArticles ? initialArticles : undefined,
   });
 
   const articles = articlesData?.items || [];
@@ -240,13 +246,13 @@ export default function ContestDashboardClient({
   }, [standings, standingsSearch]);
 
   // Filtered Submissions (articles that failed validation must never appear on the list)
-  const filteredArticles = useMemo(() => {
+  const filteredArticles = useMemo<Article[]>(() => {
     if (!articles) return [];
-    const valid = articles.filter((a) => a.status !== "validation_failed");
+    const valid = articles.filter((a: Article) => a.status !== "validation_failed");
     if (!submissionsSearch.trim()) return valid;
     const q = submissionsSearch.toLowerCase().trim();
     return valid.filter(
-      (a) =>
+      (a: Article) =>
         a.title.toLowerCase().includes(q) ||
         a.submitter_username.toLowerCase().includes(q)
     );

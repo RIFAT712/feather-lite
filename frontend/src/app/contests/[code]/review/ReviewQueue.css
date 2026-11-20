@@ -782,7 +782,7 @@ button { cursor: pointer; }
   .rq-item-title { font-size: .84rem; line-height: 1.5; }
   .rq-item-meta { font-size: .66rem; line-height: 1.5; }
   .rq-list-loading { padding: 7px 9px 9px; font-size: .68rem; }
-  .rq-preview-panel { margin-bottom: 0; }
+  .rq-preview-panel { margin-bottom: 95px; }
   .rq-article-header { min-height: 42px; padding: 5px 9px; gap: 7px; }
   .rq-article-title-link { font-size: .92rem; }
   .rq-tags { gap: 4px; }

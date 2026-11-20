@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -82,6 +83,14 @@ func ClearAuthCookie(w http.ResponseWriter) {
 }
 
 func GetUserFromRequest(r *http.Request, cfg *config.Config) (*Claims, error) {
+	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+			if claims, err := ParseToken(cfg, strings.TrimSpace(parts[1])); err == nil && claims != nil {
+				return claims, nil
+			}
+		}
+	}
 	cookie, err := r.Cookie(CookieName)
 	if err != nil {
 		return nil, err

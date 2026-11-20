@@ -16,15 +16,17 @@ async function getAuthHeader(): Promise<HeadersInit> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("feather_token")?.value;
-    const cookieHeader = cookieStore.toString();
     const headers: Record<string, string> = {
       Accept: "application/json",
     };
-    if (cookieHeader) {
-      headers["Cookie"] = cookieHeader;
-    }
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
+      headers["Cookie"] = `feather_token=${token}`;
+    } else {
+      const allCookies = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join("; ");
+      if (allCookies) {
+        headers["Cookie"] = allCookies;
+      }
     }
     return headers;
   } catch {

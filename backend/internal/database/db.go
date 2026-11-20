@@ -64,8 +64,10 @@ func Connect(cfg *config.Config) (*DB, error) {
 		db.SetConnMaxLifetime(1 * time.Hour)
 
 		_, _ = db.Exec("PRAGMA journal_mode(WAL);")
-		_, _ = db.Exec("PRAGMA busy_timeout(5000);")
+		_, _ = db.Exec("PRAGMA busy_timeout(10000);")
 		_, _ = db.Exec("PRAGMA synchronous(NORMAL);")
+		_, _ = db.Exec("PRAGMA wal_autocheckpoint(500);")
+		_, _ = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);")
 	}
 
 	if err := db.Ping(); err != nil {
@@ -97,6 +99,17 @@ func Connect(cfg *config.Config) (*DB, error) {
 	_, _ = db.Exec("UPDATE talk_page_jobs SET retry_after = NULL, attempts = 0, error = '' WHERE status = 'queued' AND error LIKE '%Wikimedia OAuth session expired%';")
 	// Clear any malformed lock records with monotonic clock artifacts
 	_, _ = db.Exec("UPDATE articles SET locked_until = NULL, locked_by_id = NULL WHERE locked_until LIKE '%m=+%';")
+
+	// Background periodic WAL checkpoint to keep NFS storage clean and prevent malformed disk image errors
+	if cfg.DBType != "mysql" {
+		go func() {
+			ticker := time.NewTicker(2 * time.Minute)
+			defer ticker.Stop()
+			for range ticker.C {
+				_, _ = db.Exec("PRAGMA wal_checkpoint(PASSIVE);")
+			}
+		}()
+	}
 
 	return &DB{DB: db, DBType: cfg.DBType}, nil
 }

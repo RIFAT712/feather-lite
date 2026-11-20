@@ -279,7 +279,12 @@ function normalizeArticle(a: any) {
     locked_by: a.locked_by ?? a.locked_by_username ?? null,
     locked_by_username: a.locked_by_username ?? a.locked_by ?? null,
     assigned_to: a.assigned_to ?? a.assigned_to_username ?? "",
-    reviews: a.reviews || [],
+    reviews: (a.reviews || []).map((r: any) => ({
+      ...r,
+      reviewer: r.reviewer ?? r.reviewer_username ?? "",
+      reviewer_username: r.reviewer_username ?? r.reviewer ?? "",
+      decision: r.decision ?? r.status ?? "",
+    })),
   };
 }
 
@@ -351,6 +356,7 @@ export default function ReviewQueueClient({
 
   const [contest, setContest] = useState<Contest | null>(initialContest || null);
   const [user, setUser] = useState<UserSession | null>(initialUser || null);
+  const [userLoaded, setUserLoaded] = useState<boolean>(() => Boolean(initialUser));
 
   const [articles, setArticles] = useState<any[]>(() => {
     if (initialArticles?.items && initialArticles.items.length > 0) {
@@ -707,7 +713,10 @@ ${body}
       } catch (err) {
         console.error("Failed to load review data", err);
       } finally {
-        if (active) setIsLoading(false);
+        if (active) {
+          setUserLoaded(true);
+          setIsLoading(false);
+        }
       }
     }
     loadData();
@@ -718,17 +727,16 @@ ${body}
 
   // Available new articles
   const newArticles = useMemo(() => {
-    if (!myUsername) return [];
     return articles.filter(
       (a) =>
         a.status === "pending" &&
-        !(isJury && !isOwner && a.submitted_by === myUsername) &&
-        !a.reviews.some((r: any) => r.reviewer === myUsername)
+        !(isJury && !isOwner && myUsername && a.submitted_by === myUsername) &&
+        (!myUsername || !a.reviews.some((r: any) => r.reviewer === myUsername))
     );
   }, [articles, isJury, isOwner, myUsername]);
 
   const availableNewArticles = useMemo(() => {
-    return newArticles.filter((a) => !a.locked_by || a.locked_by === myUsername);
+    return newArticles.filter((a) => !a.locked_by || (myUsername && a.locked_by === myUsername));
   }, [newArticles, myUsername]);
 
   const judgedArticles = useMemo(() => {
@@ -1338,7 +1346,7 @@ ${body}
 
   return (
     <div className={`rq-app ${isDark ? "rq-theme-dark" : "rq-theme-light"}`}>
-      {!isLoading && !isAuthorized ? (
+      {!isLoading && userLoaded && !isAuthorized ? (
         <div className="rq-center-state rq-center-full">
           <div className="relative flex flex-col items-center justify-center p-8 sm:p-10 max-w-md w-full mx-4 rounded-2xl bg-card border border-destructive/30 shadow-2xl text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="h-14 w-14 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive">

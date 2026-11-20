@@ -1,6 +1,6 @@
 import React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Feather, Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function ReviewLoading() {
   return (
@@ -46,37 +46,11 @@ export default function ReviewLoading() {
         {/* Center Splitter Placeholder */}
         <div className="w-1.5 bg-transparent" />
 
-        {/* Right Preview Pane Skeleton / Center Loading State */}
-        <div className="flex-1 border border-border/80 rounded-lg bg-card/40 flex flex-col items-center justify-center relative p-8">
-          <div className="relative flex flex-col items-center justify-center p-8 max-w-sm w-full rounded-2xl bg-card/90 border border-border shadow-2xl backdrop-blur-xl text-center space-y-5">
-            {/* Glowing Brand Icon */}
-            <div className="relative flex items-center justify-center">
-              <div className="absolute -inset-2 rounded-full bg-primary/20 blur-md animate-pulse" />
-              <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-tr from-primary/10 via-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center text-primary shadow-inner">
-                <Feather className="h-8 w-8 text-primary animate-pulse" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-card border-2 border-background flex items-center justify-center shadow-xs">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-              </div>
-            </div>
-
-            {/* Typography */}
-            <div className="space-y-1.5">
-              <h3 className="text-base font-semibold text-foreground tracking-tight flex items-center justify-center gap-1.5">
-                <span>Opening Review Console</span>
-                <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed max-w-[280px]">
-                Connecting to Wikipedia Action API and preparing queue workspace...
-              </p>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="w-full max-w-[200px]">
-              <div className="h-1.5 w-full bg-muted/60 rounded-full overflow-hidden relative">
-                <div className="h-full bg-primary rounded-full w-2/5 animate-[pulse_1.5s_ease-in-out_infinite]" />
-              </div>
-            </div>
+        {/* Right Preview Pane Skeleton */}
+        <div className="flex-1 border border-border/80 rounded-lg bg-card/40 flex flex-col items-center justify-center p-8">
+          <div className="flex items-center gap-2.5 text-xs text-muted-foreground font-mono">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <span>Loading review queue...</span>
           </div>
         </div>
       </div>

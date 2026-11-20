@@ -2586,22 +2586,19 @@ type JuryStatsResponse struct {
 func (h *Handler) GetJuryStats(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 	var contestID int64
-	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	var isUmbrella int
+	err := h.db.QueryRow("SELECT id, COALESCE(is_umbrella, 0) FROM contests WHERE code = ?", code).Scan(&contestID, &isUmbrella)
 	if err != nil {
 		jsonError(w, http.StatusNotFound, "Contest not found")
 		return
 	}
 
-	// Enforce authentication & jury/organizer authorization
-	currentUser := auth.GetUser(r.Context())
-	if currentUser == nil {
-		jsonError(w, http.StatusUnauthorized, "Authentication required to view jury statistics")
+	if isUmbrella == 1 {
+		jsonError(w, http.StatusBadRequest, "Multi-communal umbrella campaigns do not have centralized jury statistics. Please view individual community editions.")
 		return
 	}
-	if !h.isUserJuryOrOrganizer(contestID, currentUser.UserID, currentUser.Role) {
-		jsonError(w, http.StatusForbidden, "You do not have jury permissions for this contest")
-		return
-	}
+
+	// Publicly accessible for contest transparency (matches Wikimedia Fountain & Feather design)
 
 	var resp JuryStatsResponse
 	_ = h.db.QueryRow(`
@@ -2683,9 +2680,15 @@ func (h *Handler) GetJuryStats(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) RedistributeQueues(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 	var contestID int64
-	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	var isUmbrella int
+	err := h.db.QueryRow("SELECT id, COALESCE(is_umbrella, 0) FROM contests WHERE code = ?", code).Scan(&contestID, &isUmbrella)
 	if err != nil {
 		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	}
+
+	if isUmbrella == 1 {
+		jsonError(w, http.StatusBadRequest, "Multi-communal umbrella campaigns do not support queue redistribution.")
 		return
 	}
 

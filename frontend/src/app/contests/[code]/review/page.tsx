@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { redirect, notFound } from "next/navigation";
 import { getServerContest, getServerMe, getServerContestArticles } from "@/lib/server-api";
 import ReviewQueueClient from "./ReviewQueueClient";
 
@@ -29,8 +30,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ReviewPage({ params }: PageProps) {
   const { code } = await params;
-  const [contest, user, articles] = await Promise.all([
-    getServerContest(code),
+  const contest = await getServerContest(code);
+
+  if (!contest) {
+    notFound();
+  }
+
+  // Multi-communal umbrella campaigns do not have a centralized review queue.
+  if (contest.is_umbrella) {
+    redirect(`/contests/${code}`);
+  }
+
+  const [user, articles] = await Promise.all([
     getServerMe(),
     getServerContestArticles(code, 500),
   ]);

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getServerContest, getServerMe, getServerJuryStats } from "@/lib/server-api";
 import JuryHubClient from "./JuryHubClient";
 
@@ -30,12 +30,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function JuryStatsPage({ params }: PageProps) {
   const { code } = await params;
+  const contest = await getServerContest(code);
 
-  // Concurrently fetch contest metadata and user session on the server
-  const [contest, user] = await Promise.all([
-    getServerContest(code),
-    getServerMe(),
-  ]);
+  if (!contest) {
+    notFound();
+  }
+
+  // Multi-communal umbrella campaigns do not have a centralized jury hub.
+  if (contest.is_umbrella) {
+    redirect(`/contests/${code}`);
+  }
+
+  const user = await getServerMe();
 
   // Check if authorized to prefetch stats on the server
   const isJuryOrOwner = Boolean(

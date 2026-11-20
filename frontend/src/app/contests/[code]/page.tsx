@@ -4,6 +4,7 @@ import {
   getServerMe,
   getServerStandings,
   getServerContestArticles,
+  getServerJuryStats,
 } from "@/lib/server-api";
 import ContestDashboardClient from "./ContestDashboardClient";
 
@@ -34,11 +35,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ContestDashboardPage({ params }: PageProps) {
   const { code } = await params;
-  const [contest, me, standings, articles] = await Promise.all([
+  const [contest, me, standings, articles, juryStats] = await Promise.all([
     getServerContest(code),
     getServerMe(),
     getServerStandings(code),
     getServerContestArticles(code, 50),
+    getServerJuryStats(code),
   ]);
 
   return (
@@ -48,6 +50,7 @@ export default async function ContestDashboardPage({ params }: PageProps) {
       initialMe={me}
       initialStandings={standings}
       initialArticles={articles}
+      initialJuryStats={juryStats}
     />
   );
 }

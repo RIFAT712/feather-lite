@@ -7,9 +7,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   fetchContest, fetchStandings, fetchArticles, createSubContest,
   fetchAvailableContests, attachContestToCampaign, detachContestFromCampaign,
-  updateContest, fetchMe, approveContest, deleteContest,
+  updateContest, fetchMe, approveContest, deleteContest, fetchJuryStats,
   Contest, StandingEntry, Article, SubContestSummary, AvailableContestSummary,
-  UpdateContestPayload, UserSession, KeysetResponse
+  UpdateContestPayload, UserSession, KeysetResponse, JuryStatsResponse, JuryMemberProgress
 } from "@/lib/api";
 import TimezoneSelector from "@/components/contests/TimezoneSelector";
 import { useI18n } from "@/i18n/I18nContext";
@@ -39,7 +39,8 @@ import {
   Users, ShieldCheck, Share2, Copy, Check, Search, 
   FileCode, CheckCheck, XCircle, AlertCircle, Layers, Plus, Globe,
   Link2, Unlink, Settings, Save, Sliders, Sparkles, UserCheck, CheckCircle, Shield, X,
-  BarChart3, Trash2, AlertTriangle, ShieldAlert
+  BarChart3, Trash2, AlertTriangle, ShieldAlert, Download, List, ChevronDown, ChevronRight,
+  FileSpreadsheet
 } from "lucide-react";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
 import { UserTagInput } from "@/components/contests/UserTagInput";
@@ -55,6 +56,7 @@ interface ContestDashboardClientProps {
   initialMe?: UserSession | null;
   initialStandings?: StandingEntry[];
   initialArticles?: KeysetResponse | null;
+  initialJuryStats?: JuryStatsResponse | null;
 }
 
 export default function ContestDashboardClient({
@@ -63,6 +65,7 @@ export default function ContestDashboardClient({
   initialMe,
   initialStandings,
   initialArticles,
+  initialJuryStats,
 }: ContestDashboardClientProps) {
   const { t, n, formatDate, locale, isRtl } = useI18n();
   const router = useRouter();
@@ -76,6 +79,25 @@ export default function ContestDashboardClient({
   const [communityFilter, setCommunityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isCopied, setIsCopied] = useState(false);
+
+  // Live ticking countdown timer state (1-second tick)
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Standings Export Dialog states (Summary vs Detailed, Copy, CSV, JSON)
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportMode, setExportMode] = useState<"summary" | "detailed">("summary");
+  const [copiedExport, setCopiedExport] = useState(false);
+
+  // Submissions View Mode state (Flat list vs Grouped by submitter)
+  const [submissionsViewMode, setSubmissionsViewMode] = useState<"list" | "grouped">("list");
+  const [expandedSubmitters, setExpandedSubmitters] = useState<Record<string, boolean>>({});
 
   // Add community modal state (for campaigns)
   const [isAddCommunityOpen, setIsAddCommunityOpen] = useState(false);
@@ -164,6 +186,15 @@ export default function ContestDashboardClient({
   });
 
   const articles = articlesData?.items || [];
+
+  const { data: juryStats } = useQuery<JuryStatsResponse | null>({
+    queryKey: ["jury-stats", code],
+    queryFn: () => fetchJuryStats(code),
+    initialData: initialJuryStats ?? undefined,
+    initialDataUpdatedAt: initialJuryStats ? Date.now() : undefined,
+    staleTime: 60 * 1000,
+    refetchOnMount: false,
+  });
 
   // Available standalone contests for linking
   const { data: availableContests, isLoading: isLoadingAvailable } = useQuery<AvailableContestSummary[]>({
@@ -268,30 +299,57 @@ export default function ContestDashboardClient({
     );
   }, [articles, submissionsSearch]);
 
-  // Timeline Progress Calculation
-  const timelineInfo = useMemo(() => {
-    if (!contest) return { percent: 0, text: "", isEnded: false };
-    const now = Date.now();
+  // Live Timeline Countdown & Progress Calculation (Ticking seconds)
+  const countdownInfo = useMemo(() => {
+    if (!contest) return { percent: 0, text: "", isEnded: false, isUpcoming: false, days: 0, hours: 0, minutes: 0, seconds: 0 };
     const start = new Date(contest.start_date).getTime();
     const end = new Date(contest.end_date).getTime();
     const total = end - start;
 
-    if (total <= 0) return { percent: 100, text: t("feather-contest-ended"), isEnded: true };
-    if (now >= end) return { percent: 100, text: t("feather-contest-ended"), isEnded: true };
-    if (now < start) {
-      const daysUntil = Math.ceil((start - now) / (1000 * 60 * 60 * 24));
-      return { percent: 0, text: `Starts in ${daysUntil} days`, isEnded: false };
+    if (total <= 0 || nowMs >= end) {
+      return { percent: 100, text: t("feather-contest-ended"), isEnded: true, isUpcoming: false, days: 0, hours: 0, minutes: 0, seconds: 0 };
+    }
+    if (nowMs < start) {
+      const diffMs = start - nowMs;
+      const d = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+      const m = Math.floor((diffMs / (1000 * 60)) % 60);
+      const s = Math.floor((diffMs / 1000) % 60);
+      return {
+        percent: 0,
+        text: d > 0 ? `Starts in ${n(d)}d ${n(h)}h` : `Starts in ${n(h)}h ${n(m)}m ${n(s)}s`,
+        isEnded: false,
+        isUpcoming: true,
+        days: d,
+        hours: h,
+        minutes: m,
+        seconds: s,
+      };
     }
 
-    const elapsed = Math.min(Math.max(now - start, 0), total);
-    const percent = Math.round((elapsed / total) * 100);
-    const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+    const elapsed = Math.min(Math.max(nowMs - start, 0), total);
+    const percent = total > 0 ? Math.round((elapsed / total) * 100) : 100;
+    const diffMs = end - nowMs;
+    const d = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const h = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+    const m = Math.floor((diffMs / (1000 * 60)) % 60);
+    const s = Math.floor((diffMs / 1000) % 60);
+
+    const formattedTime = locale === "bn"
+      ? `${n(d)}দিন ${n(h)}ঘণ্টা ${n(m)}মিনিট ${n(s)}সেকেন্ড বাকি`
+      : `${d}d ${h}h ${m}m ${s}s left`;
+
     return {
       percent,
-      text: daysLeft === 0 ? t("feather-contest-today-end") : t("feather-contest-days-left-count", daysLeft),
+      text: formattedTime,
       isEnded: false,
+      isUpcoming: false,
+      days: d,
+      hours: h,
+      minutes: m,
+      seconds: s,
     };
-  }, [contest, t]);
+  }, [contest, nowMs, t, n, locale]);
 
   const isJuryOrOrganizer = useMemo(() => {
     if (!me?.is_authenticated) return false;
@@ -434,11 +492,139 @@ export default function ContestDashboardClient({
     }
   };
 
-  // Generate Wikitext Table for Standings
+  // Judging throughput calculations
+  const judgingProgress = useMemo(() => {
+    const accepted = juryStats?.accepted_articles ?? contest?.accepted_articles ?? 0;
+    const rejected = juryStats?.rejected_articles ?? 0;
+    const pending = juryStats?.pending_articles ?? contest?.pending_articles ?? 0;
+    const reviewed = accepted + rejected;
+    const totalJudgeable = reviewed + pending;
+    const percent = totalJudgeable > 0 ? Math.round((reviewed / totalJudgeable) * 100) : 0;
+    const acceptedPct = totalJudgeable > 0 ? (accepted / totalJudgeable) * 100 : 0;
+    const rejectedPct = totalJudgeable > 0 ? (rejected / totalJudgeable) * 100 : 0;
+    const pendingPct = totalJudgeable > 0 ? (pending / totalJudgeable) * 100 : 0;
+
+    return {
+      accepted,
+      rejected,
+      pending,
+      reviewed,
+      totalJudgeable,
+      percent,
+      acceptedPct,
+      rejectedPct,
+      pendingPct,
+    };
+  }, [juryStats, contest]);
+
+  // Combined Jury Roster & Activity Statistics
+  const juryTallyRows = useMemo(() => {
+    const tallyMap = new Map<string, JuryMemberProgress>();
+    (juryStats?.juries || []).forEach((j) => {
+      tallyMap.set(j.username, j);
+    });
+
+    const contestJuries = contest?.juries || [];
+    const combined = [...contestJuries];
+    (juryStats?.juries || []).forEach((j) => {
+      if (!combined.includes(j.username)) {
+        combined.push(j.username);
+      }
+    });
+
+    return combined
+      .map((username) => {
+        const stats = tallyMap.get(username);
+        return {
+          username,
+          assigned: stats?.assigned ?? 0,
+          judged: stats?.judged ?? 0,
+          remaining: stats?.remaining ?? 0,
+          accepted: stats?.accepted ?? 0,
+          rejected: stats?.rejected ?? 0,
+          skipped: stats?.skipped ?? 0,
+          acceptance_rate: stats?.acceptance_rate ?? 0,
+          progress_percent: stats?.progress_percent ?? 0,
+        };
+      })
+      .sort((a, b) => b.judged - a.judged);
+  }, [juryStats, contest?.juries]);
+
+  // Grouped Submissions by Submitter
+  const groupedArticlesBySubmitter = useMemo(() => {
+    if (!filteredArticles || filteredArticles.length === 0) return [];
+    const map: Record<string, Article[]> = {};
+    filteredArticles.forEach((art) => {
+      if (!map[art.submitter_username]) map[art.submitter_username] = [];
+      map[art.submitter_username].push(art);
+    });
+
+    return Object.entries(map)
+      .map(([username, items]) => {
+        const accepted = items.filter((a) => a.status === "accepted").length;
+        const pending = items.filter((a) => a.status === "pending").length;
+        const rejected = items.filter((a) => a.status === "rejected").length;
+        const totalWords = items.reduce((sum, a) => sum + (a.word_count || 0), 0);
+        const totalBytes = items.reduce((sum, a) => sum + (a.byte_count || 0), 0);
+        return {
+          username,
+          items,
+          accepted,
+          pending,
+          rejected,
+          total: items.length,
+          totalWords,
+          totalBytes,
+        };
+      })
+      .sort((a, b) => b.accepted - a.accepted || b.total - a.total);
+  }, [filteredArticles]);
+
+  const toggleSubmitter = (username: string) => {
+    setExpandedSubmitters((prev) => ({
+      ...prev,
+      [username]: !prev[username],
+    }));
+  };
+
+  const expandAllSubmitters = () => {
+    const all: Record<string, boolean> = {};
+    groupedArticlesBySubmitter.forEach((g) => {
+      all[g.username] = true;
+    });
+    setExpandedSubmitters(all);
+  };
+
+  const collapseAllSubmitters = () => {
+    setExpandedSubmitters({});
+  };
+
+  // Accepted articles lookup by submitter for detailed export
+  const acceptedArticlesByUser = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    if (articles) {
+      articles.forEach((a) => {
+        if (a.status === "accepted") {
+          if (!map[a.submitter_username]) map[a.submitter_username] = [];
+          map[a.submitter_username].push(a.title);
+        }
+      });
+    }
+    return map;
+  }, [articles]);
+
+  // Generate Wikitext Table for Standings (Summary vs Detailed)
   const wikitextTable = useMemo(() => {
     if (!standings || standings.length === 0) return "";
-    const headers = locale === "bn"
-      ? ["স্থান", "ব্যবহারকারী", "গৃহীত নিবন্ধ", "মোট শব্দ", "মোট বাইট", "মোট জমাকৃত"]
+    const isBn = locale === "bn";
+    const isDetailed = exportMode === "detailed";
+
+    const headers = isBn
+      ? isDetailed
+        ? ["স্থান", "ব্যবহারকারী", "গৃহীত নিবন্ধ", "গৃহীত নিবন্ধের তালিকা", "মোট শব্দ", "মোট বাইট", "মোট জমাকৃত"]
+        : ["স্থান", "ব্যবহারকারী", "গৃহীত নিবন্ধ", "মোট শব্দ", "মোট বাইট", "মোট জমাকৃত"]
+      : isDetailed
+      ? ["Rank", "User", "Accepted", "Accepted Articles", "Total Words", "Total Bytes", "Submitted"]
       : ["Rank", "User", "Accepted", "Total Words", "Total Bytes", "Submitted"];
 
     const lines: string[] = [
@@ -448,19 +634,164 @@ export default function ContestDashboardClient({
 
     standings.forEach((s) => {
       lines.push("|-");
-      lines.push(
-        `| ${s.rank} || [[User:${s.username}|${s.username}]] || ${s.accepted_count} || ${s.total_words.toLocaleString()} || ${s.total_bytes.toLocaleString()} || ${s.submitted_count}`
-      );
+      if (isDetailed) {
+        const userArticles = acceptedArticlesByUser[s.username] || [];
+        const formattedArticles = userArticles.length > 0
+          ? userArticles.map((t) => `[[${t}]]`).join(", ")
+          : "—";
+        lines.push(
+          `| ${s.rank} || [[User:${s.username}|${s.username}]] || ${s.accepted_count} || style="text-align:left" | ${formattedArticles} || ${s.total_words.toLocaleString()} || ${s.total_bytes.toLocaleString()} || ${s.submitted_count}`
+        );
+      } else {
+        lines.push(
+          `| ${s.rank} || [[User:${s.username}|${s.username}]] || ${s.accepted_count} || ${s.total_words.toLocaleString()} || ${s.total_bytes.toLocaleString()} || ${s.submitted_count}`
+        );
+      }
     });
 
     lines.push("|}");
     return lines.join("\n");
-  }, [standings, locale]);
+  }, [standings, acceptedArticlesByUser, exportMode, locale]);
+
+  const handleCopyWikitext = async () => {
+    if (!wikitextTable) return;
+    try {
+      await navigator.clipboard.writeText(wikitextTable);
+      setCopiedExport(true);
+      toast.success(t("feather-contest-wikitext-copied"));
+      setTimeout(() => setCopiedExport(false), 2000);
+    } catch {
+      toast.error("Failed to copy wikitext");
+    }
+  };
+
+  const handleDownloadWikitext = () => {
+    if (!wikitextTable) return;
+    const blob = new Blob([wikitextTable], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `feather_${code}_standings_${exportMode}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded wikitext file");
+  };
+
+  const handleDownloadCSV = () => {
+    if (!standings || standings.length === 0) return;
+    const isDetailed = exportMode === "detailed";
+    const headers = isDetailed
+      ? ["Rank", "User", "Accepted", "Accepted Articles", "Total Words", "Total Bytes", "Submitted"]
+      : ["Rank", "User", "Accepted", "Total Words", "Total Bytes", "Submitted"];
+
+    const rows = standings.map((s) => {
+      if (isDetailed) {
+        const userArticles = (acceptedArticlesByUser[s.username] || []).join("; ");
+        return [
+          s.rank,
+          `"${s.username.replace(/"/g, '""')}"`,
+          s.accepted_count,
+          `"${userArticles.replace(/"/g, '""')}"`,
+          s.total_words,
+          s.total_bytes,
+          s.submitted_count,
+        ];
+      }
+      return [
+        s.rank,
+        `"${s.username.replace(/"/g, '""')}"`,
+        s.accepted_count,
+        s.total_words,
+        s.total_bytes,
+        s.submitted_count,
+      ];
+    });
+
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `feather_${code}_standings_${exportMode}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded standings.csv");
+  };
+
+  const handleDownloadJSON = () => {
+    if (!standings) return;
+    const isDetailed = exportMode === "detailed";
+    const data = standings.map((s) => ({
+      ...s,
+      accepted_articles: isDetailed ? acceptedArticlesByUser[s.username] || [] : undefined,
+    }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `feather_${code}_standings_${exportMode}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded standings.json");
+  };
+
+  const handleExportJuryWikitable = async () => {
+    if (!juryTallyRows.length) return;
+    const lines = [
+      '{| class="wikitable sortable" style="text-align:center"',
+      `! ${[
+        t("feather-jury-col-member"),
+        t("feather-jury-col-judged"),
+        t("feather-jury-col-accepted"),
+        t("feather-jury-col-rejected"),
+        t("feather-jury-col-acceptance-rate"),
+      ].join(" !! ")}`,
+    ];
+    juryTallyRows.forEach((j) => {
+      lines.push("|-");
+      lines.push(
+        `| [[User:${j.username}|${j.username}]] || ${j.judged} || ${j.accepted} || ${j.rejected} || ${j.acceptance_rate}%`
+      );
+    });
+    lines.push("|}");
+    const content = lines.join("\n");
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success(t("feather-jury-wikitable-copied"));
+    } catch {
+      toast.error("Failed to copy table");
+    }
+  };
+
+  const handleExportJuryCSV = () => {
+    if (!juryTallyRows.length) return;
+    const headers = [
+      t("feather-jury-col-member"),
+      t("feather-jury-col-judged"),
+      t("feather-jury-col-accepted"),
+      t("feather-jury-col-rejected"),
+      t("feather-jury-col-acceptance-rate"),
+    ];
+    const rows = juryTallyRows.map((j) => [
+      `"${j.username.replace(/"/g, '""')}"`,
+      j.judged,
+      j.accepted,
+      j.rejected,
+      `${j.acceptance_rate}%`,
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `feather_${code}_jury_stats.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded jury_stats.csv");
+  };
 
   const copyWikitext = () => {
-    if (!wikitextTable) return;
-    navigator.clipboard.writeText(wikitextTable);
-    toast.success(t("feather-contest-wikitext-copied"));
+    handleCopyWikitext();
   };
 
   const copyContestLink = () => {
@@ -872,7 +1203,7 @@ export default function ContestDashboardClient({
                 </Button>
               )}
 
-              {isJuryOrOrganizer && (
+              {!contest.is_umbrella && isJuryOrOrganizer && (
                 <Link
                   href={`/contests/${code}/review`}
                   className={buttonVariants({
@@ -886,7 +1217,7 @@ export default function ContestDashboardClient({
                 </Link>
               )}
 
-              {isJuryOrOrganizer && (
+              {!contest.is_umbrella && isJuryOrOrganizer && (
                 <Link
                   href={`/contests/${code}/jury`}
                   className={buttonVariants({
@@ -938,9 +1269,19 @@ export default function ContestDashboardClient({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{timelineInfo.text}</span>
+                <span className="relative flex h-2 w-2 shrink-0">
+                  {!countdownInfo.isEnded && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  )}
+                  <span
+                    className={`relative inline-flex rounded-full h-2 w-2 ${
+                      countdownInfo.isEnded ? "bg-muted-foreground" : "bg-emerald-500"
+                    }`}
+                  />
+                </span>
+                <span className="font-semibold text-foreground font-mono text-xs">{countdownInfo.text}</span>
                 <span className="text-muted-foreground/60">·</span>
-                <span>{t("feather-contest-timeline-progress", timelineInfo.percent)}</span>
+                <span>{t("feather-contest-timeline-progress", countdownInfo.percent)}</span>
               </div>
             </div>
 
@@ -948,9 +1289,9 @@ export default function ContestDashboardClient({
             <div className="w-full bg-muted/60 rounded-full h-1.5 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  timelineInfo.isEnded ? "bg-muted-foreground" : "bg-primary"
+                  countdownInfo.isEnded ? "bg-muted-foreground" : "bg-primary"
                 }`}
-                style={{ width: `${timelineInfo.percent}%` }}
+                style={{ width: `${countdownInfo.percent}%` }}
               />
             </div>
           </div>
@@ -1048,6 +1389,85 @@ export default function ContestDashboardClient({
         </Card>
       </div>
 
+      {/* Judging Progress & Throughput Breakdown Card */}
+      {!contest.is_umbrella && judgingProgress.totalJudgeable > 0 && (
+        <Card className="border-border shadow-2xs mb-6 sm:mb-8 overflow-hidden bg-card/60">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                  <CheckCheck className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-foreground">
+                    {t("feather-contest-progress-title")}
+                  </h4>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground">
+                    {t(
+                      "feather-contest-progress-desc",
+                      n(judgingProgress.reviewed),
+                      n(judgingProgress.totalJudgeable),
+                      n(judgingProgress.percent)
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Percentage Badge */}
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge
+                  variant="outline"
+                  className="font-mono text-xs font-semibold px-2.5 py-0.5 border-primary/30 text-primary bg-primary/5"
+                >
+                  {n(judgingProgress.percent)}% {t("feather-contest-progress-reviewed")}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Segmented Multi-Color Progress Bar */}
+            <div className="w-full bg-muted/60 rounded-full h-2.5 overflow-hidden flex shadow-inner">
+              <div
+                className="bg-emerald-500 h-full transition-all duration-500"
+                style={{ width: `${judgingProgress.acceptedPct}%` }}
+                title={`Accepted: ${judgingProgress.accepted} (${Math.round(judgingProgress.acceptedPct)}%)`}
+              />
+              <div
+                className="bg-rose-500 h-full transition-all duration-500"
+                style={{ width: `${judgingProgress.rejectedPct}%` }}
+                title={`Rejected: ${judgingProgress.rejected} (${Math.round(judgingProgress.rejectedPct)}%)`}
+              />
+              <div
+                className="bg-amber-400/40 dark:bg-amber-500/30 h-full transition-all duration-500"
+                style={{ width: `${judgingProgress.pendingPct}%` }}
+                title={`Pending: ${judgingProgress.pending} (${Math.round(judgingProgress.pendingPct)}%)`}
+              />
+            </div>
+
+            {/* Micro Breakdown Legend Pills */}
+            <div className="flex items-center gap-3 sm:gap-4 mt-3 text-xs flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-muted-foreground">{t("feather-contest-filter-accepted")}:</span>
+                <span className="font-semibold text-foreground font-mono">{n(judgingProgress.accepted)}</span>
+                <span className="text-[10px] text-muted-foreground font-mono">({Math.round(judgingProgress.acceptedPct)}%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
+                <span className="text-muted-foreground">{t("feather-contest-filter-rejected")}:</span>
+                <span className="font-semibold text-foreground font-mono">{n(judgingProgress.rejected)}</span>
+                <span className="text-[10px] text-muted-foreground font-mono">({Math.round(judgingProgress.rejectedPct)}%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-amber-400 dark:bg-amber-500 shrink-0" />
+                <span className="text-muted-foreground">{t("feather-contest-filter-pending")}:</span>
+                <span className="font-semibold text-foreground font-mono">{n(judgingProgress.pending)}</span>
+                <span className="text-[10px] text-muted-foreground font-mono">({Math.round(judgingProgress.pendingPct)}%)</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* 3. Multi-Tab Workspace */}
       <Tabs value={activeTab || (contest.is_umbrella ? "communities" : "standings")} onValueChange={setActiveTab} className="w-full space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 pb-2">
@@ -1101,55 +1521,127 @@ export default function ContestDashboardClient({
             </TabsList>
           </div>
 
-          {/* Standings Wikitext Export Modal */}
+          {/* Standings Export Modal Suite (Wikitext, CSV, JSON, Summary/Detailed) */}
           <div className="flex items-center justify-end sm:justify-start shrink-0">
-            <Dialog>
+            <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
               <DialogTrigger
                 className={buttonVariants({
                   variant: "outline",
                   size: "sm",
-                  className: "gap-1.5 text-xs font-medium cursor-pointer h-8",
+                  className: "gap-1.5 text-xs font-medium cursor-pointer h-8 shadow-2xs",
                 })}
               >
-                <FileCode className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span>{t("feather-contest-export-wikitext")}</span>
+                <Download className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>{t("feather-contest-export-results")}</span>
               </DialogTrigger>
-            <DialogContent className="sm:max-w-xl">
-              <DialogHeader>
-                <DialogTitle>{t("feather-contest-export-wikitext-title")}</DialogTitle>
-                <DialogDescription className="text-xs">
-                  {t("feather-contest-export-wikitext-desc")}
-                </DialogDescription>
-              </DialogHeader>
+              <DialogContent className="sm:max-w-xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Download className="h-4 w-4 text-primary" />
+                    <span>{t("feather-contest-export-results")}</span>
+                  </DialogTitle>
+                  <DialogDescription className="text-xs">
+                    {t("feather-contest-export-wikitext-desc")}
+                  </DialogDescription>
+                </DialogHeader>
 
-              <div className="mt-2">
-                <textarea
-                  readOnly
-                  value={wikitextTable}
-                  rows={10}
-                  className="w-full rounded-md border border-border bg-muted/40 p-3 font-mono text-xs text-foreground focus-visible:outline-hidden"
-                />
-              </div>
+                {/* Mode Selector (Summary vs Detailed) */}
+                <div className="flex items-center justify-between gap-2 border-b border-border/70 pb-2.5 pt-1">
+                  <span className="text-xs font-medium text-foreground">
+                    {t("feather-contest-export-mode")}:
+                  </span>
+                  <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setExportMode("summary")}
+                      className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors cursor-pointer ${
+                        exportMode === "summary"
+                          ? "bg-background text-foreground shadow-2xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t("feather-contest-export-summary")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExportMode("detailed")}
+                      className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors cursor-pointer ${
+                        exportMode === "detailed"
+                          ? "bg-background text-foreground shadow-2xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t("feather-contest-export-detailed")}
+                    </button>
+                  </div>
+                </div>
 
-              <DialogFooter className="gap-2 sm:gap-0">
-                <Button
-                  onClick={copyWikitext}
-                  size="sm"
-                  className="gap-1.5 text-xs font-medium cursor-pointer"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  {t("feather-contest-copy-wikitext")}
-                </Button>
-                <DialogClose
-                  render={
-                    <Button variant="outline" size="sm" className="text-xs cursor-pointer">
-                      Close
-                    </Button>
-                  }
-                />
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                {/* Live Wikitext Preview */}
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>MediaWiki Wikitable Preview:</span>
+                    <span className="font-mono text-[10px] uppercase">
+                      {exportMode === "detailed" ? "Detailed Mode" : "Summary Mode"}
+                    </span>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={wikitextTable}
+                    rows={8}
+                    className="w-full rounded-md border border-border bg-muted/40 p-3 font-mono text-xs text-foreground focus-visible:outline-hidden"
+                  />
+                </div>
+
+                {/* Direct File Download Buttons */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 border-t border-border/60">
+                  <Button
+                    onClick={handleDownloadWikitext}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs font-medium cursor-pointer"
+                  >
+                    <FileCode className="h-3.5 w-3.5 text-primary" />
+                    <span>{t("feather-contest-export-download-txt")}</span>
+                  </Button>
+                  <Button
+                    onClick={handleDownloadCSV}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs font-medium cursor-pointer"
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>{t("feather-contest-export-download-csv")}</span>
+                  </Button>
+                  <Button
+                    onClick={handleDownloadJSON}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs font-medium cursor-pointer col-span-2 sm:col-span-1"
+                  >
+                    <FileText className="h-3.5 w-3.5 text-amber-500" />
+                    <span>{t("feather-contest-export-download-json")}</span>
+                  </Button>
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-border/60">
+                  <Button
+                    onClick={handleCopyWikitext}
+                    size="sm"
+                    className="gap-1.5 text-xs font-medium cursor-pointer"
+                  >
+                    {copiedExport ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{t("feather-contest-copy-wikitext")}</span>
+                  </Button>
+                  <DialogClose
+                    render={
+                      <Button variant="outline" size="sm" className="text-xs cursor-pointer">
+                        Close
+                      </Button>
+                    }
+                  />
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -1696,19 +2188,22 @@ export default function ContestDashboardClient({
                           <TableRow key={s.username} className="transition-colors hover:bg-muted/40">
                             <TableCell className="text-center font-bold">
                               {s.rank === 1 ? (
-                                <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                                  <Medal className="h-3.5 w-3.5" />
+                                <span className="inline-flex items-center justify-center gap-1 h-6 px-2 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold text-xs border border-amber-500/30 shadow-2xs">
+                                  <Medal className="h-3.5 w-3.5 fill-amber-500/80 text-amber-600 dark:text-amber-400" />
+                                  <span>1st</span>
                                 </span>
                               ) : s.rank === 2 ? (
-                                <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-muted font-bold text-xs text-muted-foreground">
-                                  {n(2)}
+                                <span className="inline-flex items-center justify-center gap-1 h-6 px-2 rounded-md bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-300 dark:border-slate-700 shadow-2xs">
+                                  <Medal className="h-3.5 w-3.5 fill-slate-400 text-slate-500" />
+                                  <span>2nd</span>
                                 </span>
                               ) : s.rank === 3 ? (
-                                <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-amber-700/10 text-amber-700 dark:text-amber-500 font-bold text-xs">
-                                  {n(3)}
+                                <span className="inline-flex items-center justify-center gap-1 h-6 px-2 rounded-md bg-amber-700/10 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold text-xs border border-amber-700/25 shadow-2xs">
+                                  <Medal className="h-3.5 w-3.5 fill-amber-700/60 text-amber-700 dark:text-amber-400" />
+                                  <span>3rd</span>
                                 </span>
                               ) : (
-                                <span className="text-muted-foreground font-mono text-xs">{n(s.rank)}</span>
+                                <span className="text-muted-foreground font-mono text-xs">#{n(s.rank)}</span>
                               )}
                             </TableCell>
                             <TableCell className="font-medium text-foreground text-xs sm:text-sm">
@@ -1769,20 +2264,23 @@ export default function ContestDashboardClient({
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             {s.rank === 1 ? (
-                              <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
-                                <Medal className="h-3.5 w-3.5" />
+                              <span className="inline-flex items-center justify-center gap-1 h-6 px-1.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold text-xs border border-amber-500/30 shrink-0">
+                                <Medal className="h-3.5 w-3.5 fill-amber-500/80 text-amber-600 dark:text-amber-400" />
+                                <span>1st</span>
                               </span>
                             ) : s.rank === 2 ? (
-                              <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-muted font-bold text-xs text-muted-foreground shrink-0">
-                                {n(2)}
+                              <span className="inline-flex items-center justify-center gap-1 h-6 px-1.5 rounded-md bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-300 dark:border-slate-700 shrink-0">
+                                <Medal className="h-3.5 w-3.5 fill-slate-400 text-slate-500" />
+                                <span>2nd</span>
                               </span>
                             ) : s.rank === 3 ? (
-                              <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-amber-700/10 text-amber-700 dark:text-amber-500 font-bold text-xs shrink-0">
-                                {n(3)}
+                              <span className="inline-flex items-center justify-center gap-1 h-6 px-1.5 rounded-md bg-amber-700/10 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold text-xs border border-amber-700/25 shrink-0">
+                                <Medal className="h-3.5 w-3.5 fill-amber-700/60 text-amber-700 dark:text-amber-400" />
+                                <span>3rd</span>
                               </span>
                             ) : (
                               <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-muted/50 text-muted-foreground font-mono text-xs shrink-0">
-                                {n(s.rank)}
+                                #{n(s.rank)}
                               </span>
                             )}
                             <Link
@@ -1854,25 +2352,57 @@ export default function ContestDashboardClient({
                   />
                 </div>
 
-                {/* Status Filter Buttons */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {(["all", "accepted", "pending", "rejected"] as const).map((st) => (
-                    <Button
-                      key={st}
-                      variant={statusFilter === st ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStatusFilter(st)}
-                      className="text-[11px] h-7 px-2.5 capitalize cursor-pointer font-medium"
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Status Filter Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {(["all", "accepted", "pending", "rejected"] as const).map((st) => (
+                      <Button
+                        key={st}
+                        variant={statusFilter === st ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setStatusFilter(st)}
+                        className="text-[11px] h-7 px-2.5 capitalize cursor-pointer font-medium"
+                      >
+                        {st === "all"
+                          ? t("feather-contest-filter-all")
+                          : st === "accepted"
+                          ? t("feather-contest-filter-accepted")
+                          : st === "pending"
+                          ? t("feather-contest-filter-pending")
+                          : t("feather-contest-filter-rejected")}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Dual View Mode Toggle (List vs Grouped by Submitter) */}
+                  <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setSubmissionsViewMode("list")}
+                      className={`px-2.5 py-1 text-xs rounded-md font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                        submissionsViewMode === "list"
+                          ? "bg-background text-foreground shadow-2xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      title={t("feather-contest-view-list")}
                     >
-                      {st === "all"
-                        ? t("feather-contest-filter-all")
-                        : st === "accepted"
-                        ? t("feather-contest-filter-accepted")
-                        : st === "pending"
-                        ? t("feather-contest-filter-pending")
-                        : t("feather-contest-filter-rejected")}
-                    </Button>
-                  ))}
+                      <List className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{t("feather-contest-view-list")}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSubmissionsViewMode("grouped")}
+                      className={`px-2.5 py-1 text-xs rounded-md font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                        submissionsViewMode === "grouped"
+                          ? "bg-background text-foreground shadow-2xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      title={t("feather-contest-view-grouped")}
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{t("feather-contest-view-grouped")}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -1939,6 +2469,174 @@ export default function ContestDashboardClient({
                     ))}
                   </div>
                 </>
+              ) : submissionsViewMode === "grouped" ? (
+                filteredArticles && filteredArticles.length > 0 ? (
+                  <div className="p-3 sm:p-4 space-y-3">
+                    {/* Submitter Quick Controls */}
+                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground pb-2 border-b border-border/60">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        <span className="font-semibold text-foreground">
+                          {n(groupedArticlesBySubmitter.length)} {t("feather-contest-participants")}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={expandAllSubmitters}
+                          className="text-xs h-7 px-2 cursor-pointer"
+                        >
+                          {t("feather-contest-expand-all")}
+                        </Button>
+                        <span>·</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={collapseAllSubmitters}
+                          className="text-xs h-7 px-2 cursor-pointer"
+                        >
+                          {t("feather-contest-collapse-all")}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {groupedArticlesBySubmitter.map((sub) => {
+                        const isExpanded = Boolean(expandedSubmitters[sub.username]);
+                        return (
+                          <div
+                            key={sub.username}
+                            className="rounded-xl border border-border/80 bg-card overflow-hidden shadow-2xs transition-all"
+                          >
+                            {/* Submitter Accordion Header */}
+                            <button
+                              type="button"
+                              onClick={() => toggleSubmitter(sub.username)}
+                              className="w-full p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-muted/30 transition-colors cursor-pointer text-left"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="text-muted-foreground p-0.5">
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 rtl:rotate-180" />
+                                  )}
+                                </span>
+                                <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                                  {sub.username.charAt(0)}
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                  <Link
+                                    href={`/contests/${code}/users/${encodeURIComponent(sub.username)}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="font-semibold text-xs sm:text-sm text-foreground hover:text-primary hover:underline truncate"
+                                  >
+                                    {sub.username}
+                                  </Link>
+                                  <UserBadge username={sub.username} />
+                                </div>
+                              </div>
+
+                              {/* Submitter Stats Pills */}
+                              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap pl-7 sm:pl-0">
+                                <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">
+                                  {n(sub.total)} {sub.total === 1 ? "entry" : "entries"}
+                                </Badge>
+                                {sub.accepted > 0 && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    <span>{n(sub.accepted)}</span>
+                                  </span>
+                                )}
+                                {sub.pending > 0 && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{n(sub.pending)}</span>
+                                  </span>
+                                )}
+                                {sub.rejected > 0 && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                    <XCircle className="h-3 w-3" />
+                                    <span>{n(sub.rejected)}</span>
+                                  </span>
+                                )}
+                                <span className="text-[11px] font-mono text-muted-foreground hidden md:inline">
+                                  {n(sub.totalWords)} words
+                                </span>
+                              </div>
+                            </button>
+
+                            {/* Submitter Articles List when expanded */}
+                            {isExpanded && (
+                              <div className="border-t border-border/60 bg-muted/15 p-2 sm:p-3 divide-y divide-border/40">
+                                {sub.items.map((art) => (
+                                  <div
+                                    key={art.id}
+                                    className="py-2 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-muted/40 rounded-md transition-colors"
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <a
+                                        href={`${contest.wiki_url || "https://bn.wiktionary.org"}/wiki/${encodeURIComponent(
+                                          art.title
+                                        )}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-medium text-xs text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 truncate"
+                                      >
+                                        <span className="truncate">{art.title}</span>
+                                        <ExternalLink className="h-2.5 w-2.5 opacity-40 shrink-0" />
+                                      </a>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-xs shrink-0 self-end sm:self-auto">
+                                      <span className="font-mono text-muted-foreground text-[11px]">
+                                        {n(art.word_count)} words
+                                      </span>
+                                      <span className="font-mono text-muted-foreground/60 text-[11px]">
+                                        {n(art.byte_count)} bytes
+                                      </span>
+                                      <Badge
+                                        variant={
+                                          art.status === "accepted"
+                                            ? "default"
+                                            : art.status === "rejected"
+                                            ? "destructive"
+                                            : art.status === "validation_failed"
+                                            ? "outline"
+                                            : "secondary"
+                                        }
+                                        className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 ${
+                                          art.status === "accepted"
+                                            ? "bg-emerald-600 hover:bg-emerald-600/90 text-white"
+                                            : ""
+                                        }`}
+                                      >
+                                        {art.status === "accepted"
+                                          ? t("feather-contest-filter-accepted")
+                                          : art.status === "pending"
+                                          ? t("feather-contest-filter-pending")
+                                          : art.status === "rejected"
+                                          ? t("feather-contest-filter-rejected")
+                                          : t("feather-contest-filter-failed")}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-xs text-muted-foreground">
+                    {t("feather-contest-submissions-empty")}
+                  </div>
+                )
               ) : filteredArticles && filteredArticles.length > 0 ? (
                 <>
                   {/* Desktop Table View (>= sm) */}
@@ -2257,6 +2955,113 @@ export default function ContestDashboardClient({
                       <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>{t("feather-contest-action-jury-stats")}</span>
                     </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Rich Jury Activity Tally Table */}
+              {!contest.is_umbrella && juryTallyRows.length > 0 && (
+                <div className="mb-6 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-primary" />
+                        <span>{t("feather-contest-jury-tally-title")}</span>
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Transparency report of articles evaluated by each jury member
+                      </p>
+                    </div>
+
+                    {/* Export Action Buttons */}
+                    <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportJuryWikitable}
+                        className="text-xs h-7 px-2.5 gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <Copy className="h-3 w-3" />
+                        <span>{t("feather-contest-export-wikitext")}</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportJuryCSV}
+                        className="text-xs h-7 px-2.5 gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <FileSpreadsheet className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                        <span>CSV</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border/80 overflow-hidden bg-card shadow-2xs">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent bg-muted/20">
+                          <TableHead className="text-xs">{t("feather-jury-col-member")}</TableHead>
+                          <TableHead className="text-right text-xs">{t("feather-jury-col-judged")}</TableHead>
+                          <TableHead className="text-right text-xs">{t("feather-jury-col-accepted")}</TableHead>
+                          <TableHead className="text-right text-xs">{t("feather-jury-col-rejected")}</TableHead>
+                          <TableHead className="text-right text-xs">{t("feather-jury-col-acceptance-rate")}</TableHead>
+                          {contest.distribute_jury_queue && (
+                            <TableHead className="text-right text-xs">{t("feather-jury-col-assigned")}</TableHead>
+                          )}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {juryTallyRows.map((j) => (
+                          <TableRow key={j.username} className="hover:bg-muted/40 transition-colors">
+                            <TableCell className="text-xs font-medium">
+                              <div className="inline-flex items-center gap-2">
+                                <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] uppercase">
+                                  {j.username.charAt(0)}
+                                </div>
+                                <Link
+                                  href={`/contests/${code}/users/${encodeURIComponent(j.username)}`}
+                                  className="font-semibold text-foreground hover:text-primary hover:underline"
+                                >
+                                  {j.username}
+                                </Link>
+                                <UserBadge username={j.username} />
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-bold font-mono text-xs text-foreground">
+                              {n(j.judged)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                {n(j.accepted)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-semibold">
+                                {n(j.rejected)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              <div className="inline-flex items-center justify-end gap-2">
+                                <span>{n(j.acceptance_rate)}%</span>
+                                <div className="w-12 bg-muted/60 rounded-full h-1.5 overflow-hidden hidden sm:block">
+                                  <div
+                                    className="bg-emerald-500 h-full rounded-full"
+                                    style={{ width: `${Math.min(j.acceptance_rate, 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </TableCell>
+                            {contest.distribute_jury_queue && (
+                              <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                                {n(j.assigned)}
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               )}

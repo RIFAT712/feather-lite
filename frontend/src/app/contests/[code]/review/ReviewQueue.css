@@ -460,35 +460,47 @@ button { cursor: pointer; }
   position: absolute;
   left: 0; right: 0; bottom: 0;
   z-index: 6;
-  /* Opaque: the banner's own tint is translucent, which was invisible while it
-     sat on the panel background and showed the rows through it once it moved
-     on top of them. */
   background: var(--rq-surface);
-  box-shadow: 0 -6px 18px rgba(32, 54, 77, .12);
+  border-top: 1px solid var(--rq-border);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
 }
 .rq-queue-panel.has-bulk .rq-panel-scroll { padding-bottom: 82px; }
 
-/* Two bands above a list that is the point of the panel, so both are kept to
-   one line: the count sits on the button row, and the comment box says how
-   many articles it covers in its own placeholder rather than in a heading and
-   a hint above itself. */
-.rq-bulk-banner { padding: 4px 10px; background: #205184; border-bottom: 1px solid #5a8db8; display: flex; align-items: center; justify-content: space-between; }
-.rq-bulk-count { font-size: 0.75rem; font-weight: 600; color: #d5eaff; }
-.rq-bulk-actions { display: flex; gap: 4px; }
+.rq-bulk-banner {
+  padding: 6px 12px;
+  background: var(--rq-surface-alt);
+  border-bottom: 1px solid var(--rq-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rq-bulk-count { font-size: 0.75rem; font-weight: 600; color: var(--rq-text); }
+.rq-bulk-actions { display: flex; gap: 6px; }
 .rq-bulk-comment-panel {
   padding: 4px 10px 5px;
-  background: var(--rq-surface-alt);
+  background: var(--rq-surface);
   border-bottom: 1px solid var(--rq-border);
 }
 .rq-bbtn {
   width: 26px; height: 26px; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center;
-  color: #fff; transition: transform 160ms var(--ease-out), filter 160ms var(--ease-out);
+  color: #fff; transition: transform 140ms var(--ease-out), filter 140ms var(--ease-out), background-color 140ms var(--ease-out);
+  cursor: pointer;
 }
-.rq-bbtn:hover:not(:disabled) { filter: brightness(1.2); }
+.rq-bbtn:hover:not(:disabled) { filter: brightness(1.15); }
 .rq-bbtn:active:not(:disabled) { transform: scale(0.95); }
-.rq-bbtn-accept { background: var(--rq-success-dark); }
-.rq-bbtn-reject { background: var(--rq-danger-dark); }
-.rq-bbtn-remove { background: #450a0a; border: 1px solid #7f1d1d; }
+.rq-bbtn-accept { background: var(--rq-success-dark, #059669); }
+.rq-bbtn-accept:hover:not(:disabled) { background: var(--rq-success, #10b981); }
+.rq-bbtn-reject { background: var(--rq-danger-dark, #dc2626); }
+.rq-bbtn-reject:hover:not(:disabled) { background: var(--rq-danger, #ef4444); }
+.rq-bbtn-remove {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: var(--rq-danger);
+}
+.rq-bbtn-remove:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fff;
+}
 
 /* --- REVIEW AREA (PREVIEW + DECISION) --- */
 .rq-review-area {
@@ -629,6 +641,7 @@ button { cursor: pointer; }
 .rq-decision-panel {
   flex-shrink: 0;
   background: var(--rq-surface);
+  border-top: 1px solid var(--rq-border);
 }
 .rq-decision-body {
   padding: 8px 16px;
@@ -643,54 +656,166 @@ button { cursor: pointer; }
   gap: 12px;
 }
 
-
 .rq-help-guide { color: var(--rq-accent); font-size: 0.75rem; text-decoration: underline; white-space: nowrap; }
 
-.rq-error-msg { color: var(--rq-danger); font-size: 0.85rem; padding: 12px; background: #450a0a; border-radius: 8px; border: 1px solid #7f1d1d; margin-bottom: -4px; }
+.rq-error-msg {
+  color: var(--rq-danger);
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.rq-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
 
 .rq-input {
-  flex: 1;
-  background: var(--rq-bg); border: 1px solid var(--rq-border-light);
-  border-radius: 8px; padding: 8px 16px; color: var(--rq-text); font-size: 0.85rem;
-  transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out);
+  width: 100%;
+  background: var(--rq-surface-alt);
+  border: 1px solid var(--rq-border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--rq-text);
+  font-size: 0.85rem;
+  transition: border-color 160ms var(--ease-out), background-color 160ms var(--ease-out);
   resize: none;
   height: 40px; /* Fixed height for 1-2 lines */
+  line-height: 1.4;
 }
-.rq-input:focus { outline: none; border-color: var(--rq-accent); background: var(--rq-surface-alt); }
+.rq-input.pl-9 {
+  padding-left: 36px;
+}
+.rq-input:focus {
+  outline: none;
+  border-color: var(--rq-accent);
+  background: var(--rq-surface);
+  box-shadow: inset 0 0 0 1px var(--rq-accent);
+}
 /* Must follow `.rq-input`, whose 40px height and 8px/16px padding it
    overrides -- the bulk box shares that class for the theme rules only.
    Same specificity, so order is what decides it. */
-.rq-bulk-comment-input { display: block; width: 100%; min-height: 28px; height: 28px; max-height: 56px; padding: 5px 8px; resize: vertical; font-size: .75rem; line-height: 1.25; }
+.rq-bulk-comment-input {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  height: 28px;
+  max-height: 56px;
+  padding: 5px 8px;
+  resize: vertical;
+  font-size: .75rem;
+  line-height: 1.25;
+}
 
 .rq-actions-wrapper {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   flex-shrink: 0;
+  align-items: center;
 }
-.rq-primary-actions { display: flex; gap: 8px; }
-.rq-secondary-actions { display: flex; gap: 8px; }
+.rq-primary-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.rq-secondary-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
 
 .rq-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 0 12px; height: 40px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; border: none; color: #fff;
-  transition: transform 160ms var(--ease-out), filter 160ms var(--ease-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  color: #fff;
+  transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out), box-shadow 140ms var(--ease-out);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
-.rq-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.rq-btn:active:not(:disabled) { transform: scale(0.97); }
-.rq-btn:hover:not(:disabled) { filter: brightness(1.15); }
+.rq-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+.rq-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
 
-.rq-btn-accept { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-.rq-btn-reject { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+.rq-btn-accept {
+  background: var(--rq-success-dark, #059669);
+}
+.rq-btn-accept:hover:not(:disabled) {
+  background: var(--rq-success, #10b981);
+}
+.rq-btn-accept .rq-kbd {
+  background: rgba(4, 120, 87, 0.8);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #ecfdf5;
+}
+
+.rq-btn-reject {
+  background: var(--rq-danger-dark, #dc2626);
+}
+.rq-btn-reject:hover:not(:disabled) {
+  background: var(--rq-danger, #ef4444);
+}
+.rq-btn-reject .rq-kbd {
+  background: rgba(185, 28, 28, 0.8);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fff1f2;
+}
+
+.rq-kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
 
 .rq-btn-ghost {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 0 12px; height: 40px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
-  background: var(--rq-surface-alt); border: 1px solid var(--rq-border-light); color: var(--rq-text-muted);
-  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out), color 160ms var(--ease-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--rq-surface-alt);
+  border: 1px solid var(--rq-border-light);
+  color: var(--rq-text-muted);
+  transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out), color 140ms var(--ease-out), border-color 140ms var(--ease-out);
+  cursor: pointer;
 }
-.rq-btn-ghost:hover:not(:disabled) { background: var(--rq-surface-hover); color: var(--rq-text); }
-.rq-btn-ghost:active:not(:disabled) { transform: scale(0.97); }
-.rq-btn-ghost.rq-btn-remove:hover { border-color: #7f1d1d; color: var(--rq-danger); background: #450a0a; }
+.rq-btn-ghost:hover:not(:disabled) {
+  background: var(--rq-surface-hover);
+  color: var(--rq-text);
+  border-color: var(--rq-border);
+}
+.rq-btn-ghost:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.rq-btn-ghost.rq-btn-remove:hover:not(:disabled) {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--rq-danger);
+  background: rgba(239, 68, 68, 0.1);
+}
 
 /* --- MOBILE NAV --- */
 .rq-mobile-nav {

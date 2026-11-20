@@ -17,6 +17,12 @@ import {
   Settings2,
   Search,
   X,
+  Check,
+  XCircle,
+  SkipForward,
+  Trash2,
+  MessageSquare,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import "@wikimedia/codex/dist/codex.style.css";
@@ -372,6 +378,7 @@ export default function ReviewQueueClient({
   });
   const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingAction, setSubmittingAction] = useState<"accepted" | "rejected" | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [mobileTab, setMobileTab] = useState<"list" | "review">("list");
@@ -998,6 +1005,7 @@ ${body}
   const handleDecision = async (decision: "accepted" | "rejected") => {
     if (!currentArticle || isSubmitting) return;
     setIsSubmitting(true);
+    setSubmittingAction(decision);
     setReviewError("");
     const reviewedArticleId = currentArticle.article_id;
     const reviewedArticle = currentArticle;
@@ -1063,6 +1071,7 @@ ${body}
       setReviewError(error.message || "Review failed");
     } finally {
       setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   };
 
@@ -1092,6 +1101,7 @@ ${body}
       console.error("Error removing article", error);
     } finally {
       setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   };
 
@@ -1141,6 +1151,7 @@ ${body}
       console.error("Bulk review failed", err);
     } finally {
       setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   };
 
@@ -1164,6 +1175,7 @@ ${body}
       console.error("Bulk remove failed", err);
     } finally {
       setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   };
 
@@ -1557,25 +1569,25 @@ ${body}
                       type="button"
                       className="rq-bbtn rq-bbtn-accept"
                       onClick={() => handleBulkDecision("accepted")}
-                      title="Accept"
+                      title="Bulk Accept"
                     >
-                      <CdxIcon icon={cdxIconCheck} />
+                      <Check className="h-3.5 w-3.5 stroke-[2.5]" />
                     </button>
                     <button
                       type="button"
                       className="rq-bbtn rq-bbtn-reject"
                       onClick={() => handleBulkDecision("rejected")}
-                      title="Reject"
+                      title="Bulk Reject"
                     >
-                      <CdxIcon icon={cdxIconClear} />
+                      <XCircle className="h-3.5 w-3.5 stroke-[2.2]" />
                     </button>
                     <button
                       type="button"
                       className="rq-bbtn rq-bbtn-remove"
                       onClick={handleBulkRemove}
-                      title="Remove"
+                      title="Bulk Delete"
                     >
-                      <CdxIcon icon={cdxIconTrash} />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
@@ -2051,16 +2063,24 @@ ${body}
                 {/* DECISION PANEL (Bottom) */}
                 <footer className="rq-panel rq-decision-panel">
                   <div className="rq-decision-body">
-                    {reviewError && <div className="rq-error-msg">{reviewError}</div>}
+                    {reviewError && (
+                      <div className="rq-error-msg flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
+                        <span className="flex-1 font-medium">{reviewError}</span>
+                      </div>
+                    )}
                     <div className="rq-decision-form">
-                      <textarea
-                        ref={commentBoxRef}
-                        className="rq-input rq-textarea"
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        placeholder="Leave a note for the submitter (optional)… (C)"
-                        rows={2}
-                      />
+                      <div className="rq-input-wrapper relative flex-1 min-w-0">
+                        <MessageSquare className="h-4 w-4 text-muted-foreground/60 absolute left-3 top-2.5 pointer-events-none" />
+                        <textarea
+                          ref={commentBoxRef}
+                          className="rq-input rq-textarea pl-9"
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                          placeholder="Leave a note for the submitter (optional)... (C)"
+                          rows={1}
+                        />
+                      </div>
 
                       <div className="rq-actions-wrapper">
                         <div className="rq-primary-actions">
@@ -2071,7 +2091,12 @@ ${body}
                             onClick={() => handleDecision("accepted")}
                             title="Accept (A)"
                           >
-                            <CdxIcon icon={cdxIconCheck} /> <span>Accept</span>
+                            {isSubmitting && submittingAction === "accepted" ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Check className="h-4 w-4 stroke-[2.5]" />
+                            )}
+                            <span>Accept</span>
                             <kbd className="rq-kbd rq-desktop-only">
                               {shortcutKeyLabel(shortcuts.accept)}
                             </kbd>
@@ -2083,7 +2108,12 @@ ${body}
                             onClick={() => handleDecision("rejected")}
                             title="Reject (R)"
                           >
-                            <CdxIcon icon={cdxIconClear} /> <span>Reject</span>
+                            {isSubmitting && submittingAction === "rejected" ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <XCircle className="h-4 w-4 stroke-[2.2]" />
+                            )}
+                            <span>Reject</span>
                             <kbd className="rq-kbd rq-desktop-only">
                               {shortcutKeyLabel(shortcuts.reject)}
                             </kbd>
@@ -2098,7 +2128,7 @@ ${body}
                             onClick={skipArticle}
                             title="Skip (S)"
                           >
-                            <CdxIcon icon={cdxIconNext} />{" "}
+                            <SkipForward className="h-3.5 w-3.5" />{" "}
                             <span className="rq-desktop-only">Skip</span>
                           </button>
                           <button
@@ -2108,7 +2138,7 @@ ${body}
                             onClick={handleRemove}
                             title="Delete article"
                           >
-                            <CdxIcon icon={cdxIconTrash} />{" "}
+                            <Trash2 className="h-3.5 w-3.5" />{" "}
                             <span className="rq-desktop-only">Delete</span>
                           </button>
                         </div>

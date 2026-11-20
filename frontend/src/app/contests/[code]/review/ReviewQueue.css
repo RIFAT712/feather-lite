@@ -305,52 +305,56 @@ button { cursor: pointer; }
 /* One row: live dot, name, and the three icon actions. Replaces the old
    header-top plus the all-caps "Jury Workspace" eyebrow and Live pill, which
    between them spent a whole band restating where you already are. */
-.rq-panel-titlebar { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
-.rq-panel-titlebar .rq-panel-title { margin: 0; flex: 1; }
-.rq-titlebar-actions { display: flex; align-items: center; gap: 4px; }
-.rq-icon-btn.is-active { background: var(--rq-accent-bg); color: var(--rq-accent); }
-/* The polling indicator, reduced from a pill with a word in it to the dot the
-   pill already contained. */
-.rq-live-dot {
-  flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--rq-success);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rq-success) 20%, transparent);
+.rq-panel-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
 }
-
-/* Queue options, behind the gear. */
-.rq-queue-options {
-  display: flex; flex-direction: column; gap: 8px;
-  margin-bottom: 8px; padding: 8px;
-  border: 1px solid var(--rq-border); border-radius: 8px;
-  background: var(--rq-surface-alt);
+.rq-panel-titlebar .rq-panel-title {
+  margin: 0;
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--rq-text);
+  letter-spacing: -0.01em;
 }
-
-/* Tabs. The count sits inside the tab because it is the reason you pick one. */
-.rq-tabs { display: flex; gap: 2px; margin-bottom: 0; padding: 2px; border-radius: 8px; background: var(--rq-bg); }
-.rq-tabs button {
-  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
-  min-width: 0; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent;
-  color: var(--rq-text-muted); font: inherit; font-size: .76rem; font-weight: 600;
-  white-space: nowrap; cursor: pointer;
-  transition: background 160ms var(--ease-out), color 160ms var(--ease-out);
+.rq-titlebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
-.rq-tabs button:hover { color: var(--rq-text); }
-.rq-tabs button.is-active { background: var(--rq-surface-alt); color: var(--rq-text); box-shadow: 0 1px 2px rgba(32, 54, 77, .12); }
-.rq-tabs button:focus-visible { outline: 2px solid var(--rq-accent); outline-offset: -2px; }
-.rq-tab-count { color: var(--rq-text-muted); font-size: .7rem; font-variant-numeric: tabular-nums; }
-.rq-tabs button.is-active .rq-tab-count { color: var(--rq-accent); }
 .rq-icon-btn {
-  display: flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; border-radius: 6px; border: 1px solid transparent;
-  background: transparent; color: var(--rq-text-muted);
-  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out), border-color 160ms var(--ease-out);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--rq-text-muted);
+  cursor: pointer;
+  transition: all 140ms var(--ease-out);
 }
-.rq-icon-btn:hover { background: var(--rq-surface-alt); border-color: var(--rq-border); color: var(--rq-text); }
-.rq-icon-btn:focus-visible { outline: 2px solid var(--rq-accent); outline-offset: 1px; }
-.rq-icon-btn:active { transform: scale(0.95); }
+.rq-icon-btn:hover {
+  background: var(--rq-surface-hover);
+  color: var(--rq-text);
+}
+.rq-icon-btn.is-active {
+  background: var(--rq-accent-bg);
+  color: var(--rq-accent);
+}
+.rq-icon-btn:focus-visible {
+  outline: 2px solid var(--rq-accent);
+  outline-offset: 1px;
+}
+.rq-icon-btn:active {
+  transform: scale(0.94);
+}
 
 .rq-panel-header {
-  padding: 6px 12px 5px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--rq-border);
   background: var(--rq-surface);
 }

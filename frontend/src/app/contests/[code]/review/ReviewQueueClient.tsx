@@ -3,7 +3,21 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Feather, Loader2, Sparkles, BookOpen, Layers } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Feather,
+  Loader2,
+  Sparkles,
+  BookOpen,
+  Layers,
+  ArrowLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings2,
+  Search,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import "@wikimedia/codex/dist/codex.style.css";
 import "./ReviewQueue.css";
@@ -1401,9 +1415,12 @@ ${body}
                   className="rq-icon-btn"
                   title="Back to Contest Dashboard"
                 >
-                  <CdxIcon icon={cdxIconArrowPrevious} />
+                  <ArrowLeft className="h-4 w-4" />
                 </Link>
-                <span className="rq-live-dot" role="img" aria-label="Live: the queue refreshes on its own"></span>
+                <span className="relative flex h-2 w-2 shrink-0" title="Live queue">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
                 <h2 className="rq-panel-title">Review Queue</h2>
                 <div className="rq-titlebar-actions">
                   {isOwner && (
@@ -1414,15 +1431,15 @@ ${body}
                       title="Queue options"
                       onClick={() => setShowQueueOptions(!showQueueOptions)}
                     >
-                      <CdxIcon icon={cdxIconSettings} />
+                      <Settings2 className="h-4 w-4" />
                     </button>
                   )}
                   <button
                     className="rq-icon-btn rq-desktop-only"
-                    title="Collapse the panel"
+                    title="Collapse sidebar (Q)"
                     onClick={() => setSidebarCollapsed(true)}
                   >
-                    <CdxIcon icon={cdxIconCollapse} />
+                    <PanelLeftClose className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -1467,47 +1484,58 @@ ${body}
               )}
 
               {/* Search box with start icon and clear button */}
-              <div className="cdx-text-input cdx-text-input--has-start-icon rq-panel-search">
-                <div className="cdx-text-input__input-wrapper">
-                  <span className="cdx-text-input__icon cdx-text-input__start-icon">
-                    <CdxIcon icon={cdxIconSearch} />
-                  </span>
-                  <input
-                    className="cdx-text-input__input"
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={searchPlaceholder}
-                    aria-label={searchPlaceholder}
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      className="cdx-text-input__clear-button"
-                      aria-label="Clear input"
-                      onClick={() => setSearchQuery("")}
-                    >
-                      <CdxIcon icon={cdxIconClear} />
-                    </button>
-                  )}
-                </div>
+              <div className="relative w-full my-1.5">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={searchPlaceholder}
+                  className="w-full h-8 pl-8 pr-7 text-xs rounded-md bg-muted/40 border border-border/80 text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                  aria-label={searchPlaceholder}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-sm transition-colors"
+                    aria-label="Clear input"
+                    onClick={() => setSearchQuery("")}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
 
               {/* Tabs */}
-              <div className="rq-tabs" role="tablist" aria-label="Queue lists">
-                {listTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab.id === tab.id ? "true" : "false"}
-                    className={activeTab.id === tab.id ? "is-active" : ""}
-                    onClick={() => setListTab(tab.id as any)}
-                  >
-                    {tab.label}
-                    <span className="rq-tab-count">{tab.list.length.toLocaleString()}</span>
-                  </button>
-                ))}
+              <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40 text-xs font-medium" role="tablist" aria-label="Queue lists">
+                {listTabs.map((tab) => {
+                  const isActive = activeTab.id === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive ? "true" : "false"}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs transition-all ${
+                        isActive
+                          ? "bg-background text-foreground shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/40 font-medium"
+                      }`}
+                      onClick={() => setListTab(tab.id as any)}
+                    >
+                      <span className="truncate">{tab.label}</span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none ${
+                          isActive
+                            ? "bg-primary/10 text-primary font-bold dark:bg-primary/20"
+                            : "bg-muted/80 text-muted-foreground"
+                        }`}
+                      >
+                        {tab.list.length.toLocaleString()}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </header>
 
@@ -1726,7 +1754,7 @@ ${body}
                     onClick={() => setSidebarCollapsed(false)}
                     style={{ marginTop: "16px" }}
                   >
-                    <CdxIcon icon={cdxIconMenu} /> Open Sidebar
+                    <PanelLeftOpen className="h-4 w-4 me-1.5 inline" /> Open Sidebar
                   </button>
                 </div>
               </div>
@@ -1759,14 +1787,18 @@ ${body}
                       <button
                         className="rq-hamburger-btn rq-desktop-only"
                         onClick={() => setSidebarCollapsed(false)}
-                        title="Open Sidebar"
+                        title="Expand sidebar (Q)"
                       >
-                        <CdxIcon icon={cdxIconMenu} />
+                        <PanelLeftOpen className="h-4 w-4" />
                       </button>
                     )}
 
-                    <button className="rq-back-btn rq-mobile-only" onClick={() => setMobileTab("list")}>
-                      <CdxIcon icon={cdxIconArrowPrevious} />
+                    <button
+                      className="rq-back-btn rq-mobile-only"
+                      onClick={() => setMobileTab("list")}
+                      title="Back to article queue"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
                     </button>
 
                     <div className="rq-article-meta-area">

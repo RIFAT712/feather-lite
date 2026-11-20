@@ -33,7 +33,7 @@ async function getAuthHeader(): Promise<HeadersInit> {
 export async function getServerMe(): Promise<UserSession | null> {
   try {
     const headers = await getAuthHeader();
-    const res = await fetch(`${INTERNAL_API_URL}/auth/me`, {
+    const res = await fetch(`${INTERNAL_API_URL}/api/me`, {
       headers,
       cache: "no-store",
     });

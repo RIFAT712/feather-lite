@@ -186,8 +186,8 @@ const LIGHT_CSS = `
 const DARK_CSS = `
   :root { color-scheme: dark; }
   html, body {
-    background: #101726 !important;
-    color: #e2e8f0 !important;
+    background: #09090b !important;
+    color: #f4f4f5 !important;
     font-family: 'Linux Libertine', Georgia, Times, serif;
     font-size: 15px;
     line-height: 1.6;
@@ -196,21 +196,21 @@ const DARK_CSS = `
     max-width: 860px;
   }
   a { color: #60a5fa !important; }
-  a:visited { color: #a78bfa !important; }
+  a:visited { color: #c084fc !important; }
   a.new, a.new:visited { color: #f87171 !important; }
   a:hover { text-decoration: underline; }
   * { background-color: unset !important; }
-  table, .wikitable { border-collapse: collapse; background: #172033 !important; color: #e2e8f0 !important; }
-  th, td { border: 1px solid #263348 !important; padding: 6px 10px; color: #e2e8f0 !important; }
-  th { background: #1e293b !important; }
-  tr:nth-child(even) td { background: #131c2d !important; }
-  .NavFrame { border: 1px solid #263348 !important; border-radius: 6px; background: #172033 !important; margin: 12px 0; overflow: hidden; }
-  .NavHead { background: #1e293b !important; color: #e2e8f0 !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
-  .NavContent { background: #172033 !important; }
-  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #1e293b !important; color: #e2e8f0 !important; }
-  .mw-collapsible-toggle { cursor: pointer; color: #94a3b8 !important; }
-  h1, h2, h3, h4, h5 { color: #f1f5f9 !important; border-bottom: 1px solid #263348 !important; padding-bottom: 4px; }
-  #toc, .toc, .infobox { background: #172033 !important; border: 1px solid #263348 !important; border-radius: 6px; }
+  table, .wikitable { border-collapse: collapse; background: #121215 !important; color: #f4f4f5 !important; }
+  th, td { border: 1px solid #27272a !important; padding: 6px 10px; color: #f4f4f5 !important; }
+  th { background: #18181b !important; }
+  tr:nth-child(even) td { background: #121215 !important; }
+  .NavFrame { border: 1px solid #27272a !important; border-radius: 6px; background: #121215 !important; margin: 12px 0; overflow: hidden; }
+  .NavHead { background: #18181b !important; color: #f4f4f5 !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
+  .NavContent { background: #121215 !important; }
+  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #18181b !important; color: #f4f4f5 !important; }
+  .mw-collapsible-toggle { cursor: pointer; color: #a1a1aa !important; }
+  h1, h2, h3, h4, h5 { color: #f4f4f5 !important; border-bottom: 1px solid #27272a !important; padding-bottom: 4px; }
+  #toc, .toc, .infobox { background: #121215 !important; border: 1px solid #27272a !important; border-radius: 6px; }
   .mw-editsection, .mw-editsection-bracket { display: none !important; }
 `;
 
@@ -413,9 +413,26 @@ export default function ReviewQueueClient({
     } catch {}
   }, []);
 
-  const myUsername = user?.wiki_username || "";
-  const isOwner = user?.role === "owner" || Boolean((user as any)?.is_owner);
-  const isJury = user?.role === "jury" || Boolean((user as any)?.is_jury);
+  const myUsername = (user?.wiki_username || "").trim();
+  const myUsernameLower = myUsername.toLowerCase();
+  const isOwner = Boolean(
+    user?.role === "owner" ||
+    (user as any)?.is_owner ||
+    (user as any)?.is_admin ||
+    user?.role === "admin" ||
+    (contest?.created_by_username &&
+      myUsernameLower &&
+      contest.created_by_username.trim().toLowerCase() === myUsernameLower)
+  );
+  const isJury = Boolean(
+    user?.role === "jury" ||
+    (user as any)?.is_jury ||
+    (contest?.juries &&
+      myUsernameLower &&
+      contest.juries.some(
+        (j: string) => (j || "").trim().toLowerCase() === myUsernameLower
+      ))
+  );
   const isAuthorized = isJury || isOwner;
 
   // Shortcuts storage
@@ -633,15 +650,26 @@ ${body}
     async function loadData() {
       setIsLoading(true);
       try {
+        const cDataPromise = initialContest
+          ? Promise.resolve(initialContest)
+          : fetchContest(code).catch(() => null);
+        const uDataPromise =
+          initialUser && initialUser.is_authenticated
+            ? Promise.resolve(initialUser)
+            : fetchMe().catch(
+                () => ({ is_authenticated: false, role: "anonymous" } as UserSession)
+              );
+        const aDataPromise = fetchArticles(code, 500).catch(() => ({ items: [], total: 0 }));
+
         const [cData, uData, aData] = await Promise.all([
-          initialContest ? Promise.resolve(initialContest) : fetchContest(code),
-          initialUser ? Promise.resolve(initialUser) : fetchMe(),
-          fetchArticles(code, 500),
+          cDataPromise,
+          uDataPromise,
+          aDataPromise,
         ]);
         if (!active) return;
-        setContest(cData);
-        setUser(uData);
-        const norm = (aData.items || []).map(normalizeArticle);
+        if (cData) setContest(cData);
+        if (uData) setUser(uData);
+        const norm = (aData?.items || []).map(normalizeArticle);
         setArticles(norm);
 
         if (cData?.juries && cData.juries.length > 0) {

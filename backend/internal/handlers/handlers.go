@@ -84,11 +84,15 @@ func (h *Handler) DevLogin(w http.ResponseWriter, r *http.Request) {
 		&user.ID, &user.WikiUsername, &user.Role,
 	)
 	if err == sql.ErrNoRows {
-		// Auto-provision dev user
+		// Auto-provision dev user with rights verification
 		role := "participant"
 		if strings.EqualFold(username, h.cfg.OwnerUsername) || requestedRole == "owner" {
 			role = "owner"
-		} else if requestedRole == "admin" || strings.Contains(strings.ToLower(username), "admin") {
+		} else if requestedRole != "" {
+			role = requestedRole
+		} else if hasAdmin, err := mwclient.CheckIsAdminOnAnyWiki(username); err == nil && hasAdmin {
+			role = "admin"
+		} else if strings.Contains(strings.ToLower(username), "admin") {
 			role = "admin"
 		}
 		res, insErr := h.db.Exec("INSERT INTO users (wiki_username, role) VALUES (?, ?)", username, role)
@@ -103,13 +107,18 @@ func (h *Handler) DevLogin(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusInternalServerError, "Database error")
 		return
 	} else {
-		// Update role if requested or owner
+		// Update role if requested, owner, or verified admin
 		if strings.EqualFold(username, h.cfg.OwnerUsername) && user.Role != "owner" {
 			user.Role = "owner"
 			_, _ = h.db.Exec("UPDATE users SET role = 'owner' WHERE id = ?", user.ID)
 		} else if requestedRole != "" && user.Role != requestedRole {
 			user.Role = requestedRole
 			_, _ = h.db.Exec("UPDATE users SET role = ? WHERE id = ?", requestedRole, user.ID)
+		} else if user.Role != "owner" && user.Role != "admin" {
+			if hasAdmin, err := mwclient.CheckIsAdminOnAnyWiki(username); err == nil && hasAdmin {
+				user.Role = "admin"
+				_, _ = h.db.Exec("UPDATE users SET role = 'admin' WHERE id = ?", user.ID)
+			}
 		}
 	}
 
@@ -244,7 +253,14 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		role = "owner"
 	}
 	isAdmin := h.isPlatformAdminOrOwner(user)
-	if !isOwner && isAdmin {
+	if !isOwner && !isAdmin {
+		if hasAdmin, err := mwclient.CheckIsAdminOnAnyWiki(user.WikiUsername); err == nil && hasAdmin {
+			isAdmin = true
+			role = "admin"
+			user.Role = "admin"
+			_, _ = h.db.Exec("UPDATE users SET role = 'admin' WHERE id = ?", user.UserID)
+		}
+	} else if !isOwner && isAdmin {
 		role = "admin"
 	}
 
@@ -258,6 +274,50 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// checkAndPromoteUser checks Wikimedia admin/steward rights for a user and updates the DB if elevated.
+func (h *Handler) checkAndPromoteUser(username string) {
+	clean := strings.TrimSpace(username)
+	if clean == "" || strings.EqualFold(clean, h.cfg.OwnerUsername) {
+		return
+	}
+	if hasAdmin, err := mwclient.CheckIsAdminOnAnyWiki(clean); err == nil && hasAdmin {
+		_, _ = h.db.Exec("UPDATE users SET role = 'admin' WHERE wiki_username = ? COLLATE NOCASE AND role != 'owner'", clean)
+	}
+}
+
+// SyncUnverifiedUsers checks users in the database whose role is not yet owner or admin and verifies them on Wikimedia.
+func (h *Handler) SyncUnverifiedUsers() {
+	rows, err := h.db.Query("SELECT id, wiki_username FROM users WHERE role NOT IN ('owner', 'admin')")
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	type uItem struct {
+		id   int64
+		name string
+	}
+	var unverified []uItem
+	for rows.Next() {
+		var u uItem
+		if err := rows.Scan(&u.id, &u.name); err == nil {
+			unverified = append(unverified, u)
+		}
+	}
+	rows.Close()
+
+	for _, u := range unverified {
+		if strings.EqualFold(u.name, h.cfg.OwnerUsername) {
+			_, _ = h.db.Exec("UPDATE users SET role = 'owner' WHERE id = ?", u.id)
+			continue
+		}
+		if hasAdmin, err := mwclient.CheckIsAdminOnAnyWiki(u.name); err == nil && hasAdmin {
+			_, _ = h.db.Exec("UPDATE users SET role = 'admin' WHERE id = ? AND role != 'owner'", u.id)
+			log.Printf("[ElevatedSync] Verified MediaWiki admin rights for %s -> role set to admin", u.name)
+		}
+	}
+}
+
 // GetElevatedUsers returns a dictionary of usernames mapped to their elevated role ("owner" | "admin").
 func (h *Handler) GetElevatedUsers(w http.ResponseWriter, r *http.Request) {
 	rolesMap := make(map[string]string)
@@ -265,6 +325,7 @@ func (h *Handler) GetElevatedUsers(w http.ResponseWriter, r *http.Request) {
 		rolesMap[h.cfg.OwnerUsername] = "owner"
 	}
 
+	// 1. Fetch from database
 	rows, err := h.db.Query("SELECT wiki_username, role FROM users WHERE role IN ('owner', 'admin')")
 	if err == nil {
 		defer rows.Close()
@@ -280,7 +341,70 @@ func (h *Handler) GetElevatedUsers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// 2. Overlay any verified admins from memory cache
+	for uname, isAdmin := range mwclient.GetAllCachedAdmins() {
+		if isAdmin {
+			if _, exists := rolesMap[uname]; !exists {
+				if h.cfg.OwnerUsername != "" && strings.EqualFold(uname, h.cfg.OwnerUsername) {
+					rolesMap[uname] = "owner"
+				} else {
+					rolesMap[uname] = "admin"
+				}
+			}
+		}
+	}
+
+	// 3. Proactively sync any unverified users in background
+	go h.SyncUnverifiedUsers()
+
 	jsonResponse(w, http.StatusOK, rolesMap)
+}
+
+// GetUserRole dynamically checks and returns a user's role ("owner" | "admin" | "participant").
+// It verifies live MediaWiki rights (CentralAuth & local wiki) without requiring manual DB entries.
+func (h *Handler) GetUserRole(w http.ResponseWriter, r *http.Request) {
+	username := strings.TrimSpace(chi.URLParam(r, "username"))
+	if username == "" {
+		jsonError(w, http.StatusBadRequest, "Username is required")
+		return
+	}
+
+	// 1. Platform owner check
+	if strings.EqualFold(username, h.cfg.OwnerUsername) {
+		jsonResponse(w, http.StatusOK, map[string]any{"username": username, "role": "owner"})
+		return
+	}
+
+	// 2. In-memory rights cache check (instant O(1))
+	if isAdmin, cached := mwclient.IsCachedAdmin(username); cached && isAdmin {
+		jsonResponse(w, http.StatusOK, map[string]any{"username": username, "role": "admin"})
+		return
+	}
+
+	// 3. Database check
+	var dbRole string
+	var userID int64
+	err := h.db.QueryRow("SELECT id, role FROM users WHERE wiki_username = ? COLLATE NOCASE", username).Scan(&userID, &dbRole)
+	if err == nil && (dbRole == "admin" || dbRole == "steward" || dbRole == "owner") {
+		jsonResponse(w, http.StatusOK, map[string]any{"username": username, "role": dbRole})
+		return
+	}
+
+	// 4. Live CentralAuth / MediaWiki verification
+	isAdmin, err := mwclient.CheckIsAdminOnAnyWiki(username)
+	if err == nil && isAdmin {
+		if userID > 0 {
+			_, _ = h.db.Exec("UPDATE users SET role = 'admin' WHERE id = ? AND role != 'owner'", userID)
+		}
+		jsonResponse(w, http.StatusOK, map[string]any{"username": username, "role": "admin"})
+		return
+	}
+
+	role := "participant"
+	if dbRole != "" {
+		role = dbRole
+	}
+	jsonResponse(w, http.StatusOK, map[string]any{"username": username, "role": role})
 }
 
 // -------------------------------------------------------------
@@ -1608,12 +1732,21 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var submitterID int64
-	_ = h.db.QueryRow("SELECT id FROM users WHERE wiki_username = ?", submitter).Scan(&submitterID)
+	var currentRole string
+	_ = h.db.QueryRow("SELECT id, role FROM users WHERE wiki_username = ?", submitter).Scan(&submitterID, &currentRole)
 	if submitterID == 0 {
-		res, err := h.db.Exec("INSERT INTO users(wiki_username, role) VALUES(?, 'participant')", submitter)
+		role := "participant"
+		if strings.EqualFold(submitter, h.cfg.OwnerUsername) {
+			role = "owner"
+		} else if hasAdmin, err := mwclient.CheckIsAdminOnAnyWiki(submitter); err == nil && hasAdmin {
+			role = "admin"
+		}
+		res, err := h.db.Exec("INSERT INTO users(wiki_username, role) VALUES(?, ?)", submitter, role)
 		if err == nil {
 			submitterID, _ = res.LastInsertId()
 		}
+	} else if currentRole != "owner" && currentRole != "admin" {
+		go h.checkAndPromoteUser(submitter)
 	}
 
 	submittedCount := 0
@@ -1793,12 +1926,17 @@ func (h *Handler) isPlatformAdminOrOwner(user *auth.Claims) bool {
 	if h.isPlatformOwner(user) {
 		return true
 	}
-	if user.Role == "admin" {
+	if user.Role == "admin" || user.Role == "steward" {
 		return true
 	}
 	var dbRole string
 	err := h.db.QueryRow("SELECT role FROM users WHERE id = ?", user.UserID).Scan(&dbRole)
-	if err == nil && (dbRole == "admin" || dbRole == "owner") {
+	if err == nil && (dbRole == "admin" || dbRole == "steward" || dbRole == "owner") {
+		return true
+	}
+	// Fallback check against MediaWiki rights
+	if hasAdmin, err := mwclient.CheckIsAdminOnAnyWiki(user.WikiUsername); err == nil && hasAdmin {
+		_, _ = h.db.Exec("UPDATE users SET role = 'admin' WHERE id = ? AND role != 'owner'", user.UserID)
 		return true
 	}
 	return false
@@ -2540,6 +2678,7 @@ func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
 
 	query := `
 		SELECT u.wiki_username,
+		       COALESCE(u.role, 'participant') as user_role,
 		       COUNT(CASE WHEN a.status = 'accepted' THEN 1 END) as accepted_count,
 		       COALESCE(SUM(CASE WHEN a.status = 'accepted' THEN a.word_count ELSE 0 END), 0) as total_words,
 		       COALESCE(SUM(CASE WHEN a.status = 'accepted' THEN a.byte_count ELSE 0 END), 0) as total_bytes,
@@ -2570,11 +2709,20 @@ func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
 	rank := 1
 	for rows.Next() {
 		var s models.StandingEntry
-		var wikisStr string
+		var wikisStr, dbRole string
 		s.Rank = rank
-		err := rows.Scan(&s.Username, &s.AcceptedCount, &s.TotalWords, &s.TotalBytes, &s.SubmittedCount, &wikisStr)
+		err := rows.Scan(&s.Username, &dbRole, &s.AcceptedCount, &s.TotalWords, &s.TotalBytes, &s.SubmittedCount, &wikisStr)
 		if err != nil {
 			continue
+		}
+		if strings.EqualFold(s.Username, h.cfg.OwnerUsername) {
+			s.Role = "owner"
+		} else if dbRole == "admin" || dbRole == "steward" {
+			s.Role = "admin"
+		} else if isAdmin, cached := mwclient.IsCachedAdmin(s.Username); cached && isAdmin {
+			s.Role = "admin"
+		} else {
+			go h.checkAndPromoteUser(s.Username)
 		}
 		if wikisStr != "" {
 			s.WikisContributed = strings.Split(wikisStr, ",")
@@ -2610,6 +2758,15 @@ func (h *Handler) GetUserGlobalProfile(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		jsonError(w, http.StatusInternalServerError, "Failed to query user")
 		return
+	}
+
+	if strings.EqualFold(dbUsername, h.cfg.OwnerUsername) {
+		role = "owner"
+	} else if role != "owner" && role != "admin" {
+		if hasAdmin, err := mwclient.CheckIsAdminOnAnyWiki(dbUsername); err == nil && hasAdmin {
+			role = "admin"
+			_, _ = h.db.Exec("UPDATE users SET role = 'admin' WHERE id = ?", userID)
+		}
 	}
 
 	// 1. Participated Contests & Articles
@@ -2770,6 +2927,15 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 	} else if err != nil {
 		jsonError(w, http.StatusInternalServerError, "Failed to query user")
 		return
+	}
+
+	if strings.EqualFold(dbUsername, h.cfg.OwnerUsername) {
+		role = "owner"
+	} else if role != "owner" && role != "admin" {
+		if hasAdmin, err := mwclient.CheckIsAdminOnAnyWiki(dbUsername); err == nil && hasAdmin {
+			role = "admin"
+			_, _ = h.db.Exec("UPDATE users SET role = 'admin' WHERE id = ?", userID)
+		}
 	}
 
 	// 1. Fetch user submissions in this contest

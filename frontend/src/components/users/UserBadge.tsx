@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchElevatedUsers } from "@/lib/api";
+import { fetchElevatedUsers, fetchUserRole } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
 
 interface UserBadgeProps {
@@ -12,13 +12,13 @@ interface UserBadgeProps {
 }
 
 export function useElevatedRoles() {
-  const { data: elevatedUsers = {} } = useQuery<Record<string, "owner" | "admin">>({
+  const { data: elevatedUsers = {} } = useQuery<Record<string, "owner" | "admin" | "steward">>({
     queryKey: ["elevatedUsers"],
     queryFn: fetchElevatedUsers,
     staleTime: 5 * 60 * 1000,
   });
 
-  const getRole = (username?: string | null): "owner" | "admin" | null => {
+  const getRole = (username?: string | null): "owner" | "admin" | "steward" | null => {
     if (!username) return null;
     const lower = username.toLowerCase();
     for (const [uname, r] of Object.entries(elevatedUsers)) {
@@ -36,8 +36,18 @@ export default function UserBadge({ username, role, className = "" }: UserBadgeP
   const { t } = useI18n();
   const { getRole } = useElevatedRoles();
 
-  const effectiveRole =
-    role === "owner" || role === "admin" ? role : getRole(username);
+  const knownRole =
+    role === "owner" || role === "admin" || role === "steward" ? role : getRole(username);
+
+  // If role is not yet known from props or elevatedUsers, dynamically query backend
+  const { data: dynamicRole } = useQuery<string | null>({
+    queryKey: ["userRole", username?.toLowerCase()],
+    queryFn: () => (username ? fetchUserRole(username) : Promise.resolve(null)),
+    enabled: !!username && !knownRole,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const effectiveRole = knownRole || dynamicRole;
 
   if (!effectiveRole) return null;
 
@@ -52,11 +62,22 @@ export default function UserBadge({ username, role, className = "" }: UserBadgeP
     );
   }
 
+  if (effectiveRole === "steward") {
+    return (
+      <span
+        className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold border border-purple-500/35 bg-purple-500/10 text-purple-700 dark:text-purple-400 shrink-0 whitespace-nowrap shadow-2xs select-none ${className}`}
+        title={`${username || "User"} is Wikimedia Global Steward`}
+      >
+        <span>{t("feather-role-steward") || t("feather-role-admin")}</span>
+      </span>
+    );
+  }
+
   if (effectiveRole === "admin") {
     return (
       <span
         className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold border border-blue-500/35 bg-blue-500/10 text-blue-700 dark:text-blue-400 shrink-0 whitespace-nowrap shadow-2xs select-none ${className}`}
-        title={`${username || "User"} is Wikimedia Admin`}
+        title={`${username || "User"} is Wikimedia Admin / Steward`}
       >
         <span>{t("feather-role-admin")}</span>
       </span>

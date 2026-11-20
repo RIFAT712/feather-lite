@@ -43,6 +43,7 @@ func main() {
 	talkQueue.Start(ctx)
 
 	h := handlers.New(cfg, db, talkQueue)
+	go h.SyncUnverifiedUsers()
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -112,6 +113,7 @@ func main() {
 		api.Post("/articles/bulk-review", h.BulkReview)
 		api.Get("/users/suggest", h.SuggestUsers)
 		api.Get("/users/elevated", h.GetElevatedUsers)
+		api.Get("/users/{username}/role", h.GetUserRole)
 	})
 
 	server := &http.Server{

@@ -149,6 +149,7 @@ export interface KeysetResponse {
 export interface StandingEntry {
   rank: number;
   username: string;
+  role?: string;
   accepted_count: number;
   total_words: number;
   total_bytes: number;
@@ -879,7 +880,7 @@ export async function enqueueMissingTalkQueue(code: string): Promise<{ message: 
   return res.json();
 }
 
-export async function fetchElevatedUsers(): Promise<Record<string, "owner" | "admin">> {
+export async function fetchElevatedUsers(): Promise<Record<string, "owner" | "admin" | "steward">> {
   const res = await fetch(`${API_BASE}/users/elevated`, {
     credentials: "include",
   });
@@ -887,6 +888,19 @@ export async function fetchElevatedUsers(): Promise<Record<string, "owner" | "ad
     return {};
   }
   return res.json().catch(() => ({}));
+}
+
+export async function fetchUserRole(username: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_BASE}/users/${encodeURIComponent(username)}/role`, {
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.role || null;
+  } catch {
+    return null;
+  }
 }
 
 

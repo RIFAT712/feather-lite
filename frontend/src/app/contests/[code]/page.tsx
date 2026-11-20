@@ -1683,7 +1683,7 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                                 >
                                   {s.username}
                                 </Link>
-                                <UserBadge username={s.username} />
+                                <UserBadge username={s.username} role={s.role} />
                                 <a
                                   href={`${contest.wiki_url || "https://bn.wikipedia.org"}/wiki/Special:Contributions/${encodeURIComponent(
                                     s.username
@@ -1755,7 +1755,7 @@ export default function ContestDashboardPage({ params }: { params: Promise<{ cod
                             >
                               {s.username}
                             </Link>
-                            <UserBadge username={s.username} />
+                            <UserBadge username={s.username} role={s.role} />
                           </div>
 
                           <div className="flex items-center gap-1.5 shrink-0">

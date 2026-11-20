@@ -134,85 +134,173 @@ func FetchUserProfile(accessToken string) (*UserProfile, error) {
 	return &profile, nil
 }
 
+var (
+	adminStatusCache sync.Map // map[string]bool (lowercased username -> bool)
+)
+
+// IsCachedAdmin returns true if the user is verified as an admin in memory cache.
+func IsCachedAdmin(username string) (bool, bool) {
+	clean := strings.ToLower(strings.TrimSpace(username))
+	if clean == "" {
+		return false, false
+	}
+	val, ok := adminStatusCache.Load(clean)
+	if !ok {
+		return false, false
+	}
+	return val.(bool), true
+}
+
+// SetCachedAdmin stores admin verification status for a username.
+func SetCachedAdmin(username string, isAdmin bool) {
+	clean := strings.ToLower(strings.TrimSpace(username))
+	if clean != "" {
+		adminStatusCache.Store(clean, isAdmin)
+	}
+}
+
+// GetAllCachedAdmins returns a map of all usernames verified as admin in cache.
+func GetAllCachedAdmins() map[string]bool {
+	out := make(map[string]bool)
+	adminStatusCache.Range(func(key, value any) bool {
+		if k, ok := key.(string); ok {
+			if v, ok := value.(bool); ok && v {
+				out[k] = true
+			}
+		}
+		return true
+	})
+	return out
+}
+
 // CheckIsAdminOnAnyWiki checks MediaWiki CentralAuth to verify if a user has sysop or higher rights on ANY Wikimedia wiki.
 func CheckIsAdminOnAnyWiki(username string) (bool, error) {
-	if strings.TrimSpace(username) == "" {
+	cleanName := strings.TrimSpace(username)
+	if cleanName == "" {
 		return false, nil
 	}
 
-	apiEndpoint := "https://meta.wikimedia.org/w/api.php"
-	params := url.Values{}
-	params.Set("action", "query")
-	params.Set("meta", "globaluserinfo")
-	params.Set("guiuser", username)
-	params.Set("guiprop", "groups|merged")
-	params.Set("format", "json")
-	params.Set("formatversion", "2")
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", apiEndpoint, params.Encode()), nil)
-	if err != nil {
-		return false, err
-	}
-	req.Header.Set("User-Agent", DefaultUserAgent)
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return false, fmt.Errorf("globaluserinfo query failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("meta api returned HTTP %d", resp.StatusCode)
-	}
-
-	var result struct {
-		Query struct {
-			GlobalUserInfo struct {
-				ID     int64    `json:"id"`
-				Name   string   `json:"name"`
-				Groups []string `json:"groups"`
-				Merged []struct {
-					Wiki   string   `json:"wiki"`
-					Groups []string `json:"groups"`
-				} `json:"merged"`
-			} `json:"globaluserinfo"`
-		} `json:"query"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return false, fmt.Errorf("failed to decode globaluserinfo response: %w", err)
+	lower := strings.ToLower(cleanName)
+	if val, ok := adminStatusCache.Load(lower); ok {
+		return val.(bool), nil
 	}
 
 	elevatedGroups := map[string]bool{
 		"sysop":                   true,
+		"administrator":           true,
 		"bureaucrat":              true,
+		"bureaucrats":             true,
 		"steward":                 true,
+		"stewards":                true,
 		"global-sysop":            true,
 		"interface-admin":         true,
 		"checkuser":               true,
 		"suppress":                true,
+		"oversight":               true,
 		"global-interface-editor": true,
 		"ombuds":                  true,
 		"staff":                   true,
 		"sysadmin":                true,
 	}
 
-	// 1. Check global rights
-	for _, g := range result.Query.GlobalUserInfo.Groups {
-		if elevatedGroups[strings.ToLower(strings.TrimSpace(g))] {
-			return true, nil
-		}
-	}
+	// 1. Primary check: Meta-Wiki CentralAuth globaluserinfo
+	apiEndpoint := "https://meta.wikimedia.org/w/api.php"
+	params := url.Values{}
+	params.Set("action", "query")
+	params.Set("meta", "globaluserinfo")
+	params.Set("guiuser", cleanName)
+	params.Set("guiprop", "groups|merged")
+	params.Set("format", "json")
+	params.Set("formatversion", "2")
 
-	// 2. Check local rights across ANY merged wiki
-	for _, m := range result.Query.GlobalUserInfo.Merged {
-		for _, g := range m.Groups {
-			if elevatedGroups[strings.ToLower(strings.TrimSpace(g))] {
-				return true, nil
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", apiEndpoint, params.Encode()), nil)
+	if err == nil {
+		req.Header.Set("User-Agent", DefaultUserAgent)
+		resp, reqErr := httpClient.Do(req)
+		if reqErr == nil && resp.StatusCode == http.StatusOK {
+			var result struct {
+				Query struct {
+					GlobalUserInfo struct {
+						ID     int64    `json:"id"`
+						Name   string   `json:"name"`
+						Groups []string `json:"groups"`
+						Merged []struct {
+							Wiki   string   `json:"wiki"`
+							Groups []string `json:"groups"`
+						} `json:"merged"`
+					} `json:"globaluserinfo"`
+				} `json:"query"`
 			}
+			if decodeErr := json.NewDecoder(resp.Body).Decode(&result); decodeErr == nil {
+				resp.Body.Close()
+
+				// Check global rights
+				for _, g := range result.Query.GlobalUserInfo.Groups {
+					if elevatedGroups[strings.ToLower(strings.TrimSpace(g))] {
+						adminStatusCache.Store(lower, true)
+						return true, nil
+					}
+				}
+
+				// Check local rights across ANY merged wiki
+				for _, m := range result.Query.GlobalUserInfo.Merged {
+					for _, g := range m.Groups {
+						if elevatedGroups[strings.ToLower(strings.TrimSpace(g))] {
+							adminStatusCache.Store(lower, true)
+							return true, nil
+						}
+					}
+				}
+			} else {
+				resp.Body.Close()
+			}
+		} else if resp != nil {
+			resp.Body.Close()
 		}
 	}
 
+	// 2. Secondary check: Direct local check on bnwiki (or metawiki) in case CentralAuth cache is lagging
+	bnAPI := "https://bn.wikipedia.org/w/api.php"
+	bnParams := url.Values{}
+	bnParams.Set("action", "query")
+	bnParams.Set("list", "users")
+	bnParams.Set("ususers", cleanName)
+	bnParams.Set("usprop", "groups")
+	bnParams.Set("format", "json")
+	bnParams.Set("formatversion", "2")
+
+	bnReq, bnErr := http.NewRequest("GET", fmt.Sprintf("%s?%s", bnAPI, bnParams.Encode()), nil)
+	if bnErr == nil {
+		bnReq.Header.Set("User-Agent", DefaultUserAgent)
+		bnResp, bnDoErr := httpClient.Do(bnReq)
+		if bnDoErr == nil && bnResp.StatusCode == http.StatusOK {
+			var bnRes struct {
+				Query struct {
+					Users []struct {
+						Name   string   `json:"name"`
+						Groups []string `json:"groups"`
+					} `json:"users"`
+				} `json:"query"`
+			}
+			if bnDecodeErr := json.NewDecoder(bnResp.Body).Decode(&bnRes); bnDecodeErr == nil {
+				bnResp.Body.Close()
+				for _, u := range bnRes.Query.Users {
+					for _, g := range u.Groups {
+						if elevatedGroups[strings.ToLower(strings.TrimSpace(g))] {
+							adminStatusCache.Store(lower, true)
+							return true, nil
+						}
+					}
+				}
+			} else {
+				bnResp.Body.Close()
+			}
+		} else if bnResp != nil {
+			bnResp.Body.Close()
+		}
+	}
+
+	adminStatusCache.Store(lower, false)
 	return false, nil
 }
 

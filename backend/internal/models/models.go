@@ -212,6 +212,7 @@ type UpdateContestRequest struct {
 type GlobalStandingEntry struct {
 	Rank             int      `json:"rank"`
 	Username         string   `json:"username"`
+	Role             string   `json:"role,omitempty"`
 	AcceptedCount    int      `json:"accepted_count"`
 	TotalWords       int      `json:"total_words"`
 	TotalBytes       int      `json:"total_bytes"`
@@ -254,6 +255,7 @@ type CreateContestRequest struct {
 type StandingEntry struct {
 	Rank             int      `json:"rank"`
 	Username         string   `json:"username"`
+	Role             string   `json:"role,omitempty"`
 	AcceptedCount    int      `json:"accepted_count"`
 	TotalWords       int      `json:"total_words"`
 	TotalBytes       int      `json:"total_bytes"`

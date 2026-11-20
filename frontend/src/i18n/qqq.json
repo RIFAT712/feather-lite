@@ -55,6 +55,7 @@
   "feather-draft-restored": "Toast notification when a previously saved contest draft has been restored into the form.",
   "feather-role-owner": "Role badge label for platform owner.",
   "feather-role-admin": "Role badge label for platform administrator.",
+  "feather-role-steward": "Role badge label for Wikimedia global steward.",
   "feather-contest-submitted": "Metric label for submitted articles count.",
   "feather-contest-accepted": "Metric label for accepted articles count.",
   "feather-contest-pending": "Metric label for articles awaiting jury review.",

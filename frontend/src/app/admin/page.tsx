@@ -45,6 +45,7 @@ import {
   Users,
   Search,
   Check,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -163,9 +164,22 @@ export default function AdminPage() {
   // Loading state
   if (userLoading) {
     return (
-      <div className="container mx-auto max-w-6xl py-16 px-4 flex flex-col items-center justify-center space-y-4">
-        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Checking administrator credentials...</p>
+      <div className="container mx-auto max-w-6xl py-24 px-4 flex flex-col items-center justify-center">
+        <div className="relative flex flex-col items-center justify-center p-8 max-w-sm w-full rounded-2xl bg-card border border-border shadow-xl backdrop-blur-md text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative flex items-center justify-center">
+            <div className="absolute -inset-2 rounded-full bg-primary/20 blur-md animate-pulse" />
+            <div className="relative h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-inner">
+              <ShieldCheck className="h-7 w-7 text-primary animate-pulse" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-card border-2 border-background flex items-center justify-center shadow-xs">
+              <Loader2 className="h-3 w-3 animate-spin text-primary" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-foreground">Verifying Privileges</h3>
+            <p className="text-xs text-muted-foreground">Checking global steward & platform admin status...</p>
+          </div>
+        </div>
       </div>
     );
   }

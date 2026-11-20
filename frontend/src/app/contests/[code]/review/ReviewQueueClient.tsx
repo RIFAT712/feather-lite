@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Feather, Loader2, Sparkles, BookOpen, Layers } from "lucide-react";
 import { toast } from "sonner";
 import "@wikimedia/codex/dist/codex.style.css";
 import "./ReviewQueue.css";
@@ -1325,25 +1325,65 @@ ${body}
   return (
     <div className={`rq-app ${isDark ? "rq-theme-dark" : "rq-theme-light"}`}>
       {!isLoading && !isAuthorized ? (
-        <div className="rq-center-state">
-          <div className="rq-card-unauth">
-            <CdxIcon className="rq-icon-large" icon={cdxIconBlock} />
-            <h2>Access Denied</h2>
-            <p>This area is restricted to Contest Jury members and Owners.</p>
+        <div className="rq-center-state rq-center-full">
+          <div className="relative flex flex-col items-center justify-center p-8 sm:p-10 max-w-md w-full mx-4 rounded-2xl bg-card border border-destructive/30 shadow-2xl text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="h-14 w-14 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive">
+              <CdxIcon className="rq-icon-large" icon={cdxIconBlock} />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="text-base sm:text-lg font-bold text-foreground">Access Restricted</h2>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
+                This review console is reserved for designated Contest Jury members and Platform Owners.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Link
+                href={`/contests/${code}`}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors"
+              >
+                Return to Contest Dashboard
+              </Link>
+            </div>
           </div>
         </div>
       ) : isLoading || (isBackgroundLoading && !currentArticle) ? (
-        <div className="global-loader" role="status" aria-live="polite">
-          <div className="global-loader__mark" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
+        <div className="rq-center-state rq-center-full" role="status" aria-live="polite">
+          <div className="relative flex flex-col items-center justify-center p-8 sm:p-10 max-w-sm w-full mx-4 rounded-2xl bg-card/95 border border-border shadow-2xl backdrop-blur-xl text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            {/* Glowing Brand Icon with Multi-ring Aura */}
+            <div className="relative flex items-center justify-center">
+              <div className="absolute -inset-2 rounded-full bg-primary/20 blur-md animate-pulse" />
+              <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-tr from-primary/10 via-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center text-primary shadow-inner">
+                <Feather className="h-8 w-8 text-primary animate-pulse" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-card border-2 border-background flex items-center justify-center shadow-xs">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+              </div>
+            </div>
+
+            {/* Typography */}
+            <div className="space-y-1.5">
+              <h3 className="text-base font-semibold text-foreground tracking-tight flex items-center justify-center gap-1.5">
+                <span>{isBackgroundLoading && articles.length > 0 ? "Updating Queue" : "Loading Review Console"}</span>
+                <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-[280px]">
+                {isBackgroundLoading && articles.length > 0
+                  ? `Loading ${articles.length} of ${statusStats.total || 0} contest submissions...`
+                  : "Syncing articles, jury assignments, and MediaWiki cache..."}
+              </p>
+            </div>
+
+            {/* Polished Indeterminate Linear Progress Bar */}
+            <div className="w-full max-w-[220px] space-y-2">
+              <div className="h-1.5 w-full bg-muted/60 rounded-full overflow-hidden relative">
+                <div className="h-full bg-primary rounded-full w-2/5 animate-[pulse_1.5s_ease-in-out_infinite]" />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                <span>Wikimedia API</span>
+                <span>Active</span>
+              </div>
+            </div>
           </div>
-          <span className="global-loader__label">
-            {isBackgroundLoading && articles.length > 0
-              ? `Scanning (${articles.length} / ${statusStats.total || "?"} loaded)…`
-              : "Loading review queue…"}
-          </span>
         </div>
       ) : (
         <div className={`rq-layout ${mobileTab === "review" ? "is-mobile-review" : ""}`}>
@@ -1890,9 +1930,42 @@ ${body}
                     }`}
                   >
                     {isLoadingPreview ? (
-                      <div className="rq-center-state">
-                        <div className="rq-spinner rq-spinner-sm"></div>
-                        <span className="rq-loading-text">Loading Wikipedia preview…</span>
+                      <div className="h-full w-full p-6 sm:p-8 overflow-hidden bg-background/50 relative select-none">
+                        {/* Floating Status Pill */}
+                        <div className="absolute top-6 right-6 z-10 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card/90 border border-border shadow-md backdrop-blur-md text-xs font-medium text-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+                          <span>Rendering Wikipedia article...</span>
+                        </div>
+
+                        {/* Article Header Wireframe */}
+                        <div className="space-y-4 max-w-3xl">
+                          <div className="h-8 w-2/3 bg-muted/70 rounded-md animate-pulse" />
+                          <div className="flex items-center gap-2">
+                            <div className="h-4 w-28 bg-muted/50 rounded-sm animate-pulse" />
+                            <div className="h-4 w-16 bg-muted/40 rounded-sm animate-pulse" />
+                          </div>
+                          <div className="h-px w-full bg-border/60 my-3" />
+
+                          {/* Grid with Content + Simulated Infobox */}
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+                            <div className="lg:col-span-2 space-y-3">
+                              <div className="h-3.5 w-full bg-muted/60 rounded animate-pulse" />
+                              <div className="h-3.5 w-11/12 bg-muted/60 rounded animate-pulse" />
+                              <div className="h-3.5 w-4/5 bg-muted/50 rounded animate-pulse" />
+                              <div className="h-3.5 w-full bg-muted/60 rounded animate-pulse pt-2" />
+                              <div className="h-3.5 w-3/4 bg-muted/50 rounded animate-pulse" />
+                              <div className="h-5 w-40 bg-muted/70 rounded mt-6 mb-2 animate-pulse" />
+                              <div className="h-3.5 w-full bg-muted/60 rounded animate-pulse" />
+                              <div className="h-3.5 w-5/6 bg-muted/60 rounded animate-pulse" />
+                            </div>
+                            <div className="hidden lg:block space-y-3 p-4 rounded-xl border border-border/80 bg-muted/20">
+                              <div className="h-28 w-full bg-muted/40 rounded-lg animate-pulse" />
+                              <div className="h-3 w-3/4 bg-muted/50 rounded" />
+                              <div className="h-3 w-1/2 bg-muted/40 rounded" />
+                              <div className="h-3 w-2/3 bg-muted/40 rounded" />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <>

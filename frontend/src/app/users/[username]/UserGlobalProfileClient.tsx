@@ -41,11 +41,36 @@ export default function UserGlobalProfileClient({
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 sm:px-8 py-16 max-w-5xl">
-        <div className="animate-pulse space-y-6">
-          <div className="h-6 w-32 bg-muted rounded-md" />
-          <div className="h-44 bg-muted/40 rounded-xl border border-border" />
-          <div className="h-64 bg-muted/30 rounded-xl border border-border" />
+      <div className="container mx-auto px-4 sm:px-8 py-8 max-w-5xl space-y-6">
+        <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
+          <div className="h-3.5 w-24 bg-muted rounded animate-pulse" />
+        </div>
+
+        {/* Profile Header Card Skeleton */}
+        <Card className="border-border shadow-xs">
+          <CardHeader className="p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-muted animate-pulse" />
+                <div className="space-y-2">
+                  <div className="h-6 w-44 bg-muted rounded animate-pulse" />
+                  <div className="h-4 w-28 bg-muted/70 rounded animate-pulse" />
+                </div>
+              </div>
+              <div className="h-9 w-28 bg-muted rounded-md animate-pulse" />
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* 4 Stat Cards Skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="border-border p-4 space-y-2">
+              <div className="h-3.5 w-20 bg-muted/60 rounded animate-pulse" />
+              <div className="h-7 w-14 bg-muted rounded animate-pulse" />
+            </Card>
+          ))}
         </div>
       </div>
     );

@@ -130,7 +130,9 @@ export default function ContestDashboardClient({
     queryKey: ["me"],
     queryFn: fetchMe,
     initialData: initialMe || undefined,
+    initialDataUpdatedAt: initialMe ? Date.now() : undefined,
     staleTime: 60 * 1000,
+    refetchOnMount: false,
   });
 
   // Queries
@@ -138,19 +140,27 @@ export default function ContestDashboardClient({
     queryKey: ["contest", code],
     queryFn: () => fetchContest(code),
     initialData: initialContest || undefined,
-    staleTime: 30 * 1000,
+    initialDataUpdatedAt: initialContest ? Date.now() : undefined,
+    staleTime: 60 * 1000,
+    refetchOnMount: false,
   });
 
   const { data: standings, isLoading: standingsLoading } = useQuery<StandingEntry[]>({
     queryKey: ["standings", code, communityFilter],
     queryFn: () => fetchStandings(code, communityFilter === "all" ? undefined : communityFilter),
-    initialData: communityFilter === "all" && initialStandings?.length ? initialStandings : undefined,
+    initialData: communityFilter === "all" ? (initialStandings ?? undefined) : undefined,
+    initialDataUpdatedAt: communityFilter === "all" && initialStandings ? Date.now() : undefined,
+    staleTime: 60 * 1000,
+    refetchOnMount: false,
   });
 
   const { data: articlesData, isLoading: articlesLoading } = useQuery<KeysetResponse>({
     queryKey: ["articles", code, statusFilter],
     queryFn: () => fetchArticles(code, undefined, statusFilter === "all" ? undefined : statusFilter, 100),
-    initialData: statusFilter === "all" && initialArticles ? initialArticles : undefined,
+    initialData: statusFilter === "all" ? (initialArticles ?? undefined) : undefined,
+    initialDataUpdatedAt: statusFilter === "all" && initialArticles ? Date.now() : undefined,
+    staleTime: 60 * 1000,
+    refetchOnMount: false,
   });
 
   const articles = articlesData?.items || [];

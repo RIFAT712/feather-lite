@@ -16,6 +16,7 @@ echo "=== [Feather-Lite] Initializing deployment from ${APP_DIR} ==="
 # 1. Environment Configuration (Toolforge envvars take precedence if set)
 export PORT="${PORT:-8000}"
 export BACKEND_PORT="${BACKEND_PORT:-8081}"
+export INTERNAL_API_URL="${INTERNAL_API_URL:-http://127.0.0.1:${BACKEND_PORT}}"
 export DB_TYPE="${DB_TYPE:-sqlite}"
 export FRONTEND_URL="${FRONTEND_URL:-https://feather-lite.toolforge.org}"
 export OAUTH_CALLBACK_URL="${OAUTH_CALLBACK_URL:-https://feather-lite.toolforge.org/auth/callback}"

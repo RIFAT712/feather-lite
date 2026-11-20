@@ -50,14 +50,14 @@ export async function getServerMe(): Promise<UserSession | null> {
 
 export async function getServerContests(): Promise<Contest[]> {
   try {
-    const headers = await getAuthHeader();
     const res = await fetch(`${INTERNAL_API_URL}/api/contests`, {
-      headers,
+      headers: { Accept: "application/json" },
       next: { revalidate: 15 },
     });
     if (!res.ok) return [];
     return await res.json();
-  } catch {
+  } catch (err) {
+    console.error("[SSR] Failed to fetch contests:", err);
     return [];
   }
 }
@@ -71,21 +71,22 @@ export async function getServerContest(code: string): Promise<Contest | null> {
     });
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch (err) {
+    console.error(`[SSR] Failed to fetch contest ${code}:`, err);
     return null;
   }
 }
 
 export async function getServerPlatformOverview(): Promise<PlatformOverview | null> {
   try {
-    const headers = await getAuthHeader();
     const res = await fetch(`${INTERNAL_API_URL}/api/overview`, {
-      headers,
+      headers: { Accept: "application/json" },
       next: { revalidate: 30 },
     });
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch (err) {
+    console.error("[SSR] Failed to fetch platform overview:", err);
     return null;
   }
 }

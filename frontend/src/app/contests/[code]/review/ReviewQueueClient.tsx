@@ -179,61 +179,63 @@ const LIGHT_CSS = `
   html, body {
     background: #ffffff !important;
     color: #18181b !important;
-    font-family: var(--font-sans), 'Linux Libertine', Georgia, Times, serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", "Kalpurush", "SolaimanLipi", sans-serif !important;
     font-size: 15px;
-    line-height: 1.65;
+    line-height: 1.75;
     margin: 0;
     padding: 16px 24px 48px;
     max-width: 900px;
   }
-  a { color: #2563eb !important; }
+  a { color: #2563eb !important; text-decoration: none; }
   a:visited { color: #7c3aed !important; }
   a.new, a.new:visited { color: #dc2626 !important; }
-  a:hover { text-decoration: underline; }
-  * { background-color: unset !important; }
-  table, .wikitable { border-collapse: collapse; background: #ffffff !important; color: #18181b !important; border-radius: 8px; }
-  th, td { border: 1px solid #e4e4e7 !important; padding: 6px 10px; color: #18181b !important; }
-  th { background: #f4f4f5 !important; font-weight: 600; color: #18181b !important; }
+  a:hover { text-decoration: underline; color: #1d4ed8 !important; }
+  * { box-sizing: border-box; }
+  table, .wikitable { border-collapse: collapse; background: #ffffff !important; color: #18181b !important; border-radius: 8px; margin: 1em 0; }
+  th, td { border: 1px solid #e4e4e7 !important; padding: 7px 12px; color: #18181b !important; font-size: 14px; }
+  th { background: #f4f4f5 !important; font-weight: 600; color: #18181b !important; text-align: left; }
   tr:nth-child(even) td { background: #fafafa !important; }
   .NavFrame { border: 1px solid #e4e4e7 !important; border-radius: 8px; background: #ffffff !important; margin: 12px 0; overflow: hidden; }
-  .NavHead { background: #f4f4f5 !important; color: #18181b !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
-  .NavContent { background: #ffffff !important; }
+  .NavHead { background: #f4f4f5 !important; color: #18181b !important; padding: 6px 12px !important; cursor: pointer !important; font-weight: 600; }
+  .NavContent { background: #ffffff !important; padding: 8px 12px; }
   .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #f4f4f5 !important; color: #18181b !important; }
-  .mw-collapsible-toggle { cursor: pointer; color: #71717a !important; }
-  h1, h2, h3, h4, h5 { color: #18181b !important; border-bottom: 1px solid #e4e4e7 !important; padding-bottom: 4px; }
-  #toc, .toc, .infobox { background: #f4f4f5 !important; border: 1px solid #e4e4e7 !important; border-radius: 8px; }
+  .mw-collapsible-toggle { cursor: pointer; color: #71717a !important; font-weight: 500; }
+  h1, h2, h3, h4, h5 { color: #18181b !important; border-bottom: 1px solid #e4e4e7 !important; padding-bottom: 4px; margin-top: 1.2em; font-weight: 600; }
+  #toc, .toc, .infobox { background: #f4f4f5 !important; border: 1px solid #e4e4e7 !important; border-radius: 8px; padding: 10px; margin: 1em 0; }
   .mw-editsection, .mw-editsection-bracket { display: none !important; }
+  img { max-width: 100%; height: auto; }
 `;
 
 const DARK_CSS = `
   :root { color-scheme: dark; }
   html, body {
     background: #09090b !important;
-    color: #f4f4f5 !important;
-    font-family: var(--font-sans), 'Linux Libertine', Georgia, Times, serif;
+    color: #e4e4e7 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", "Kalpurush", "SolaimanLipi", sans-serif !important;
     font-size: 15px;
-    line-height: 1.65;
+    line-height: 1.75;
     margin: 0;
     padding: 16px 24px 48px;
     max-width: 900px;
   }
-  a { color: #60a5fa !important; }
+  a { color: #60a5fa !important; text-decoration: none; }
   a:visited { color: #c084fc !important; }
   a.new, a.new:visited { color: #f87171 !important; }
-  a:hover { text-decoration: underline; }
-  * { background-color: unset !important; }
-  table, .wikitable { border-collapse: collapse; background: #18181b !important; color: #f4f4f5 !important; border-radius: 8px; }
-  th, td { border: 1px solid rgba(255, 255, 255, 0.1) !important; padding: 6px 10px; color: #f4f4f5 !important; }
-  th { background: #27272a !important; color: #fafafa !important; font-weight: 600; }
-  tr:nth-child(even) td { background: #1f1f23 !important; }
+  a:hover { text-decoration: underline; color: #93c5fd !important; }
+  * { box-sizing: border-box; }
+  table, .wikitable { border-collapse: collapse; background: #18181b !important; color: #e4e4e7 !important; border-radius: 8px; margin: 1em 0; border: 1px solid rgba(255, 255, 255, 0.1) !important; }
+  th, td { border: 1px solid rgba(255, 255, 255, 0.08) !important; padding: 7px 12px; color: #e4e4e7 !important; font-size: 14px; }
+  th { background: #27272a !important; color: #fafafa !important; font-weight: 600; text-align: left; }
+  tr:nth-child(even) td { background: #18181b !important; }
   .NavFrame { border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 8px; background: #18181b !important; margin: 12px 0; overflow: hidden; }
-  .NavHead { background: #27272a !important; color: #fafafa !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
-  .NavContent { background: #18181b !important; }
+  .NavHead { background: #27272a !important; color: #fafafa !important; padding: 6px 12px !important; cursor: pointer !important; font-weight: 600; }
+  .NavContent { background: #18181b !important; padding: 8px 12px; }
   .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #27272a !important; color: #fafafa !important; }
-  .mw-collapsible-toggle { cursor: pointer; color: #a1a1aa !important; }
-  h1, h2, h3, h4, h5 { color: #fafafa !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; padding-bottom: 4px; }
-  #toc, .toc, .infobox { background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 8px; color: #f4f4f5 !important; }
+  .mw-collapsible-toggle { cursor: pointer; color: #a1a1aa !important; font-weight: 500; }
+  h1, h2, h3, h4, h5 { color: #fafafa !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; padding-bottom: 4px; margin-top: 1.2em; font-weight: 600; }
+  #toc, .toc, .infobox { background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 8px; padding: 10px; margin: 1em 0; color: #e4e4e7 !important; }
   .mw-editsection, .mw-editsection-bracket { display: none !important; }
+  img { max-width: 100%; height: auto; }
 `;
 
 function formatDateDayFirst(val?: string | null) {
@@ -371,6 +373,9 @@ export default function ReviewQueueClient({
     }
     return [];
   });
+  const [hasMore, setHasMore] = useState<boolean>(() => Boolean(initialArticles?.has_more));
+  const [nextCursor, setNextCursor] = useState<number | undefined>(() => initialArticles?.next_cursor);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentArticle, setCurrentArticle] = useState<any | null>(null);
   const [comment, setComment] = useState("");
   const [bulkComment, setBulkComment] = useState("");
@@ -699,10 +704,15 @@ ${body}
             : fetchMe().catch(
                 () => ({ is_authenticated: false, role: "anonymous" } as UserSession)
               );
-        const aDataPromise =
+        const aDataPromise: Promise<KeysetResponse> =
           initialArticles?.items && initialArticles.items.length > 0
             ? Promise.resolve(initialArticles)
-            : fetchArticles(code, undefined, undefined, 500).catch(() => ({ items: [], total: 0 }));
+            : fetchArticles(code, undefined, undefined, 500).catch(() => ({
+                items: [],
+                total: 0,
+                has_more: false,
+                next_cursor: undefined,
+              }));
 
         const [cData, uData, aData] = await Promise.all([
           cDataPromise,
@@ -714,6 +724,8 @@ ${body}
         if (uData) setUser(uData);
         const norm = (aData?.items || []).map(normalizeArticle);
         setArticles(norm);
+        setHasMore(Boolean(aData?.has_more));
+        setNextCursor(aData?.next_cursor);
 
         if (cData?.juries && cData.juries.length > 0) {
           setSelectedJudge(uData?.wiki_username || cData.juries[0]);
@@ -833,16 +845,50 @@ ${body}
     [forSidebar, otherReviewedArticles]
   );
 
+  const loadMoreArticles = useCallback(async () => {
+    if (isLoadingMore || !hasMore || !nextCursor) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await fetchArticles(code, nextCursor, undefined, 500);
+      if (res?.items?.length) {
+        const norm = res.items.map(normalizeArticle);
+        setArticles((prev) => {
+          const existingIds = new Set(prev.map((a) => a.article_id));
+          const uniqueNew = norm.filter((a) => !existingIds.has(a.article_id));
+          return [...prev, ...uniqueNew];
+        });
+      }
+      setHasMore(Boolean(res?.has_more));
+      setNextCursor(res?.next_cursor);
+    } catch (err) {
+      console.error("Failed to load more articles", err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [code, hasMore, isLoadingMore, nextCursor]);
+
   const listTabs = useMemo(() => {
+    const totalPendingCount =
+      !searchQuery && contest?.pending_articles && contest.pending_articles > filteredNewArticles.length
+        ? contest.pending_articles
+        : filteredNewArticles.length;
+
     const tabs = [
-      { id: "queue", key: "pending", label: "Queue", list: filteredNewArticles },
-      { id: "rereview", key: "judged", label: "Re-review", list: filteredJudgedArticles },
+      { id: "queue", key: "pending", label: "Queue", count: totalPendingCount, list: filteredNewArticles },
+      { id: "rereview", key: "judged", label: "Re-review", count: filteredJudgedArticles.length, list: filteredJudgedArticles },
     ];
     if (otherReviewedArticles.length > 0) {
-      tabs.push({ id: "others", key: "other", label: "Other judges", list: filteredOtherArticles });
+      tabs.push({ id: "others", key: "other", label: "Other judges", count: filteredOtherArticles.length, list: filteredOtherArticles });
     }
     return tabs;
-  }, [filteredJudgedArticles, filteredNewArticles, filteredOtherArticles, otherReviewedArticles.length]);
+  }, [
+    contest?.pending_articles,
+    filteredJudgedArticles.length,
+    filteredNewArticles.length,
+    filteredOtherArticles.length,
+    otherReviewedArticles.length,
+    searchQuery,
+  ]);
 
   const activeTab = useMemo(() => {
     return listTabs.find((t) => t.id === listTab) || listTabs[0];
@@ -896,6 +942,9 @@ ${body}
       ...prev,
       [activeTab.key]: Math.min((prev[activeTab.key] || screenful(44)) + LIST_STEP, activeTab.list.length),
     }));
+    if (activeTab.id === "queue" && hasMore && !isLoadingMore) {
+      loadMoreArticles();
+    }
   };
 
   // Bulk operations
@@ -990,6 +1039,18 @@ ${body}
             : article
         )
       );
+      setContest((prev) =>
+        prev
+          ? {
+              ...prev,
+              pending_articles: (prev.pending_articles || 0) + 1,
+              accepted_articles:
+                pending.decision === "accepted"
+                  ? Math.max(0, (prev.accepted_articles || 1) - 1)
+                  : prev.accepted_articles,
+            }
+          : prev
+      );
       dismissUndo();
       const restored = articles.find((a) => a.article_id === pending.articleId);
       if (restored) {
@@ -1042,6 +1103,17 @@ ${body}
             ? { ...article, status: decision, reviews: [...(article.reviews || []), optimisticReview] }
             : article
         )
+      );
+
+      setContest((prev) =>
+        prev
+          ? {
+              ...prev,
+              pending_articles: Math.max(0, (prev.pending_articles || 1) - 1),
+              accepted_articles:
+                decision === "accepted" ? (prev.accepted_articles || 0) + 1 : prev.accepted_articles,
+            }
+          : prev
       );
 
       if (listTab !== "queue") {
@@ -1098,6 +1170,15 @@ ${body}
       setCurrentArticle(null);
       setMobileTab("list");
       setArticles((prev) => prev.filter((a) => a.article_id !== removedId));
+      setContest((prev) =>
+        prev
+          ? {
+              ...prev,
+              total_articles: Math.max(0, (prev.total_articles || 1) - 1),
+              pending_articles: Math.max(0, (prev.pending_articles || 1) - 1),
+            }
+          : prev
+      );
     } catch (error) {
       console.error("Error removing article", error);
     } finally {
@@ -1604,7 +1685,7 @@ ${body}
                             : "bg-muted/80 text-muted-foreground"
                         }`}
                       >
-                        {tab.list.length.toLocaleString()}
+                        {tab.count.toLocaleString()}
                       </span>
                     </button>
                   );
@@ -2216,7 +2297,11 @@ ${body}
         >
           <CdxIcon icon={cdxIconMenu} className="rq-nav-icon" />
           <span className="rq-nav-label">Queue</span>
-          {newArticles.length > 0 && <span className="rq-nav-badge">{newArticles.length}</span>}
+          {(contest?.pending_articles ?? newArticles.length) > 0 && (
+            <span className="rq-nav-badge">
+              {(contest?.pending_articles ?? newArticles.length).toLocaleString()}
+            </span>
+          )}
         </button>
         <button
           className={`rq-nav-btn ${mobileTab === "review" ? "is-active" : ""}`}

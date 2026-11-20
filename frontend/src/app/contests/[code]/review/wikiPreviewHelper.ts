@@ -120,30 +120,30 @@ export const LIGHT_CSS = `
   :root { color-scheme: light; }
   html, body {
     background: #ffffff !important;
-    color: #202122 !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Liberation Sans', sans-serif;
+    color: #18181b !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", "Kalpurush", "SolaimanLipi", sans-serif !important;
     font-size: 15px;
-    line-height: 1.65;
+    line-height: 1.75;
     margin: 0;
     padding: 16px 20px 48px;
     max-width: 900px;
   }
-  a { color: #36c !important; text-decoration: none; }
-  a:visited { color: #5a3696 !important; }
-  a.new, a.new:visited { color: #d73333 !important; }
-  a:hover { text-decoration: underline; }
+  a { color: #2563eb !important; text-decoration: none; }
+  a:visited { color: #7c3aed !important; }
+  a.new, a.new:visited { color: #dc2626 !important; }
+  a:hover { text-decoration: underline; color: #1d4ed8 !important; }
   * { box-sizing: border-box; }
-  table, .wikitable { border-collapse: collapse; background: #ffffff !important; color: #202122 !important; margin: 1em 0; }
-  th, td { border: 1px solid #a2a9b1 !important; padding: 6px 10px; color: #202122 !important; }
-  th { background: #eaecf0 !important; font-weight: bold; text-align: left; }
-  tr:nth-child(even) td { background: #f8f9fa !important; }
-  .NavFrame { border: 1px solid #a2a9b1 !important; border-radius: 4px; background: #ffffff !important; margin: 12px 0; overflow: hidden; }
-  .NavHead { background: #eaecf0 !important; color: #202122 !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
-  .NavContent { background: #ffffff !important; padding: 8px 10px; }
-  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #eaecf0 !important; color: #202122 !important; }
-  .mw-collapsible-toggle { cursor: pointer; color: #54595d !important; }
-  h1, h2, h3, h4, h5 { color: #000000 !important; border-bottom: 1px solid #a2a9b1 !important; padding-bottom: 4px; margin-top: 1.2em; }
-  #toc, .toc, .infobox { background: #f8f9fa !important; border: 1px solid #a2a9b1 !important; border-radius: 4px; padding: 10px; margin: 1em 0; }
+  table, .wikitable { border-collapse: collapse; background: #ffffff !important; color: #18181b !important; margin: 1em 0; border-radius: 8px; }
+  th, td { border: 1px solid #e4e4e7 !important; padding: 7px 12px; color: #18181b !important; font-size: 14px; }
+  th { background: #f4f4f5 !important; font-weight: 600; text-align: left; }
+  tr:nth-child(even) td { background: #fafafa !important; }
+  .NavFrame { border: 1px solid #e4e4e7 !important; border-radius: 8px; background: #ffffff !important; margin: 12px 0; overflow: hidden; }
+  .NavHead { background: #f4f4f5 !important; color: #18181b !important; padding: 6px 12px !important; cursor: pointer !important; font-weight: 600; }
+  .NavContent { background: #ffffff !important; padding: 8px 12px; }
+  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #f4f4f5 !important; color: #18181b !important; }
+  .mw-collapsible-toggle { cursor: pointer; color: #71717a !important; font-weight: 500; }
+  h1, h2, h3, h4, h5 { color: #18181b !important; border-bottom: 1px solid #e4e4e7 !important; padding-bottom: 4px; margin-top: 1.2em; font-weight: 600; }
+  #toc, .toc, .infobox { background: #f4f4f5 !important; border: 1px solid #e4e4e7 !important; border-radius: 8px; padding: 10px; margin: 1em 0; }
   .mw-editsection, .mw-editsection-bracket { display: none !important; }
   img { max-width: 100%; height: auto; }
 `;

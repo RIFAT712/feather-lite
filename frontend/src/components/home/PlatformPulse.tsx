@@ -20,20 +20,37 @@ import {
 
 /**
  * Silky smooth cubic ease-out counter matching 60 FPS performance.
- * Curve: 1 - Math.pow(1 - progress, 3) over 850ms for a satisfying dynamic roll.
+ * Initializes immediately to SSR value to prevent jarring 0-count flashes.
+ * Curve: startVal + (value - startVal) * (1 - Math.pow(1 - progress, 3)) over 650ms.
  */
 function SmoothCount({ value, formatFn }: { value: number; formatFn: (v: number) => string }) {
-  const [displayValue, setDisplayValue] = useState(0);
+  const [displayValue, setDisplayValue] = useState<number>(() => value || 0);
   const animRef = useRef<number | null>(null);
+  const prevValueRef = useRef<number>(value || 0);
+  const hasMountedRef = useRef<boolean>(false);
 
   useEffect(() => {
-    if (!value || value <= 0) {
-      setDisplayValue(0);
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      prevValueRef.current = value || 0;
+      setDisplayValue(value || 0);
       return;
     }
 
+    if (!value || value <= 0) {
+      setDisplayValue(0);
+      prevValueRef.current = 0;
+      return;
+    }
+
+    if (value === prevValueRef.current) {
+      return;
+    }
+
+    const startVal = prevValueRef.current || 0;
+    prevValueRef.current = value;
     let startTime: number | null = null;
-    const duration = 850; // ms
+    const duration = 650; // ms
 
     const step = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
@@ -41,7 +58,7 @@ function SmoothCount({ value, formatFn }: { value: number; formatFn: (v: number)
       const progress = Math.min(1, elapsed / duration);
       // Cubic ease-out
       const easeOut = 1 - Math.pow(1 - progress, 3);
-      const current = Math.round(value * easeOut);
+      const current = Math.round(startVal + (value - startVal) * easeOut);
       setDisplayValue(current);
 
       if (progress < 1) {
@@ -93,7 +110,9 @@ export default function PlatformPulse({ initialOverview }: PlatformPulseProps) {
     queryKey: ["platformOverview"],
     queryFn: fetchPlatformOverview,
     initialData: initialOverview || undefined,
+    initialDataUpdatedAt: initialOverview ? Date.now() : undefined,
     staleTime: 60 * 1000,
+    refetchOnMount: false,
   });
 
   const maxDaily = useMemo(() => {

@@ -56,7 +56,9 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
     queryKey: ["contests"],
     queryFn: fetchContests,
     initialData: initialContests,
+    initialDataUpdatedAt: initialContests?.length ? Date.now() : undefined,
     staleTime: 60 * 1000,
+    refetchOnMount: false,
   });
 
   // Extract unique projects (normalized Wikimedia projects: wikipedia, wiktionary, wikisource, wikibooks, etc.)

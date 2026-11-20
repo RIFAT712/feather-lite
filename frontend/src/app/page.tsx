@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getServerContests } from "@/lib/server-api";
+import { getServerContests, getServerPlatformOverview } from "@/lib/server-api";
 import HomeClient from "./HomeClient";
 
 export const metadata: Metadata = {
@@ -8,6 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const contests = await getServerContests();
-  return <HomeClient initialContests={contests} />;
+  const [contests, overview] = await Promise.all([
+    getServerContests(),
+    getServerPlatformOverview(),
+  ]);
+
+  return <HomeClient initialContests={contests} initialOverview={overview} />;
 }

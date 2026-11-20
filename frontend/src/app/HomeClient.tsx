@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { fetchContests, Contest } from "@/lib/api";
+import { fetchContests, Contest, PlatformOverview } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
 import { getProjectMeta, getWikiInfo, getLanguageName } from "@/lib/wikis";
 import { Badge } from "@/components/ui/badge";
@@ -41,9 +41,10 @@ import {
 
 interface HomeClientProps {
   initialContests?: Contest[];
+  initialOverview?: PlatformOverview | null;
 }
 
-export default function HomeClient({ initialContests }: HomeClientProps) {
+export default function HomeClient({ initialContests, initialOverview }: HomeClientProps) {
   const { t, n, locale, isRtl } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"active" | "all" | "ended">("active");
@@ -182,7 +183,7 @@ export default function HomeClient({ initialContests }: HomeClientProps) {
       
       {/* Platform Movement Pulse (All Time & This Month) */}
       <div className="mt-5">
-        <PlatformPulse />
+        <PlatformPulse initialOverview={initialOverview} />
       </div>
 
       {/* 2. Unified Toolbar Block */}

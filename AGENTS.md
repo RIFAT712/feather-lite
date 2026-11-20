@@ -198,8 +198,15 @@ All agents modifying code in this repository must uphold the following rules:
 * No version badge pills next to the logo in headers or footers.
 
 ### H. Next.js 16 & React 19 Standards (Server-Side Rendering SSR & Client Split)
-* **Hybrid SSR Architecture:** Pages (`page.tsx`) MUST be Server Components without `"use client"`. They execute server-side data fetching (`getServerContest`, `getServerMe`, `getServerContests` in `frontend/src/lib/server-api.ts`), generate dynamic SEO metadata (`generateMetadata()`), and pass pre-fetched data as `initialData` into interactive client components (`*Client.tsx`).
-* **Interactive Client Components:** Use `"use client"` ONLY in leaf/interactive components (e.g. `JuryHubClient.tsx`, `ReviewQueueClient.tsx`, `HomeClient.tsx`) that require state, browser event listeners, keyboard shortcuts, or React Query cache management.
+* **Hybrid SSR Architecture:** Pages (`page.tsx`) MUST be Server Components without `"use client"`. They execute server-side data fetching (`getServerPlatformOverview`, `getServerContest`, `getServerMe`, `getServerContests`, `getServerUserProfile`, `getServerContestUserProfile` in `frontend/src/lib/server-api.ts`), generate dynamic SEO metadata (`generateMetadata()`), and pass pre-fetched data as `initialData` into interactive client components (`*Client.tsx`).
+* **Covered SSR Routes:**
+  * `/` (`page.tsx` -> `HomeClient.tsx`): Pre-fetches `getServerContests()` and `getServerPlatformOverview()`, completely eliminating skeleton flash on Platform Pulse metrics and daily activity sparkline.
+  * `/contests/[code]` (`page.tsx` -> `ContestDashboardClient.tsx`): Pre-renders contest metadata, description, wiki details, and generates OpenGraph tags via `getServerContest()`.
+  * `/contests/[code]/jury` (`page.tsx` -> `JuryHubClient.tsx`): Pre-fetches contest configuration and user auth session.
+  * `/contests/[code]/review` (`page.tsx` -> `ReviewQueueClient.tsx`): Pre-fetches contest metadata and user auth session.
+  * `/users/[username]` (`page.tsx` -> `UserGlobalProfileClient.tsx`): Pre-fetches user statistics via `getServerUserProfile()`.
+  * `/contests/[code]/users/[username]` (`page.tsx` -> `ContestUserProfileClient.tsx`): Pre-fetches user contest contributions via `getServerContestUserProfile()`.
+* **Interactive Client Components:** Use `"use client"` ONLY in leaf/interactive components (e.g. `JuryHubClient.tsx`, `ReviewQueueClient.tsx`, `HomeClient.tsx`, `ContestDashboardClient.tsx`) that require state, browser event listeners, keyboard shortcuts, or React Query cache management.
 * **Virtualization:** Table rows for contests with many submissions must use `@tanstack/react-virtual` to avoid rendering large numbers of DOM nodes.
 * **Button Primitives:** Button primitives in this repo use `@base-ui/react/button` and do not support Radix `asChild`. Use `buttonVariants({ variant, size })` on links.
 

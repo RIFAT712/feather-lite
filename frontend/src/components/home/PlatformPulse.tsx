@@ -21,12 +21,18 @@ import {
 /**
  * Silky smooth cubic ease-out counter matching 60 FPS performance
  * Curve: 1 - Math.pow(1 - progress, 3) over 700ms
+ * When SSR renders, displays the real value directly to eliminate content flash.
  */
 function SmoothCount({ value, formatFn }: { value: number; formatFn: (v: number) => string }) {
-  const [displayValue, setDisplayValue] = useState(0);
+  const [displayValue, setDisplayValue] = useState(value);
   const animRef = useRef<number | null>(null);
+  const prevValueRef = useRef(value);
 
   useEffect(() => {
+    if (prevValueRef.current === value) return;
+    const startVal = prevValueRef.current;
+    prevValueRef.current = value;
+
     if (!value || value <= 0) {
       setDisplayValue(0);
       return;
@@ -41,7 +47,7 @@ function SmoothCount({ value, formatFn }: { value: number; formatFn: (v: number)
       const progress = Math.min(1, elapsed / duration);
       // Cubic ease-out
       const easeOut = 1 - Math.pow(1 - progress, 3);
-      const current = Math.round(value * easeOut);
+      const current = Math.round(startVal + (value - startVal) * easeOut);
       setDisplayValue(current);
 
       if (progress < 1) {
@@ -60,7 +66,11 @@ function SmoothCount({ value, formatFn }: { value: number; formatFn: (v: number)
   return <>{formatFn(displayValue)}</>;
 }
 
-export default function PlatformPulse() {
+export interface PlatformPulseProps {
+  initialOverview?: PlatformOverview | null;
+}
+
+export default function PlatformPulse({ initialOverview }: PlatformPulseProps) {
   const { t, n } = useI18n();
   const [collapsed, setCollapsed] = useState<boolean>(false);
 
@@ -88,6 +98,7 @@ export default function PlatformPulse() {
   const { data, isLoading } = useQuery<PlatformOverview>({
     queryKey: ["platformOverview"],
     queryFn: fetchPlatformOverview,
+    initialData: initialOverview || undefined,
     staleTime: 60 * 1000,
   });
 

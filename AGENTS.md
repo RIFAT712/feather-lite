@@ -190,11 +190,11 @@ All agents modifying code in this repository must uphold the following rules:
 * Always brand the application simply as **Feather** (never "Feather 2.0" or "Feather New" in user-facing UI or copy).
 * No version badge pills next to the logo in headers or footers.
 
-### H. Next.js 16 & React 19 Standards
-* Respect `frontend/AGENTS.md` regarding breaking changes in Next.js 16 / React 19.
-* Use Server Components where possible; use `"use client"` only for interactive components (hooks, state, event handlers).
-* Table rows for contests with many submissions must use `@tanstack/react-virtual` to avoid rendering large numbers of DOM nodes.
-* Note: Button primitives in this repo use `@base-ui/react/button` and do not support Radix `asChild`. Use `buttonVariants({ variant, size })` on links.
+### H. Next.js 16 & React 19 Standards (Server-Side Rendering SSR & Client Split)
+* **Hybrid SSR Architecture:** Pages (`page.tsx`) MUST be Server Components without `"use client"`. They execute server-side data fetching (`getServerContest`, `getServerMe`, `getServerContests` in `frontend/src/lib/server-api.ts`), generate dynamic SEO metadata (`generateMetadata()`), and pass pre-fetched data as `initialData` into interactive client components (`*Client.tsx`).
+* **Interactive Client Components:** Use `"use client"` ONLY in leaf/interactive components (e.g. `JuryHubClient.tsx`, `ReviewQueueClient.tsx`, `HomeClient.tsx`) that require state, browser event listeners, keyboard shortcuts, or React Query cache management.
+* **Virtualization:** Table rows for contests with many submissions must use `@tanstack/react-virtual` to avoid rendering large numbers of DOM nodes.
+* **Button Primitives:** Button primitives in this repo use `@base-ui/react/button` and do not support Radix `asChild`. Use `buttonVariants({ variant, size })` on links.
 
 ### I. Modern Web Guidance (Google Chrome Platform Standards)
 * Native primitives over heavy polyfills: `<dialog>` for modals, HTML `popover` for popovers, CSS Anchor Positioning, and View Transitions API.

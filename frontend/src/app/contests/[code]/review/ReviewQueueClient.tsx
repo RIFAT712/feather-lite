@@ -2,6 +2,9 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
+import { Sun, Moon } from "lucide-react";
+import { toast } from "sonner";
 import "@wikimedia/codex/dist/codex.style.css";
 import "./ReviewQueue.css";
 import {
@@ -180,6 +183,37 @@ const LIGHT_CSS = `
   .mw-editsection, .mw-editsection-bracket { display: none !important; }
 `;
 
+const DARK_CSS = `
+  :root { color-scheme: dark; }
+  html, body {
+    background: #101726 !important;
+    color: #e2e8f0 !important;
+    font-family: 'Linux Libertine', Georgia, Times, serif;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 10px 14px 28px;
+    max-width: 860px;
+  }
+  a { color: #60a5fa !important; }
+  a:visited { color: #a78bfa !important; }
+  a.new, a.new:visited { color: #f87171 !important; }
+  a:hover { text-decoration: underline; }
+  * { background-color: unset !important; }
+  table, .wikitable { border-collapse: collapse; background: #172033 !important; color: #e2e8f0 !important; }
+  th, td { border: 1px solid #263348 !important; padding: 6px 10px; color: #e2e8f0 !important; }
+  th { background: #1e293b !important; }
+  tr:nth-child(even) td { background: #131c2d !important; }
+  .NavFrame { border: 1px solid #263348 !important; border-radius: 6px; background: #172033 !important; margin: 12px 0; overflow: hidden; }
+  .NavHead { background: #1e293b !important; color: #e2e8f0 !important; padding: 6px 10px !important; cursor: pointer !important; font-weight: 600; }
+  .NavContent { background: #172033 !important; }
+  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #1e293b !important; color: #e2e8f0 !important; }
+  .mw-collapsible-toggle { cursor: pointer; color: #94a3b8 !important; }
+  h1, h2, h3, h4, h5 { color: #f1f5f9 !important; border-bottom: 1px solid #263348 !important; padding-bottom: 4px; }
+  #toc, .toc, .infobox { background: #172033 !important; border: 1px solid #263348 !important; border-radius: 6px; }
+  .mw-editsection, .mw-editsection-bracket { display: none !important; }
+`;
+
 function formatDateDayFirst(val?: string | null) {
   if (!val) return "—";
   try {
@@ -295,6 +329,9 @@ export default function ReviewQueueClient({
   initialContest,
   initialUser,
 }: ReviewQueueClientProps) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
   const [contest, setContest] = useState<Contest | null>(initialContest || null);
   const [user, setUser] = useState<UserSession | null>(initialUser || null);
 
@@ -513,12 +550,13 @@ export default function ReviewQueueClient({
         if (requestId !== previewRequestIdRef.current) return;
         const wikitext = data.parse?.wikitext?.["*"] ?? "";
         setWikitextSource(wikitext);
+        const css = isDark ? DARK_CSS : LIGHT_CSS;
         setPreviewSrcdoc(`<!DOCTYPE html>
 <html lang="bn">
 <head>
 <meta charset="utf-8">
 <base href="${base}/wiki/">
-<style>${LIGHT_CSS}</style>
+<style>${css}</style>
 </head>
 <body class="mw-body mw-parser-output">
 ${body}
@@ -536,8 +574,14 @@ ${body}
         if (requestId === previewRequestIdRef.current) setIsLoadingPreview(false);
       }
     },
-    [contest?.wiki_url]
+    [contest?.wiki_url, isDark]
   );
+
+  useEffect(() => {
+    if (currentArticle?.title) {
+      fetchPreview(currentArticle.title);
+    }
+  }, [isDark]);
 
   const getMyLatestDecision = useCallback(
     (article: any) => {
@@ -1236,7 +1280,7 @@ ${body}
   const juryList = contest?.juries || [];
 
   return (
-    <div className="rq-app rq-theme-light">
+    <div className={`rq-app ${isDark ? "rq-theme-dark" : "rq-theme-light"}`}>
       {!isLoading && !isAuthorized ? (
         <div className="rq-center-state">
           <div className="rq-card-unauth">
@@ -1269,6 +1313,13 @@ ${body}
           >
             <header className="rq-panel-header">
               <div className="rq-panel-titlebar">
+                <Link
+                  href={`/contests/${code}`}
+                  className="rq-icon-btn"
+                  title="Back to Contest Dashboard"
+                >
+                  <CdxIcon icon={cdxIconArrowPrevious} />
+                </Link>
                 <span className="rq-live-dot" role="img" aria-label="Live: the queue refreshes on its own"></span>
                 <h2 className="rq-panel-title">Review Queue</h2>
                 <div className="rq-titlebar-actions">
@@ -1636,17 +1687,54 @@ ${body}
                     </button>
 
                     <div className="rq-article-meta-area">
-                      <a
-                        href={articleUrl(currentArticle.title)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rq-article-title-link"
-                        title={currentArticle.title}
-                      >
-                        {currentArticle.title}
-                      </a>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <a
+                          href={articleUrl(currentArticle.title)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rq-article-title-link"
+                          title={currentArticle.title}
+                        >
+                          {currentArticle.title}
+                        </a>
+                        <button
+                          type="button"
+                          className="rq-icon-btn"
+                          style={{ padding: "3px", width: "24px", height: "24px" }}
+                          title="Copy article title"
+                          onClick={() => {
+                            navigator.clipboard.writeText(currentArticle.title);
+                            toast.success("Article title copied!");
+                          }}
+                        >
+                          <CdxIcon icon={cdxIconCopy} size={14} />
+                        </button>
+                      </div>
                       <div className="rq-tags">
                         <span className="rq-tag">by {currentArticle.submitted_by}</span>
+                        {currentArticle.wiki_creator &&
+                          currentArticle.wiki_creator.toLowerCase() ===
+                            currentArticle.submitted_by.toLowerCase() && (
+                            <span
+                              className="rq-tag"
+                              style={{
+                                color: "var(--rq-success)",
+                                borderColor: "var(--rq-success)",
+                              }}
+                            >
+                              ✓ Creator
+                            </span>
+                          )}
+                        {currentArticle.word_count > 0 && (
+                          <span className="rq-tag">
+                            {currentArticle.word_count.toLocaleString()} words
+                          </span>
+                        )}
+                        {currentArticle.byte_count > 0 && (
+                          <span className="rq-tag">
+                            {currentArticle.byte_count.toLocaleString()} bytes
+                          </span>
+                        )}
                         {currentArticle.wiki_creation_date && (
                           <span className="rq-tag rq-tag-date">
                             {formatDateDayFirst(currentArticle.wiki_creation_date)}
@@ -1674,6 +1762,28 @@ ${body}
                     </div>
 
                     <div className="rq-header-tools">
+                      <Link
+                        href={`/contests/${code}/jury`}
+                        className="rq-btn-secondary rq-desktop-only"
+                        title="Jury Hub stats and queue redistribution"
+                      >
+                        Jury Hub
+                      </Link>
+
+                      <button
+                        type="button"
+                        className="rq-btn-secondary"
+                        title={isDark ? "Switch to Light mode" : "Switch to Dark mode"}
+                        aria-label="Toggle theme"
+                        onClick={() => setTheme(isDark ? "light" : "dark")}
+                      >
+                        {isDark ? (
+                          <Sun className="h-3.5 w-3.5 text-amber-400" />
+                        ) : (
+                          <Moon className="h-3.5 w-3.5 text-blue-500" />
+                        )}
+                      </button>
+
                       <button
                         type="button"
                         className={`rq-wikitext-switch ${showWikitext ? "is-on" : ""}`}

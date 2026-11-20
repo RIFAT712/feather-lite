@@ -659,7 +659,7 @@ ${body}
             : fetchMe().catch(
                 () => ({ is_authenticated: false, role: "anonymous" } as UserSession)
               );
-        const aDataPromise = fetchArticles(code, 500).catch(() => ({ items: [], total: 0 }));
+        const aDataPromise = fetchArticles(code, undefined, undefined, 500).catch(() => ({ items: [], total: 0 }));
 
         const [cData, uData, aData] = await Promise.all([
           cDataPromise,

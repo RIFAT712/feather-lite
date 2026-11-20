@@ -95,8 +95,36 @@ func Connect(cfg *config.Config) (*DB, error) {
 	_, _ = db.Exec("UPDATE talk_page_jobs SET status = 'queued' WHERE status = 'processing';")
 	// Reset any queued jobs that were placed into backoff due to OAuth token verification check
 	_, _ = db.Exec("UPDATE talk_page_jobs SET retry_after = NULL, attempts = 0, error = '' WHERE status = 'queued' AND error LIKE '%Wikimedia OAuth session expired%';")
+	// Clear any malformed lock records with monotonic clock artifacts
+	_, _ = db.Exec("UPDATE articles SET locked_until = NULL, locked_by_id = NULL WHERE locked_until LIKE '%m=+%';")
 
 	return &DB{DB: db, DBType: cfg.DBType}, nil
+}
+
+func parseFlexTime(s string) *time.Time {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	if idx := strings.Index(s, " m="); idx != -1 {
+		s = s[:idx]
+	}
+	layouts := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02 15:04:05.999999999 -0700 MST",
+		"2006-01-02 15:04:05 -0700 MST",
+		"2006-01-02 15:04:05.999999999",
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02",
+	}
+	for _, l := range layouts {
+		if t, err := time.Parse(l, s); err == nil {
+			return &t
+		}
+	}
+	return nil
 }
 
 // Keyset Paginated Article Fetch - O(1) time on 50,000+ entries (supports standalone & umbrella campaigns)
@@ -105,13 +133,13 @@ func (d *DB) GetArticlesKeyset(contestID int64, beforeID int64, status string, a
 }
 
 func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status string, assignedToID int64, assignedToUsername string, limit int) (*models.KeysetPaginationResult, error) {
-	if limit <= 0 || limit > 100 {
+	if limit <= 0 || limit > 500 {
 		limit = 50
 	}
 
 	baseQuery := `
 		SELECT a.id, a.contest_id, c.code, c.wiki_dbname, c.wiki_url, c.wiki_lang, a.title, a.submitter_id, u.wiki_username, a.status, 
-		       a.validation_error, a.wiki_creator, a.wiki_creation_date, a.byte_count, a.word_count, a.word_count_verified,
+		       COALESCE(a.validation_error, ''), COALESCE(a.wiki_creator, ''), a.wiki_creation_date, a.byte_count, a.word_count, COALESCE(a.word_count_verified, 1),
 		       a.assigned_to_id, COALESCE(ju.wiki_username, ''), a.submitted_at,
 		       CASE WHEN a.locked_until IS NOT NULL AND a.locked_until > CURRENT_TIMESTAMP THEN a.locked_until ELSE NULL END,
 		       CASE WHEN a.locked_until IS NOT NULL AND a.locked_until > CURRENT_TIMESTAMP THEN a.locked_by_id ELSE NULL END,
@@ -157,14 +185,30 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 		var a models.Article
 		var assignedUsername string
 		var lockedUsername string
+		var valErr, creator, creationDateStr, submittedAtStr, lockedUntilStr sql.NullString
+		var wordCountVerifiedInt int64
 		err := rows.Scan(
 			&a.ID, &a.ContestID, &a.ContestCode, &a.WikiDbName, &a.WikiURL, &a.WikiLang, &a.Title, &a.SubmitterID, &a.SubmitterUsername,
-			&a.Status, &a.ValidationError, &a.WikiCreator, &a.WikiCreationDate, &a.ByteCount,
-			&a.WordCount, &a.WordCountVerified, &a.AssignedToID, &assignedUsername, &a.SubmittedAt,
-			&a.LockedUntil, &a.LockedByID, &lockedUsername,
+			&a.Status, &valErr, &creator, &creationDateStr, &a.ByteCount,
+			&a.WordCount, &wordCountVerifiedInt, &a.AssignedToID, &assignedUsername, &submittedAtStr,
+			&lockedUntilStr, &a.LockedByID, &lockedUsername,
 		)
 		if err != nil {
 			return nil, err
+		}
+		a.ValidationError = valErr.String
+		a.WikiCreator = creator.String
+		a.WordCountVerified = wordCountVerifiedInt == 1
+		if creationDateStr.Valid {
+			a.WikiCreationDate = parseFlexTime(creationDateStr.String)
+		}
+		if submittedAtStr.Valid {
+			if t := parseFlexTime(submittedAtStr.String); t != nil {
+				a.SubmittedAt = *t
+			}
+		}
+		if lockedUntilStr.Valid {
+			a.LockedUntil = parseFlexTime(lockedUntilStr.String)
 		}
 		if assignedUsername != "" {
 			a.AssignedToUsername = assignedUsername

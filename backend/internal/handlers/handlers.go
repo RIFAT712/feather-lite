@@ -1593,7 +1593,7 @@ func (h *Handler) GetContestArticles(w http.ResponseWriter, r *http.Request) {
 
 	limit := 50
 	if l := r.URL.Query().Get("limit"); l != "" {
-		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 && parsedLimit <= 500 {
 			limit = parsedLimit
 		}
 	}
@@ -1607,6 +1607,7 @@ func (h *Handler) GetContestArticles(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.db.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, assignedToUsername, limit)
 	if err != nil {
+		log.Printf("[GetContestArticles] Error querying articles for contest %d (%s): %v", contestID, code, err)
 		jsonError(w, http.StatusInternalServerError, "Failed to query articles")
 		return
 	}
@@ -2278,8 +2279,9 @@ func (h *Handler) AcquireArticleLock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Acquire or refresh 5-minute lock
-	expiry := time.Now().Add(5 * time.Minute)
-	_, err = h.db.Exec("UPDATE articles SET locked_until = ?, locked_by_id = ? WHERE id = ?", expiry, currentUser.UserID, articleID)
+	expiry := time.Now().Add(5 * time.Minute).UTC().Truncate(time.Second)
+	expiryStr := expiry.Format("2006-01-02 15:04:05")
+	_, err = h.db.Exec("UPDATE articles SET locked_until = ?, locked_by_id = ? WHERE id = ?", expiryStr, currentUser.UserID, articleID)
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, "Failed to acquire lock")
 		return

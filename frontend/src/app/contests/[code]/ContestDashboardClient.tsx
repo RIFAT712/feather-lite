@@ -999,8 +999,16 @@ export default function ContestDashboardClient({
           </CardHeader>
           <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
             <div className="flex items-baseline gap-1.5 sm:gap-2">
-              <span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                {contest.accepted_articles || 0}
+              <span
+                className={`text-xl sm:text-2xl font-bold tracking-tight ${
+                  contest.is_umbrella
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-amber-500 dark:text-amber-400"
+                }`}
+              >
+                {contest.is_umbrella
+                  ? contest.accepted_articles || 0
+                  : contest.pending_articles || 0}
               </span>
               {contest.is_umbrella && contest.total_articles ? (
                 <span className="text-[11px] sm:text-xs text-muted-foreground">({acceptanceRate}%)</span>

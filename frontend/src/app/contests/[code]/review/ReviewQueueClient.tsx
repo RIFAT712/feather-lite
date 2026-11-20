@@ -427,7 +427,7 @@ export default function ReviewQueueClient({
 
   const [previewSrcdoc, setPreviewSrcdoc] = useState("");
 
-  const commentBoxRef = useRef<HTMLTextAreaElement>(null);
+  const commentBoxRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const previewRequestIdRef = useRef(0);
   const undoExpiryTimerRef = useRef<any>(null);
   const wikitextCopyTimerRef = useRef<any>(null);
@@ -2043,14 +2043,14 @@ ${body}
                     )}
                     <div className="rq-decision-form">
                       <div className="rq-input-wrapper relative flex-1 min-w-0">
-                        <MessageSquare className="h-4 w-4 text-muted-foreground/60 absolute left-3 top-2.5 pointer-events-none" />
-                        <textarea
-                          ref={commentBoxRef}
-                          className="rq-input rq-textarea pl-9"
+                        <MessageSquare className="h-4 w-4 text-muted-foreground/60 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          ref={commentBoxRef as any}
+                          type="text"
+                          className="rq-input pl-9"
                           value={comment}
                           onChange={(e) => setComment(e.target.value)}
                           placeholder="Leave a note for the submitter (optional)... (C)"
-                          rows={1}
                         />
                       </div>
 
@@ -2102,6 +2102,9 @@ ${body}
                           >
                             <SkipForward className="h-3.5 w-3.5" />{" "}
                             <span className="rq-desktop-only">Skip</span>
+                            <kbd className="rq-kbd rq-desktop-only">
+                              {shortcutKeyLabel(shortcuts.skip)}
+                            </kbd>
                           </button>
                           <button
                             type="button"

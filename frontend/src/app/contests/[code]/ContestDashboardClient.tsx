@@ -1170,10 +1170,12 @@ export default function ContestDashboardClient({
                 {(() => {
                   const isPending = contest.status === "pending_approval";
                   const isDraft = contest.status === "draft";
-                  const isEnded = contest.status === "ended";
+                  const isEnded = contest.status === "ended" || countdownInfo.isEnded;
+                  const isUpcoming = isActive && countdownInfo.isUpcoming;
 
                   let label = contest.status;
-                  if (isActive) label = t("feather-contest-status-active");
+                  if (isUpcoming) label = t("feather-contest-status-upcoming");
+                  else if (isActive) label = t("feather-contest-status-active");
                   else if (isPending) label = t("feather-contest-status-pending-approval");
                   else if (isDraft) label = t("feather-contest-status-draft");
                   else if (isEnded) label = t("feather-contest-status-ended");
@@ -1181,7 +1183,15 @@ export default function ContestDashboardClient({
                   let badgeClass = "bg-muted/40 text-muted-foreground border-border/60";
                   let dotEl = <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 shrink-0" />;
 
-                  if (isActive) {
+                  if (isUpcoming) {
+                    badgeClass = "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25";
+                    dotEl = (
+                      <span className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+                      </span>
+                    );
+                  } else if (isActive) {
                     badgeClass = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25";
                     dotEl = (
                       <span className="relative flex h-2 w-2 shrink-0">
@@ -1514,11 +1524,19 @@ export default function ContestDashboardClient({
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2 shrink-0">
                   {!countdownInfo.isEnded && (
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span
+                      className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                        countdownInfo.isUpcoming ? "bg-blue-400" : "bg-emerald-400"
+                      }`}
+                    />
                   )}
                   <span
                     className={`relative inline-flex rounded-full h-2 w-2 ${
-                      countdownInfo.isEnded ? "bg-muted-foreground" : "bg-emerald-500"
+                      countdownInfo.isEnded
+                        ? "bg-muted-foreground"
+                        : countdownInfo.isUpcoming
+                        ? "bg-blue-500"
+                        : "bg-emerald-500"
                     }`}
                   />
                 </span>

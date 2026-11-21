@@ -88,14 +88,41 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
     const start = new Date(startDateStr).getTime();
     const end = new Date(endDateStr).getTime();
     const total = Math.max(1, end - start);
-    const elapsed = Math.min(total, Math.max(0, now - start));
-    const percent = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
-    const diffMs = end - now;
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     const isEnded = now >= end;
     const notStarted = now < start;
 
-    return { percent, diffDays, isEnded, notStarted };
+    if (notStarted) {
+      const diffMs = Math.max(0, start - now);
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+      return {
+        percent: 0,
+        diffDays,
+        hours,
+        diffMs,
+        isEnded: false,
+        notStarted: true,
+      };
+    }
+
+    if (isEnded) {
+      return {
+        percent: 100,
+        diffDays: 0,
+        hours: 0,
+        diffMs: 0,
+        isEnded: true,
+        notStarted: false,
+      };
+    }
+
+    const elapsed = Math.min(total, Math.max(0, now - start));
+    const percent = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
+    const diffMs = Math.max(0, end - now);
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+
+    return { percent, diffDays, hours, diffMs, isEnded: false, notStarted: false };
   };
 
   // Filter and sort contests
@@ -103,9 +130,12 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
     if (!contests) return [];
 
     const filtered = contests.filter((c) => {
+      const time = getTimeRemaining(c.start_date, c.end_date);
+      const isEnded = c.status === "ended" || time.isEnded;
+
       // Status
-      if (statusFilter === "active" && c.status !== "active") return false;
-      if (statusFilter === "ended" && c.status !== "ended") return false;
+      if (statusFilter === "active" && (c.status !== "active" || isEnded)) return false;
+      if (statusFilter === "ended" && !isEnded) return false;
 
       // Type/Format filter
       if (typeFilter === "campaigns" && !c.is_umbrella) return false;
@@ -137,8 +167,13 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
     });
 
     return filtered.sort((a, b) => {
-      // Default: competitions ending soonest first
-      return new Date(a.end_date).getTime() - new Date(b.end_date).getTime();
+      // Recent competitions first (newest by id / creation)
+      if (b.id !== a.id) {
+        return b.id - a.id;
+      }
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : new Date(b.start_date).getTime();
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : new Date(a.start_date).getTime();
+      return bTime - aTime;
     });
   }, [contests, statusFilter, typeFilter, selectedProject, selectedLanguage, searchQuery, locale]);
 
@@ -581,10 +616,12 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       {(() => {
                         const isPending = c.status === "pending_approval";
                         const isDraft = c.status === "draft";
-                        const isEnded = c.status === "ended";
+                        const isEnded = c.status === "ended" || time.isEnded;
+                        const isUpcoming = isActive && time.notStarted;
 
                         let label = c.status;
-                        if (isActive) label = t("feather-contest-status-active");
+                        if (isUpcoming) label = t("feather-contest-status-upcoming");
+                        else if (isActive) label = t("feather-contest-status-active");
                         else if (isPending) label = t("feather-contest-status-pending-approval");
                         else if (isDraft) label = t("feather-contest-status-draft");
                         else if (isEnded) label = t("feather-contest-status-ended");
@@ -592,7 +629,15 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                         let badgeClass = "bg-muted/40 text-muted-foreground border-border/60";
                         let dotEl = <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 shrink-0" />;
 
-                        if (isActive) {
+                        if (isUpcoming) {
+                          badgeClass = "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25";
+                          dotEl = (
+                            <span className="relative flex h-2 w-2 shrink-0">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+                            </span>
+                          );
+                        } else if (isActive) {
                           badgeClass = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25";
                           dotEl = (
                             <span className="relative flex h-2 w-2 shrink-0">
@@ -673,6 +718,10 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       <Clock className="h-3 w-3 text-muted-foreground" />
                       {time.isEnded
                         ? t("feather-contest-ended")
+                        : time.notStarted
+                        ? (time.diffDays <= 1
+                            ? (time.hours > 0 ? t("feather-contest-starts-in-hours", time.hours) : t("feather-contest-starts-in-today"))
+                            : t("feather-contest-starts-in-days", time.diffDays))
                         : time.diffDays <= 0
                         ? t("feather-contest-today-end")
                         : t("feather-contest-days-left", time.diffDays)}
@@ -700,7 +749,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                       <span className="flex items-center gap-1 text-[10.5px]">
                         <Clock className="h-3 w-3 text-muted-foreground/70" />
-                        {t("feather-time-remaining")}
+                        {time.notStarted ? t("feather-time-starts-in") : t("feather-time-remaining")}
                       </span>
                       <span className="font-mono text-[10px]">
                         {t("feather-time-elapsed", time.percent)}
@@ -711,6 +760,8 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                         className={`h-full rounded-full ${
                           time.isEnded
                             ? "bg-muted-foreground/50"
+                            : time.notStarted
+                            ? "bg-blue-500"
                             : time.diffDays <= 3
                             ? "bg-amber-500"
                             : "bg-primary"

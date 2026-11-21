@@ -806,7 +806,7 @@ func (h *Handler) ListContests(w http.ResponseWriter, r *http.Request) {
 		WHERE c.is_draft = 0 AND c.parent_contest_id IS NULL
 		  AND (c.status != 'pending_approval' OR (c.created_by_id = ? AND ? > 0) OR ? = 1)
 		GROUP BY c.id
-		ORDER BY c.start_date DESC
+		ORDER BY c.id DESC
 	`
 	ownerFlag := 0
 	if isOwner {
@@ -2849,7 +2849,7 @@ func (h *Handler) GetUserGlobalProfile(w http.ResponseWriter, r *http.Request) {
 		FROM articles a
 		JOIN contests c ON a.contest_id = c.id
 		WHERE a.submitter_id = ? AND a.status != 'validation_failed'
-		ORDER BY c.start_date DESC, a.submitted_at DESC
+		ORDER BY c.id DESC, a.submitted_at DESC
 	`
 	rows, err := h.db.Query(partQuery, userID)
 	if err != nil {
@@ -2905,7 +2905,7 @@ func (h *Handler) GetUserGlobalProfile(w http.ResponseWriter, r *http.Request) {
 		WHERE c.created_by_id = ?
 		   OR c.id IN (SELECT contest_id FROM contest_juries WHERE user_id = ?)
 		   OR c.id IN (SELECT a.contest_id FROM articles a JOIN reviews r ON a.id = r.article_id WHERE r.reviewer_id = ?)
-		ORDER BY c.start_date DESC
+		ORDER BY c.id DESC
 	`
 	jRows, err := h.db.Query(judgedQuery, userID, userID, userID, userID)
 	if err != nil {

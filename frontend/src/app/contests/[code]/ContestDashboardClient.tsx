@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useMemo, useEffect } from "react";
+import { use, useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -315,9 +315,17 @@ export default function ContestDashboardClient({
       const h = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
       const m = Math.floor((diffMs / (1000 * 60)) % 60);
       const s = Math.floor((diffMs / 1000) % 60);
+      const text = locale === "bn"
+        ? (d > 0
+            ? `শুরু হতে বাকি ${n(d)} দিন ${n(h)} ঘণ্টা`
+            : `শুরু হতে বাকি ${n(h)} ঘণ্টা ${n(m)} মিনিট ${n(s)} সেকেন্ড`)
+        : (d > 0
+            ? `Starts in ${d}d ${h}h`
+            : `Starts in ${h}h ${m}m ${s}s`);
+
       return {
         percent: 0,
-        text: d > 0 ? `Starts in ${n(d)}d ${n(h)}h` : `Starts in ${n(h)}h ${n(m)}m ${n(s)}s`,
+        text,
         isEnded: false,
         isUpcoming: true,
         days: d,
@@ -350,6 +358,19 @@ export default function ContestDashboardClient({
       seconds: s,
     };
   }, [contest, nowMs, t, n, locale]);
+
+  const formatDateDDMMYYYY = useCallback((dateStr: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    if (locale === "bn") {
+      return `${n(day)}/${n(month)}/${n(year)}`;
+    }
+    return `${day}/${month}/${year}`;
+  }, [locale, n]);
 
   const isJuryOrOrganizer = useMemo(() => {
     if (!me?.is_authenticated) return false;
@@ -1268,7 +1289,7 @@ export default function ContestDashboardClient({
               <div className="flex items-center gap-2 font-medium">
                 <Calendar className="h-3.5 w-3.5 text-primary" />
                 <span>
-                  {new Date(contest.start_date).toLocaleDateString()} — {new Date(contest.end_date).toLocaleDateString()}
+                  {formatDateDDMMYYYY(contest.start_date)} — {formatDateDDMMYYYY(contest.end_date)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -2861,8 +2882,8 @@ export default function ContestDashboardClient({
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {t(
                         "feather-contest-rule-window-desc",
-                        new Date(contest.start_date).toLocaleDateString(),
-                        new Date(contest.end_date).toLocaleDateString()
+                        formatDateDDMMYYYY(contest.start_date),
+                        formatDateDDMMYYYY(contest.end_date)
                       )}
                     </p>
                   </div>

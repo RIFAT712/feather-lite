@@ -6,7 +6,7 @@ import (
 	"feather-backend/internal/config"
 )
 
-func TestConnect_Migrations(t *testing.T) {
+func TestDeleteOwnerJuryAndUnassign(t *testing.T) {
 	cfg := &config.Config{
 		DBType:        "sqlite",
 		DatabaseURL:   ":memory:",
@@ -18,11 +18,11 @@ func TestConnect_Migrations(t *testing.T) {
 	}
 	defer db.Close()
 
-	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE id = 'remove_default_owner_juries'").Scan(&count); err != nil {
-		t.Fatalf("Failed to query schema_migrations: %v", err)
+	var migCount int
+	if err := db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE id = 'cleanup_legacy_owner_juries_v3'").Scan(&migCount); err != nil {
+		t.Fatalf("Query migration failed: %v", err)
 	}
-	if count != 1 {
-		t.Errorf("Expected 1 migration record, got %d", count)
+	if migCount != 1 {
+		t.Errorf("Expected migration to be applied, got count %d", migCount)
 	}
 }

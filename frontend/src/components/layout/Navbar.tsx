@@ -54,9 +54,9 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-xs">
-      <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="w-full flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         {/* Brand & Left Navigation Links */}
-        <div className="flex items-center gap-4 lg:gap-6">
+        <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 shrink-0">
           <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 shrink-0">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-2xs">
               <Feather className="h-4 w-4" />
@@ -107,18 +107,19 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Right: Actions, Utilities, Account */}
-        <div className="hidden md:flex items-center gap-2.5 lg:gap-3">
+        <div className="hidden md:flex items-center gap-2 lg:gap-3 shrink-0">
           {/* New Contest CTA Button */}
           <Link
             href="/contests/new"
             className={buttonVariants({
               variant: "outline",
               size: "sm",
-              className: "h-8 gap-1.5 text-xs font-medium border-primary/30 text-foreground hover:bg-primary/10 shadow-xs",
+              className: "h-8 gap-1.5 text-xs font-medium border-primary/30 text-foreground hover:bg-primary/10 shadow-xs shrink-0",
             })}
           >
             <PlusCircle className="h-3.5 w-3.5 text-primary" />
-            <span>{t("feather-nav-create-contest")}</span>
+            <span className="hidden xl:inline">{t("feather-nav-create-contest")}</span>
+            <span className="xl:hidden">{t("feather-create-contest-btn", "Create Contest")}</span>
           </Link>
 
           {/* Theme & Language Controls */}

@@ -1419,115 +1419,87 @@ export default function ContestDashboardClient({
         </CardContent>
       </Card>
 
-      {/* 2. Key Metric Dashboard Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      {/* 2. Key Metric Dashboard Cards (Compact & Sleek) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mb-5">
         {/* Card 1: Total Submitted */}
-        <Card className="border-border/80 shadow-2xs hover:border-border transition-all bg-card/60 backdrop-blur-xs group">
-          <CardHeader className="p-3.5 sm:p-4 pb-1 sm:pb-1">
-            <CardDescription className="text-xs font-medium flex items-center justify-between text-muted-foreground">
-              <span>{contest.is_umbrella ? t("feather-campaign-stat-communities") : t("feather-contest-submitted")}</span>
-              <div className="p-1.5 rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/20 group-hover:scale-105 transition-transform shrink-0">
-                {contest.is_umbrella ? <Layers className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-              </div>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-3.5 pt-0 sm:p-4 sm:pt-0">
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-mono">
-              {n(
-                contest.is_umbrella
-                  ? contest.sub_contest_count || contest.sub_contests?.length || 0
-                  : contest.total_articles || 0
-              )}
+        <div className="rounded-lg border border-border/80 bg-card/60 backdrop-blur-xs p-3 sm:p-3.5 flex flex-col justify-between gap-1 shadow-2xs hover:border-border transition-colors">
+          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+            <span>{contest.is_umbrella ? t("feather-campaign-stat-communities") : t("feather-contest-submitted")}</span>
+            <div className="p-1 rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0">
+              {contest.is_umbrella ? <Layers className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
             </div>
-            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-              {t("feather-contest-stat-sub-context")}
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono">
+            {n(
+              contest.is_umbrella
+                ? contest.sub_contest_count || contest.sub_contests?.length || 0
+                : contest.total_articles || 0
+            )}
+          </div>
+        </div>
 
         {/* Card 2: Accepted */}
-        <Card className="border-border/80 shadow-2xs hover:border-emerald-500/30 transition-all bg-card/60 backdrop-blur-xs group">
-          <CardHeader className="p-3.5 sm:p-4 pb-1 sm:pb-1">
-            <CardDescription className="text-xs font-medium flex items-center justify-between text-muted-foreground">
-              <span>{contest.is_umbrella ? t("feather-campaign-stat-submissions") : t("feather-contest-accepted")}</span>
-              <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 group-hover:scale-105 transition-transform shrink-0">
-                <CheckCircle2 className="h-4 w-4" />
-              </div>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-3.5 pt-0 sm:p-4 sm:pt-0">
-            <div className="flex items-baseline gap-2">
-              <span className={`text-2xl sm:text-3xl font-extrabold tracking-tight font-mono ${contest.is_umbrella ? "text-foreground" : "text-emerald-500 dark:text-emerald-400"}`}>
-                {n(contest.is_umbrella ? contest.total_articles || 0 : contest.accepted_articles || 0)}
-              </span>
-              {!contest.is_umbrella && contest.total_articles ? (
-                <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
-                  {n(acceptanceRate)}%
-                </span>
-              ) : null}
+        <div className="rounded-lg border border-border/80 bg-card/60 backdrop-blur-xs p-3 sm:p-3.5 flex flex-col justify-between gap-1 shadow-2xs hover:border-emerald-500/30 transition-colors">
+          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+            <span>{contest.is_umbrella ? t("feather-campaign-stat-submissions") : t("feather-contest-accepted")}</span>
+            <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+              <CheckCircle2 className="h-3.5 w-3.5" />
             </div>
-            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-              {t("feather-contest-stat-acc-context")}
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className={`text-xl sm:text-2xl font-bold tracking-tight font-mono ${contest.is_umbrella ? "text-foreground" : "text-emerald-500 dark:text-emerald-400"}`}>
+              {n(contest.is_umbrella ? contest.total_articles || 0 : contest.accepted_articles || 0)}
+            </span>
+            {!contest.is_umbrella && contest.total_articles ? (
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
+                {n(acceptanceRate)}%
+              </span>
+            ) : null}
+          </div>
+        </div>
 
         {/* Card 3: Pending */}
-        <Card className="border-border/80 shadow-2xs hover:border-amber-500/30 transition-all bg-card/60 backdrop-blur-xs group">
-          <CardHeader className="p-3.5 sm:p-4 pb-1 sm:pb-1">
-            <CardDescription className="text-xs font-medium flex items-center justify-between text-muted-foreground">
-              <span>{contest.is_umbrella ? t("feather-campaign-stat-accepted") : t("feather-contest-pending")}</span>
-              <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover:scale-105 transition-transform shrink-0">
-                <Clock className="h-4 w-4" />
-              </div>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-3.5 pt-0 sm:p-4 sm:pt-0">
-            <div className="flex items-baseline gap-2">
-              <span
-                className={`text-2xl sm:text-3xl font-extrabold tracking-tight font-mono ${
-                  contest.is_umbrella
-                    ? "text-emerald-500 dark:text-emerald-400"
-                    : "text-amber-500 dark:text-amber-400"
-                }`}
-              >
-                {n(
-                  contest.is_umbrella
-                    ? contest.accepted_articles || 0
-                    : contest.pending_articles || 0
-                )}
-              </span>
-              {contest.is_umbrella && contest.total_articles ? (
-                <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
-                  {n(acceptanceRate)}%
-                </span>
-              ) : null}
+        <div className="rounded-lg border border-border/80 bg-card/60 backdrop-blur-xs p-3 sm:p-3.5 flex flex-col justify-between gap-1 shadow-2xs hover:border-amber-500/30 transition-colors">
+          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+            <span>{contest.is_umbrella ? t("feather-campaign-stat-accepted") : t("feather-contest-pending")}</span>
+            <div className="p-1 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
+              <Clock className="h-3.5 w-3.5" />
             </div>
-            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-              {t("feather-contest-stat-pen-context")}
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className={`text-xl sm:text-2xl font-bold tracking-tight font-mono ${
+                contest.is_umbrella
+                  ? "text-emerald-500 dark:text-emerald-400"
+                  : "text-amber-500 dark:text-amber-400"
+              }`}
+            >
+              {n(
+                contest.is_umbrella
+                  ? contest.accepted_articles || 0
+                  : contest.pending_articles || 0
+              )}
+            </span>
+            {contest.is_umbrella && contest.total_articles ? (
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
+                {n(acceptanceRate)}%
+              </span>
+            ) : null}
+          </div>
+        </div>
 
         {/* Card 4: Participants */}
-        <Card className="border-border/80 shadow-2xs hover:border-purple-500/30 transition-all bg-card/60 backdrop-blur-xs group">
-          <CardHeader className="p-3.5 sm:p-4 pb-1 sm:pb-1">
-            <CardDescription className="text-xs font-medium flex items-center justify-between text-muted-foreground">
-              <span>{contest.is_umbrella ? t("feather-campaign-stat-participants") : t("feather-contest-participants")}</span>
-              <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-500 border border-purple-500/20 group-hover:scale-105 transition-transform shrink-0">
-                <Users className="h-4 w-4" />
-              </div>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-3.5 pt-0 sm:p-4 sm:pt-0">
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-mono">
-              {n(standings?.length || 0)}
+        <div className="rounded-lg border border-border/80 bg-card/60 backdrop-blur-xs p-3 sm:p-3.5 flex flex-col justify-between gap-1 shadow-2xs hover:border-purple-500/30 transition-colors">
+          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+            <span>{contest.is_umbrella ? t("feather-campaign-stat-participants") : t("feather-contest-participants")}</span>
+            <div className="p-1 rounded-md bg-purple-500/10 text-purple-500 border border-purple-500/20 shrink-0">
+              <Users className="h-3.5 w-3.5" />
             </div>
-            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-              {t("feather-contest-stat-part-context")}
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono">
+            {n(standings?.length || 0)}
+          </div>
+        </div>
       </div>
 
       {/* Share Contest & Link Preview Dialog */}

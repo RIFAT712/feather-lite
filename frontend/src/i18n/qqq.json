@@ -11,6 +11,7 @@
   "feather-nav-contests": "Navigation link to contest list.",
   "feather-nav-create-contest": "Navigation action button to launch new contest creation.",
   "feather-nav-login": "Action button linking to Wikimedia OAuth login.",
+  "feather-nav-login-short": "Short label for login button on compact screens.",
   "feather-nav-logout": "Action button logging the current user out.",
   "feather-nav-session-checking": "Loading text displayed while checking active session cookie.",
   "feather-theme-toggle": "Tooltip and accessibility label for the theme switcher button.",

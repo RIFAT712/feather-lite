@@ -114,12 +114,11 @@ export default function Navbar() {
             className={buttonVariants({
               variant: "outline",
               size: "sm",
-              className: "h-8 gap-1.5 text-xs font-medium border-primary/30 text-foreground hover:bg-primary/10 shadow-xs shrink-0",
+              className: "h-8 gap-1.5 text-xs font-medium border-primary/30 text-foreground hover:bg-primary/10 shadow-xs shrink-0 whitespace-nowrap",
             })}
           >
-            <PlusCircle className="h-3.5 w-3.5 text-primary" />
-            <span className="hidden xl:inline">{t("feather-nav-create-contest")}</span>
-            <span className="xl:hidden">{t("feather-create-contest-btn", "Create Contest")}</span>
+            <PlusCircle className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span>{t("feather-nav-create-contest")}</span>
           </Link>
 
           {/* Theme & Language Controls */}
@@ -164,11 +163,12 @@ export default function Navbar() {
               className={buttonVariants({
                 variant: "default",
                 size: "sm",
-                className: "gap-1.5 text-xs font-medium shadow-xs cursor-pointer",
+                className: "gap-1.5 text-xs font-medium shadow-xs cursor-pointer shrink-0 whitespace-nowrap",
               })}
             >
-              <WikimediaLogoIcon className="h-3.5 w-3.5" />
-              <span>{t("feather-nav-login")}</span>
+              <WikimediaLogoIcon className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden xl:inline">{t("feather-nav-login")}</span>
+              <span className="xl:hidden">{t("feather-nav-login-short")}</span>
             </a>
           )}
         </div>

@@ -2763,9 +2763,13 @@ func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
 		SELECT u.wiki_username,
 		       COALESCE(u.role, 'participant') as user_role,
 		       COUNT(CASE WHEN a.status = 'accepted' THEN 1 END) as accepted_count,
+		       COUNT(CASE WHEN a.status = 'pending' THEN 1 END) as pending_count,
+		       COUNT(CASE WHEN a.status = 'rejected' THEN 1 END) as rejected_count,
 		       COALESCE(SUM(CASE WHEN a.status = 'accepted' THEN a.word_count ELSE 0 END), 0) as total_words,
 		       COALESCE(SUM(CASE WHEN a.status = 'accepted' THEN a.byte_count ELSE 0 END), 0) as total_bytes,
 		       COUNT(a.id) as submitted_count,
+		       COALESCE(SUM(a.word_count), 0) as submitted_words,
+		       COALESCE(SUM(a.byte_count), 0) as submitted_bytes,
 		       COALESCE(GROUP_CONCAT(DISTINCT c.wiki_dbname), '') as wikis_contributed
 		FROM articles a
 		JOIN contests c ON a.contest_id = c.id
@@ -2793,7 +2797,11 @@ func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
 		var s models.StandingEntry
 		var wikisStr, dbRole string
 		s.Rank = rank
-		err := rows.Scan(&s.Username, &dbRole, &s.AcceptedCount, &s.TotalWords, &s.TotalBytes, &s.SubmittedCount, &wikisStr)
+		err := rows.Scan(
+			&s.Username, &dbRole, &s.AcceptedCount, &s.PendingCount, &s.RejectedCount,
+			&s.TotalWords, &s.TotalBytes, &s.SubmittedCount, &s.SubmittedWords, &s.SubmittedBytes,
+			&wikisStr,
+		)
 		if err != nil {
 			continue
 		}
@@ -3101,9 +3109,13 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 	standingsQuery := `
 		SELECT u.wiki_username,
 		       COUNT(CASE WHEN a.status = 'accepted' THEN 1 END) as accepted_count,
+		       COUNT(CASE WHEN a.status = 'pending' THEN 1 END) as pending_count,
+		       COUNT(CASE WHEN a.status = 'rejected' THEN 1 END) as rejected_count,
 		       COALESCE(SUM(CASE WHEN a.status = 'accepted' THEN a.word_count ELSE 0 END), 0) as total_words,
 		       COALESCE(SUM(CASE WHEN a.status = 'accepted' THEN a.byte_count ELSE 0 END), 0) as total_bytes,
-		       COUNT(a.id) as submitted_count
+		       COUNT(a.id) as submitted_count,
+		       COALESCE(SUM(a.word_count), 0) as submitted_words,
+		       COALESCE(SUM(a.byte_count), 0) as submitted_bytes
 		FROM articles a
 		JOIN users u ON a.submitter_id = u.id
 		WHERE a.contest_id = ?
@@ -3115,7 +3127,10 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 		for stRows.Next() {
 			var s models.StandingEntry
 			s.Rank = rank
-			if err := stRows.Scan(&s.Username, &s.AcceptedCount, &s.TotalWords, &s.TotalBytes, &s.SubmittedCount); err == nil {
+			if err := stRows.Scan(
+				&s.Username, &s.AcceptedCount, &s.PendingCount, &s.RejectedCount,
+				&s.TotalWords, &s.TotalBytes, &s.SubmittedCount, &s.SubmittedWords, &s.SubmittedBytes,
+			); err == nil {
 				if strings.EqualFold(s.Username, dbUsername) {
 					standing = &s
 					break

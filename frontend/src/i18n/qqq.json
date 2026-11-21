@@ -316,6 +316,8 @@
   "feather-contest-rule-talk-template-desc": "Description for talk page template notification.",
   "feather-contest-juries-empty": "Empty state when no juries are configured.",
   "feather-contest-submissions-empty": "Empty state when no articles have been submitted.",
+  "feather-contest-col-total-entries": "Column header title for total submissions count by a participant.",
+  "feather-contest-load-more": "Button label to load additional submissions using cursor pagination.",
   "feather-contest-col-article": "Table column header for article title.",
   "feather-contest-col-submitter": "Table column header for submitter.",
   "feather-contest-col-status": "Table column header for status.",

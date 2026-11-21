@@ -151,9 +151,13 @@ export interface StandingEntry {
   username: string;
   role?: string;
   accepted_count: number;
+  pending_count?: number;
+  rejected_count?: number;
   total_words: number;
   total_bytes: number;
   submitted_count: number;
+  submitted_words?: number;
+  submitted_bytes?: number;
   wikis_contributed?: string[];
 }
 

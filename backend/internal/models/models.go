@@ -258,9 +258,13 @@ type StandingEntry struct {
 	Username         string   `json:"username"`
 	Role             string   `json:"role,omitempty"`
 	AcceptedCount    int      `json:"accepted_count"`
+	PendingCount     int      `json:"pending_count"`
+	RejectedCount    int      `json:"rejected_count"`
 	TotalWords       int      `json:"total_words"`
 	TotalBytes       int      `json:"total_bytes"`
 	SubmittedCount   int      `json:"submitted_count"`
+	SubmittedWords   int      `json:"submitted_words"`
+	SubmittedBytes   int      `json:"submitted_bytes"`
 	WikisContributed []string `json:"wikis_contributed,omitempty"`
 }
 

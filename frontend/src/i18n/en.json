@@ -316,6 +316,8 @@
   "feather-contest-rule-talk-template-desc": "Contest template ($1) will be posted to the article talk page upon acceptance.",
   "feather-contest-juries-empty": "No juries listed for this contest.",
   "feather-contest-submissions-empty": "No articles have been submitted to this contest yet.",
+  "feather-contest-col-total-entries": "Total Entries",
+  "feather-contest-load-more": "Load More Submissions",
   "feather-contest-col-article": "Article Title",
   "feather-contest-col-submitter": "Submitter",
   "feather-contest-col-status": "Status",

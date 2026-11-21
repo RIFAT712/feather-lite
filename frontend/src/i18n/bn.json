@@ -316,6 +316,8 @@
   "feather-contest-rule-talk-template-desc": "গৃহীত হলে নিবন্ধের আলোচনা পাতায় প্রতিযোগিতার টেমপ্লেট ($1) যুক্ত করা হবে।",
   "feather-contest-juries-empty": "এই প্রতিযোগিতায় কোনো বিচারক তালিকাভুক্ত নেই।",
   "feather-contest-submissions-empty": "এই প্রতিযোগিতায় এখনও কোনো নিবন্ধ জমা দেওয়া হয়নি।",
+  "feather-contest-col-total-entries": "মোট নিবন্ধ",
+  "feather-contest-load-more": "আরও নিবন্ধ দেখুন",
   "feather-contest-col-article": "নিবন্ধের শিরোনাম",
   "feather-contest-col-submitter": "জমাদানকারী",
   "feather-contest-col-status": "অবস্থা",

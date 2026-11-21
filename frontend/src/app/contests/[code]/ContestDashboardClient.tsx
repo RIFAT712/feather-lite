@@ -1,13 +1,13 @@
 "use client";
 
-import { use, useState, useMemo, useEffect, useCallback } from "react";
+import { use, useState, useMemo, useEffect, useCallback, Fragment } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   fetchContest, fetchStandings, fetchArticles, createSubContest,
   fetchAvailableContests, attachContestToCampaign, detachContestFromCampaign,
-  fetchMe, approveContest, fetchJuryStats,
+  fetchMe, approveContest, fetchJuryStats, fetchContestUserProfile,
   Contest, StandingEntry, Article, SubContestSummary, AvailableContestSummary,
   UserSession, KeysetResponse, JuryStatsResponse, JuryMemberProgress
 } from "@/lib/api";
@@ -44,6 +44,154 @@ import {
 import { UserTagInput } from "@/components/contests/UserTagInput";
 import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
 import UserBadge from "@/components/users/UserBadge";
+
+function ParticipantArticlesDrawer({
+  code,
+  username,
+  wikiUrl,
+  showWords,
+  showBytes,
+  cachedArticles,
+  expectedTotal,
+  statusFilter,
+  formatDate,
+}: {
+  code: string;
+  username: string;
+  wikiUrl?: string;
+  showWords: boolean;
+  showBytes: boolean;
+  cachedArticles?: Article[];
+  expectedTotal: number;
+  statusFilter?: string;
+  formatDate: (date: any, options?: any) => string;
+}) {
+  const { t, n } = useI18n();
+  const hasAll = Boolean(cachedArticles && cachedArticles.length >= expectedTotal && expectedTotal > 0);
+
+  const { data: userProfile, isLoading } = useQuery({
+    queryKey: ["contestUserProfile", code, username],
+    queryFn: () => fetchContestUserProfile(code, username),
+    enabled: !hasAll,
+    staleTime: 60 * 1000,
+  });
+
+  const rawSubmissions = (hasAll && cachedArticles)
+    ? cachedArticles
+    : (userProfile?.submissions || cachedArticles || []);
+
+  const submissions = useMemo(() => {
+    let list = rawSubmissions.filter((s: any) => s.status !== "validation_failed");
+    if (statusFilter && statusFilter !== "all") {
+      list = list.filter((s: any) => s.status === statusFilter);
+    }
+    return list;
+  }, [rawSubmissions, statusFilter]);
+
+  if (isLoading && (!rawSubmissions || rawSubmissions.length === 0)) {
+    return (
+      <div className="p-4 space-y-2">
+        <Skeleton className="h-4 w-48 rounded" />
+        <Skeleton className="h-4 w-64 rounded" />
+      </div>
+    );
+  }
+
+  if (submissions.length === 0) {
+    return (
+      <div className="py-4 text-center text-xs text-muted-foreground italic">
+        {t("feather-contest-submissions-empty")}
+      </div>
+    );
+  }
+
+  const baseWiki = wikiUrl || "https://bn.wikipedia.org";
+
+  return (
+    <div className="rounded-lg border border-border/70 overflow-hidden bg-card/60 shadow-2xs">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent bg-muted/40">
+            <TableHead className="text-xs">{t("feather-contest-col-article")}</TableHead>
+            <TableHead className="text-center text-xs">{t("feather-contest-col-status")}</TableHead>
+            {showWords && <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>}
+            {showBytes && <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>}
+            <TableHead className="text-right text-xs">{t("feather-contest-col-date")}</TableHead>
+            <TableHead className="w-12 text-center text-xs"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {submissions.map((art: any) => (
+            <TableRow key={art.id} className="hover:bg-muted/40 transition-colors">
+              <TableCell className="font-medium text-xs">
+                <a
+                  href={`${baseWiki}/wiki/${encodeURIComponent(art.title)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-primary hover:underline text-foreground"
+                >
+                  <span>{art.title}</span>
+                  <ExternalLink className="h-2.5 w-2.5 opacity-40" />
+                </a>
+                {art.validation_error && (
+                  <div className="text-[10px] text-destructive mt-0.5">{art.validation_error}</div>
+                )}
+              </TableCell>
+              <TableCell className="text-center">
+                <Badge
+                  variant={
+                    art.status === "accepted"
+                      ? "default"
+                      : art.status === "rejected"
+                      ? "destructive"
+                      : art.status === "validation_failed"
+                      ? "outline"
+                      : "secondary"
+                  }
+                  className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 ${
+                    art.status === "accepted" ? "bg-emerald-600 hover:bg-emerald-600/90 text-white" : ""
+                  }`}
+                >
+                  {art.status === "accepted"
+                    ? t("feather-contest-filter-accepted")
+                    : art.status === "pending"
+                    ? t("feather-contest-filter-pending")
+                    : art.status === "rejected"
+                    ? t("feather-contest-filter-rejected")
+                    : t("feather-contest-filter-failed")}
+                </Badge>
+              </TableCell>
+              {showWords && (
+                <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                  {n(art.word_count)}
+                </TableCell>
+              )}
+              {showBytes && (
+                <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                  {n(art.byte_count)}
+                </TableCell>
+              )}
+              <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                {art.submitted_at ? formatDate(art.submitted_at) : "—"}
+              </TableCell>
+              <TableCell className="text-center p-2">
+                <a
+                  href={`${baseWiki}/wiki/${encodeURIComponent(art.title)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground/60 hover:text-primary p-1 inline-flex"
+                  title="Open on Wikipedia"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 
 interface ContestDashboardClientProps {
   code: string;
@@ -154,7 +302,39 @@ export default function ContestDashboardClient({
     refetchOnMount: false,
   });
 
-  const articles = articlesData?.items || [];
+  const [extraArticles, setExtraArticles] = useState<Article[]>([]);
+  const [nextCursor, setNextCursor] = useState<number | undefined>(initialArticles?.next_cursor);
+  const [hasMoreArticles, setHasMoreArticles] = useState<boolean>(initialArticles?.has_more ?? false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  useEffect(() => {
+    if (articlesData) {
+      setNextCursor(articlesData.next_cursor);
+      setHasMoreArticles(articlesData.has_more ?? false);
+      setExtraArticles([]);
+    }
+  }, [articlesData, statusFilter]);
+
+  const handleLoadMoreArticles = async () => {
+    if (!nextCursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await fetchArticles(code, nextCursor, statusFilter === "all" ? undefined : statusFilter, 100);
+      setExtraArticles((prev) => [...prev, ...res.items]);
+      setNextCursor(res.next_cursor);
+      setHasMoreArticles(res.has_more ?? false);
+    } catch {
+      toast.error("Failed to load more articles");
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const allArticles = useMemo(() => {
+    return [...(articlesData?.items || []), ...extraArticles];
+  }, [articlesData?.items, extraArticles]);
+
+  const articles = allArticles;
 
   const { data: juryStats } = useQuery<JuryStatsResponse | null>({
     queryKey: ["jury-stats", code],
@@ -459,35 +639,54 @@ export default function ContestDashboardClient({
       .sort((a, b) => b.judged - a.judged);
   }, [juryStats, contest?.juries]);
 
-  // Grouped Submissions by Submitter
-  const groupedArticlesBySubmitter = useMemo(() => {
-    if (!filteredArticles || filteredArticles.length === 0) return [];
+  const userArticlesMap = useMemo(() => {
     const map: Record<string, Article[]> = {};
-    filteredArticles.forEach((art) => {
+    (allArticles || []).forEach((art) => {
       if (!map[art.submitter_username]) map[art.submitter_username] = [];
       map[art.submitter_username].push(art);
     });
+    return map;
+  }, [allArticles]);
 
-    return Object.entries(map)
-      .map(([username, items]) => {
-        const accepted = items.filter((a) => a.status === "accepted").length;
-        const pending = items.filter((a) => a.status === "pending").length;
-        const rejected = items.filter((a) => a.status === "rejected").length;
-        const totalWords = items.reduce((sum, a) => sum + (a.word_count || 0), 0);
-        const totalBytes = items.reduce((sum, a) => sum + (a.byte_count || 0), 0);
-        return {
-          username,
-          items,
-          accepted,
-          pending,
-          rejected,
-          total: items.length,
-          totalWords,
-          totalBytes,
-        };
-      })
-      .sort((a, b) => b.accepted - a.accepted || b.total - a.total);
-  }, [filteredArticles]);
+  // Grouped Submissions by Submitter (Using full contest standings for 100% accurate aggregates across all entries)
+  const groupedSubmitters = useMemo(() => {
+    if (!standings || standings.length === 0) return [];
+    let list = standings;
+
+    // Filter by search query
+    if (submissionsSearch.trim()) {
+      const q = submissionsSearch.toLowerCase().trim();
+      list = list.filter((s) => s.username.toLowerCase().includes(q));
+    }
+
+    // Filter by status tab (all / accepted / pending / rejected)
+    if (statusFilter === "accepted") {
+      list = list.filter((s) => s.accepted_count > 0);
+    } else if (statusFilter === "pending") {
+      list = list.filter((s) => (s.pending_count ?? 0) > 0 || (s.submitted_count - s.accepted_count - (s.rejected_count ?? 0)) > 0);
+    } else if (statusFilter === "rejected") {
+      list = list.filter((s) => (s.rejected_count ?? 0) > 0);
+    }
+
+    return list.map((s) => {
+      const pending = s.pending_count ?? Math.max(0, s.submitted_count - s.accepted_count - (s.rejected_count ?? 0));
+      const rejected = s.rejected_count ?? 0;
+      return {
+        username: s.username,
+        role: s.role,
+        total: s.submitted_count,
+        accepted: s.accepted_count,
+        pending,
+        rejected,
+        totalWords: s.submitted_words || s.total_words,
+        totalBytes: s.submitted_bytes || s.total_bytes,
+      };
+    });
+  }, [standings, submissionsSearch, statusFilter]);
+
+  const totalSubmissionsInGrouped = useMemo(() => {
+    return groupedSubmitters.reduce((sum, s) => sum + s.total, 0);
+  }, [groupedSubmitters]);
 
   const toggleSubmitter = (username: string) => {
     setExpandedSubmitters((prev) => ({
@@ -498,7 +697,7 @@ export default function ContestDashboardClient({
 
   const expandAllSubmitters = () => {
     const all: Record<string, boolean> = {};
-    groupedArticlesBySubmitter.forEach((g) => {
+    groupedSubmitters.forEach((g) => {
       all[g.username] = true;
     });
     setExpandedSubmitters(all);
@@ -2760,17 +2959,21 @@ export default function ContestDashboardClient({
                   </div>
                 </>
               ) : submissionsViewMode === "grouped" ? (
-                filteredArticles && filteredArticles.length > 0 ? (
-                  <div className="p-3 sm:p-4 space-y-3">
+                groupedSubmitters && groupedSubmitters.length > 0 ? (
+                  <div>
                     {/* Submitter Quick Controls */}
-                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground pb-2 border-b border-border/60">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground px-4 py-3 border-b border-border/60 bg-muted/10">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Users className="h-4 w-4 text-primary" />
                         <span className="font-semibold text-foreground">
-                          {n(groupedArticlesBySubmitter.length)} {t("feather-contest-participants")}
+                          {n(groupedSubmitters.length)} {t("feather-contest-participants")}
+                        </span>
+                        <span>·</span>
+                        <span>
+                          {n(totalSubmissionsInGrouped)} {t("feather-contest-submitted").toLowerCase()}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <Button
                           type="button"
                           variant="ghost"
@@ -2793,144 +2996,131 @@ export default function ContestDashboardClient({
                       </div>
                     </div>
 
-                    <div className="space-y-2.5">
-                      {groupedArticlesBySubmitter.map((sub) => {
-                        const isExpanded = Boolean(expandedSubmitters[sub.username]);
-                        return (
-                          <div
-                            key={sub.username}
-                            className="rounded-xl border border-border/80 bg-card overflow-hidden shadow-2xs transition-all"
-                          >
-                            {/* Submitter Accordion Header */}
-                            <button
-                              type="button"
-                              onClick={() => toggleSubmitter(sub.username)}
-                              className="w-full p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-muted/30 transition-colors cursor-pointer text-left"
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <span className="text-muted-foreground p-0.5">
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 rtl:rotate-180" />
+                    {/* Table with Header Titles */}
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="hover:bg-transparent bg-muted/20">
+                            <TableHead className="w-10 text-center"></TableHead>
+                            <TableHead className="text-xs">{t("feather-contest-col-submitter")}</TableHead>
+                            <TableHead className="text-right text-xs">{t("feather-contest-col-total-entries")}</TableHead>
+                            <TableHead className="text-right text-xs">{t("feather-contest-filter-accepted")}</TableHead>
+                            <TableHead className="text-right text-xs">{t("feather-contest-filter-pending")}</TableHead>
+                            <TableHead className="text-right text-xs">{t("feather-contest-filter-rejected")}</TableHead>
+                            {showWords && <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>}
+                            {showBytes && <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>}
+                            <TableHead className="w-12 text-center text-xs"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {groupedSubmitters.map((sub) => {
+                            const isExpanded = Boolean(expandedSubmitters[sub.username]);
+                            const colSpan = 7 + (showWords ? 1 : 0) + (showBytes ? 1 : 0);
+                            return (
+                              <Fragment key={sub.username}>
+                                <TableRow
+                                  onClick={() => toggleSubmitter(sub.username)}
+                                  className="cursor-pointer hover:bg-muted/40 transition-colors"
+                                >
+                                  <TableCell className="text-center p-2">
+                                    {isExpanded ? (
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground mx-auto" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4 text-muted-foreground mx-auto rtl:rotate-180" />
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="font-medium text-xs sm:text-sm">
+                                    <div className="inline-flex items-center gap-2">
+                                      <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                                        {sub.username.charAt(0)}
+                                      </div>
+                                      <Link
+                                        href={`/contests/${code}/users/${encodeURIComponent(sub.username)}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="font-semibold text-foreground hover:text-primary hover:underline"
+                                      >
+                                        {sub.username}
+                                      </Link>
+                                      <UserBadge username={sub.username} role={sub.role} />
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono font-semibold text-xs text-foreground">
+                                    {n(sub.total)}
+                                  </TableCell>
+                                  <TableCell className="text-right text-xs">
+                                    {sub.accepted > 0 ? (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                        <CheckCircle2 className="h-3 w-3" />
+                                        <span>{n(sub.accepted)}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground/40 font-mono">0</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right text-xs">
+                                    {sub.pending > 0 ? (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                        <Clock className="h-3 w-3" />
+                                        <span>{n(sub.pending)}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground/40 font-mono">0</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right text-xs">
+                                    {sub.rejected > 0 ? (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                        <XCircle className="h-3 w-3" />
+                                        <span>{n(sub.rejected)}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground/40 font-mono">0</span>
+                                    )}
+                                  </TableCell>
+                                  {showWords && (
+                                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                                      {n(sub.totalWords)}
+                                    </TableCell>
                                   )}
-                                </span>
-                                <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                                  {sub.username.charAt(0)}
-                                </div>
-                                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                                  <Link
-                                    href={`/contests/${code}/users/${encodeURIComponent(sub.username)}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="font-semibold text-xs sm:text-sm text-foreground hover:text-primary hover:underline truncate"
-                                  >
-                                    {sub.username}
-                                  </Link>
-                                  <UserBadge username={sub.username} />
-                                </div>
-                              </div>
+                                  {showBytes && (
+                                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                                      {n(sub.totalBytes)}
+                                    </TableCell>
+                                  )}
+                                  <TableCell className="text-center p-2">
+                                    <Link
+                                      href={`/contests/${code}/users/${encodeURIComponent(sub.username)}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-muted-foreground/60 hover:text-primary transition-colors p-1 inline-flex"
+                                      title="View contest profile"
+                                    >
+                                      <ExternalLink className="h-3.5 w-3.5" />
+                                    </Link>
+                                  </TableCell>
+                                </TableRow>
 
-                              {/* Submitter Stats Pills */}
-                              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap pl-7 sm:pl-0">
-                                <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">
-                                  {n(sub.total)} {sub.total === 1 ? "entry" : "entries"}
-                                </Badge>
-                                {sub.accepted > 0 && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                    <CheckCircle2 className="h-3 w-3" />
-                                    <span>{n(sub.accepted)}</span>
-                                  </span>
+                                {isExpanded && (
+                                  <TableRow className="hover:bg-transparent bg-muted/15 border-b border-border/80">
+                                    <TableCell colSpan={colSpan} className="p-3 sm:p-4">
+                                      <ParticipantArticlesDrawer
+                                        code={code}
+                                        username={sub.username}
+                                        wikiUrl={contest.wiki_url}
+                                        showWords={showWords}
+                                        showBytes={showBytes}
+                                        cachedArticles={userArticlesMap[sub.username]}
+                                        expectedTotal={sub.total}
+                                        statusFilter={statusFilter}
+                                        formatDate={formatDate}
+                                      />
+                                    </TableCell>
+                                  </TableRow>
                                 )}
-                                {sub.pending > 0 && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                                    <Clock className="h-3 w-3" />
-                                    <span>{n(sub.pending)}</span>
-                                  </span>
-                                )}
-                                {sub.rejected > 0 && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                                    <XCircle className="h-3 w-3" />
-                                    <span>{n(sub.rejected)}</span>
-                                  </span>
-                                )}
-                                {showWords && (
-                                  <span className="text-[11px] font-mono text-muted-foreground hidden md:inline">
-                                    {n(sub.totalWords)} words
-                                  </span>
-                                )}
-                                {showBytes && (
-                                  <span className="text-[11px] font-mono text-muted-foreground hidden md:inline">
-                                    {n(sub.totalBytes)} bytes
-                                  </span>
-                                )}
-                              </div>
-                            </button>
-
-                            {/* Submitter Articles List when expanded */}
-                            {isExpanded && (
-                              <div className="border-t border-border/60 bg-muted/15 p-2 sm:p-3 divide-y divide-border/40">
-                                {sub.items.map((art) => (
-                                  <div
-                                    key={art.id}
-                                    className="py-2 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-muted/40 rounded-md transition-colors"
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <a
-                                        href={`${contest.wiki_url || "https://bn.wiktionary.org"}/wiki/${encodeURIComponent(
-                                          art.title
-                                        )}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="font-medium text-xs text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 truncate"
-                                      >
-                                        <span className="truncate">{art.title}</span>
-                                        <ExternalLink className="h-2.5 w-2.5 opacity-40 shrink-0" />
-                                      </a>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 text-xs shrink-0 self-end sm:self-auto">
-                                      {showWords && (
-                                        <span className="font-mono text-muted-foreground text-[11px]">
-                                          {n(art.word_count)} words
-                                        </span>
-                                      )}
-                                      {showBytes && (
-                                        <span className="font-mono text-muted-foreground/60 text-[11px]">
-                                          {n(art.byte_count)} bytes
-                                        </span>
-                                      )}
-                                      <Badge
-                                        variant={
-                                          art.status === "accepted"
-                                            ? "default"
-                                            : art.status === "rejected"
-                                            ? "destructive"
-                                            : art.status === "validation_failed"
-                                            ? "outline"
-                                            : "secondary"
-                                        }
-                                        className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 ${
-                                          art.status === "accepted"
-                                            ? "bg-emerald-600 hover:bg-emerald-600/90 text-white"
-                                            : ""
-                                        }`}
-                                      >
-                                        {art.status === "accepted"
-                                          ? t("feather-contest-filter-accepted")
-                                          : art.status === "pending"
-                                          ? t("feather-contest-filter-pending")
-                                          : art.status === "rejected"
-                                          ? t("feather-contest-filter-rejected")
-                                          : t("feather-contest-filter-failed")}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                              </Fragment>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
                     </div>
                   </div>
                 ) : (
@@ -3088,6 +3278,21 @@ export default function ContestDashboardClient({
                         </div>
                       </div>
                     ))}
+                    {/* Keyset Load More Button */}
+                    {hasMoreArticles && (
+                      <div className="p-4 text-center border-t border-border/60 bg-muted/10">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleLoadMoreArticles}
+                          disabled={isLoadingMore}
+                          className="text-xs cursor-pointer font-medium"
+                        >
+                          {isLoadingMore ? "Loading..." : t("feather-contest-load-more")}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (

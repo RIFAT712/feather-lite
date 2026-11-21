@@ -918,6 +918,13 @@ export default function ContestDashboardClient({
                   <Skeleton className="h-3.5 w-full max-w-xl rounded" />
                   <Skeleton className="h-3.5 w-2/3 max-w-md rounded" />
                 </div>
+
+                {/* Jury Roster Skeleton */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  <Skeleton className="h-4 w-20 rounded" />
+                  <Skeleton className="h-5 w-24 rounded-full" />
+                  <Skeleton className="h-5 w-28 rounded-full" />
+                </div>
               </div>
 
               {/* Action Buttons Skeleton */}
@@ -928,6 +935,19 @@ export default function ContestDashboardClient({
               </div>
             </div>
           </CardHeader>
+
+          {/* Integrated Metrics Grid Skeleton */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-border/60 divide-y sm:divide-y-0 sm:divide-x divide-border/60 bg-muted/10">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="p-3 sm:px-4 sm:py-3 flex items-center justify-between gap-3">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3 w-16 rounded" />
+                  <Skeleton className="h-6 w-12 rounded" />
+                </div>
+                <Skeleton className="h-7 w-7 rounded-lg" />
+              </div>
+            ))}
+          </div>
 
           {/* Timeline & Metadata Footer */}
           <CardContent className="pt-3 border-t border-border/60">
@@ -940,23 +960,6 @@ export default function ContestDashboardClient({
             </div>
           </CardContent>
         </Card>
-
-        {/* 2. Key Metrics Grid (4 Stat Cards Skeleton) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="border-border shadow-2xs">
-              <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-1">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-3.5 w-24 rounded" />
-                  <Skeleton className="h-4 w-4 rounded-full" />
-                </div>
-              </CardHeader>
-              <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-                <Skeleton className="h-7 w-16 mt-1 rounded" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
 
         {/* 3. Multi-Tab Workspace Skeleton */}
         <div className="w-full space-y-4">
@@ -1265,6 +1268,31 @@ export default function ContestDashboardClient({
               <CardDescription className="text-xs sm:text-sm text-muted-foreground max-w-3xl leading-relaxed">
                 {contest.description || "No description provided."}
               </CardDescription>
+
+              {/* Jury Members Roster */}
+              {contest.juries && contest.juries.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 pt-1.5 text-xs">
+                  <span className="font-semibold text-muted-foreground flex items-center gap-1.5 shrink-0">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>{contest.is_umbrella ? t("feather-campaign-tab-organizers") : t("feather-contest-tab-juries")}:</span>
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {contest.juries.map((juryName) => (
+                      <Link
+                        key={juryName}
+                        href={`/contests/${code}/users/${juryName}`}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-muted/60 hover:bg-muted text-foreground border border-border/70 hover:border-border transition-colors font-medium text-xs group"
+                        title={juryName}
+                      >
+                        <span className="h-4 w-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold uppercase shrink-0">
+                          {juryName.charAt(0)}
+                        </span>
+                        <span className="font-mono text-xs">{juryName}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action Toolbar */}
@@ -1373,6 +1401,101 @@ export default function ContestDashboardClient({
           </div>
         </CardHeader>
 
+        {/* Integrated Metric Stats Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-border/60 divide-y sm:divide-y-0 sm:divide-x divide-border/60 bg-muted/15">
+          {/* 1. Submitted / Communities */}
+          <div className="p-3.5 sm:px-5 sm:py-3.5 flex items-center justify-between gap-3 hover:bg-muted/25 transition-colors">
+            <div>
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                {contest.is_umbrella ? t("feather-campaign-stat-communities") : t("feather-contest-submitted")}
+              </div>
+              <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono mt-0.5">
+                {n(
+                  contest.is_umbrella
+                    ? contest.sub_contest_count || contest.sub_contests?.length || 0
+                    : contest.total_articles || 0
+                )}
+              </div>
+            </div>
+            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0">
+              {contest.is_umbrella ? <Layers className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+            </div>
+          </div>
+
+          {/* 2. Accepted / Submissions */}
+          <div className="p-3.5 sm:px-5 sm:py-3.5 flex items-center justify-between gap-3 hover:bg-muted/25 transition-colors">
+            <div>
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                {contest.is_umbrella ? t("feather-campaign-stat-submissions") : t("feather-contest-accepted")}
+              </div>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span
+                  className={`text-xl sm:text-2xl font-bold tracking-tight font-mono ${
+                    contest.is_umbrella ? "text-foreground" : "text-emerald-500 dark:text-emerald-400"
+                  }`}
+                >
+                  {n(contest.is_umbrella ? contest.total_articles || 0 : contest.accepted_articles || 0)}
+                </span>
+                {!contest.is_umbrella && contest.total_articles ? (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
+                    {n(acceptanceRate)}%
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+          </div>
+
+          {/* 3. Pending / Accepted */}
+          <div className="p-3.5 sm:px-5 sm:py-3.5 flex items-center justify-between gap-3 hover:bg-muted/25 transition-colors">
+            <div>
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                {contest.is_umbrella ? t("feather-campaign-stat-accepted") : t("feather-contest-pending")}
+              </div>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span
+                  className={`text-xl sm:text-2xl font-bold tracking-tight font-mono ${
+                    contest.is_umbrella
+                      ? "text-emerald-500 dark:text-emerald-400"
+                      : "text-amber-500 dark:text-amber-400"
+                  }`}
+                >
+                  {n(
+                    contest.is_umbrella
+                      ? contest.accepted_articles || 0
+                      : contest.pending_articles || 0
+                  )}
+                </span>
+                {contest.is_umbrella && contest.total_articles ? (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
+                    {n(acceptanceRate)}%
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
+              <Clock className="h-4 w-4" />
+            </div>
+          </div>
+
+          {/* 4. Participants */}
+          <div className="p-3.5 sm:px-5 sm:py-3.5 flex items-center justify-between gap-3 hover:bg-muted/25 transition-colors">
+            <div>
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                {contest.is_umbrella ? t("feather-campaign-stat-participants") : t("feather-contest-participants")}
+              </div>
+              <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono mt-0.5">
+                {n(standings?.length || 0)}
+              </div>
+            </div>
+            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500 border border-purple-500/20 shrink-0">
+              <Users className="h-4 w-4" />
+            </div>
+          </div>
+        </div>
+
         {/* Timeline & Metadata Footer */}
         <CardContent className="pt-3 pb-4 sm:pb-5 px-4 sm:px-6 border-t border-border/60 bg-muted/15">
           <div className="space-y-2.5">
@@ -1419,89 +1542,6 @@ export default function ContestDashboardClient({
           </div>
         </CardContent>
       </Card>
-
-      {/* 2. Key Metric Dashboard Cards (Compact & Sleek) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mb-5">
-        {/* Card 1: Total Submitted */}
-        <div className="rounded-lg border border-border/80 bg-card/60 backdrop-blur-xs p-3 sm:p-3.5 flex flex-col justify-between gap-1 shadow-2xs hover:border-border transition-colors">
-          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-            <span>{contest.is_umbrella ? t("feather-campaign-stat-communities") : t("feather-contest-submitted")}</span>
-            <div className="p-1 rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0">
-              {contest.is_umbrella ? <Layers className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono">
-            {n(
-              contest.is_umbrella
-                ? contest.sub_contest_count || contest.sub_contests?.length || 0
-                : contest.total_articles || 0
-            )}
-          </div>
-        </div>
-
-        {/* Card 2: Accepted */}
-        <div className="rounded-lg border border-border/80 bg-card/60 backdrop-blur-xs p-3 sm:p-3.5 flex flex-col justify-between gap-1 shadow-2xs hover:border-emerald-500/30 transition-colors">
-          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-            <span>{contest.is_umbrella ? t("feather-campaign-stat-submissions") : t("feather-contest-accepted")}</span>
-            <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className={`text-xl sm:text-2xl font-bold tracking-tight font-mono ${contest.is_umbrella ? "text-foreground" : "text-emerald-500 dark:text-emerald-400"}`}>
-              {n(contest.is_umbrella ? contest.total_articles || 0 : contest.accepted_articles || 0)}
-            </span>
-            {!contest.is_umbrella && contest.total_articles ? (
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
-                {n(acceptanceRate)}%
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Card 3: Pending */}
-        <div className="rounded-lg border border-border/80 bg-card/60 backdrop-blur-xs p-3 sm:p-3.5 flex flex-col justify-between gap-1 shadow-2xs hover:border-amber-500/30 transition-colors">
-          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-            <span>{contest.is_umbrella ? t("feather-campaign-stat-accepted") : t("feather-contest-pending")}</span>
-            <div className="p-1 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
-              <Clock className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span
-              className={`text-xl sm:text-2xl font-bold tracking-tight font-mono ${
-                contest.is_umbrella
-                  ? "text-emerald-500 dark:text-emerald-400"
-                  : "text-amber-500 dark:text-amber-400"
-              }`}
-            >
-              {n(
-                contest.is_umbrella
-                  ? contest.accepted_articles || 0
-                  : contest.pending_articles || 0
-              )}
-            </span>
-            {contest.is_umbrella && contest.total_articles ? (
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
-                {n(acceptanceRate)}%
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Card 4: Participants */}
-        <div className="rounded-lg border border-border/80 bg-card/60 backdrop-blur-xs p-3 sm:p-3.5 flex flex-col justify-between gap-1 shadow-2xs hover:border-purple-500/30 transition-colors">
-          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-            <span>{contest.is_umbrella ? t("feather-campaign-stat-participants") : t("feather-contest-participants")}</span>
-            <div className="p-1 rounded-md bg-purple-500/10 text-purple-500 border border-purple-500/20 shrink-0">
-              <Users className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono">
-            {n(standings?.length || 0)}
-          </div>
-        </div>
-      </div>
 
       {/* Share Contest & Link Preview Dialog */}
       <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>

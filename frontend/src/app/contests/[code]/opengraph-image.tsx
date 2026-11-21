@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getServerContest, getServerStandings } from "@/lib/server-api";
 import { shapeLineToSvg, shapeParagraphToSvg } from "@/lib/svg-shaper";
-import fs from "fs/promises";
-import path from "path";
 
 export const runtime = "nodejs";
 
@@ -13,43 +11,11 @@ export const size = {
 
 export const contentType = "image/png";
 
-type FontItem = {
-  name: string;
-  data: ArrayBuffer;
-  weight: 700 | 400;
-  style: "normal";
-};
-
-let cachedFonts: FontItem[] | null = null;
-
-async function loadFonts(): Promise<FontItem[]> {
-  if (cachedFonts) return cachedFonts;
-  try {
-    const fontPath = path.join(process.cwd(), "public/fonts/NotoSansBengali.ttf");
-    const fontBuf = await fs.readFile(fontPath);
-    if (fontBuf.length > 1000 && (fontBuf[0] === 0x00 || fontBuf[0] === 0x4f || fontBuf[0] === 0x74)) {
-      cachedFonts = [
-        {
-          name: "Noto Sans Bengali",
-          data: fontBuf.buffer.slice(fontBuf.byteOffset, fontBuf.byteOffset + fontBuf.byteLength),
-          weight: 700,
-          style: "normal",
-        },
-      ];
-      return cachedFonts;
-    }
-  } catch {
-    // Non-blocking fallback
-  }
-  return [];
-}
-
 export default async function Image({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const [contest, standings, fonts] = await Promise.all([
+  const [contest, standings] = await Promise.all([
     getServerContest(code),
     getServerStandings(code),
-    loadFonts(),
   ]);
 
   const title = contest?.name || "Feather Contest";
@@ -126,7 +92,7 @@ export default async function Image({ params }: { params: Promise<{ code: string
           backgroundColor: "#09090b",
           color: "#fafafa",
           padding: "45px 55px",
-          fontFamily: '"Noto Sans Bengali", system-ui, -apple-system, sans-serif',
+          fontFamily: "system-ui, -apple-system, sans-serif",
           position: "relative",
           overflow: "hidden",
         }}
@@ -405,7 +371,6 @@ export default async function Image({ params }: { params: Promise<{ code: string
     ),
     {
       ...size,
-      fonts: fonts && fonts.length > 0 ? fonts : undefined,
     }
   );
 }

@@ -2737,7 +2737,11 @@ func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
 
 	var contestID int64
 	var isUmbrella int
-	err := h.db.QueryRow("SELECT id, COALESCE(is_umbrella, 0) FROM contests WHERE code = ?", code).Scan(&contestID, &isUmbrella)
+	var rankByWords, minWords, minBytes int
+	err := h.db.QueryRow(`
+		SELECT id, COALESCE(is_umbrella, 0), COALESCE(rank_by_words, 0), COALESCE(min_words, 0), COALESCE(min_bytes, 0)
+		FROM contests WHERE code = ?
+	`, code).Scan(&contestID, &isUmbrella, &rankByWords, &minWords, &minBytes)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Contest not found")
 		return
@@ -2747,6 +2751,13 @@ func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wikiFilter := strings.TrimSpace(r.URL.Query().Get("wiki"))
+
+	orderClause := "ORDER BY accepted_count DESC, total_words DESC, total_bytes DESC"
+	if rankByWords == 1 {
+		orderClause = "ORDER BY total_words DESC, accepted_count DESC, total_bytes DESC"
+	} else if minBytes > 0 && minWords == 0 {
+		orderClause = "ORDER BY accepted_count DESC, total_bytes DESC, total_words DESC"
+	}
 
 	query := `
 		SELECT u.wiki_username,
@@ -2768,8 +2779,7 @@ func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
 	}
 	query += `
 		GROUP BY u.id
-		ORDER BY accepted_count DESC, total_words DESC
-	`
+	` + "\n\t\t" + orderClause + "\n"
 	rows, err := h.db.Query(query, args...)
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, "Failed to calculate standings")
@@ -2972,11 +2982,12 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 
 	var contestID int64
 	var contestName, wikiURL string
+	var rankByWords, minWords, minBytes int
 	err := h.db.QueryRow(`
-		SELECT id, name, wiki_url 
+		SELECT id, name, wiki_url, COALESCE(rank_by_words, 0), COALESCE(min_words, 0), COALESCE(min_bytes, 0)
 		FROM contests 
 		WHERE code = ?
-	`, code).Scan(&contestID, &contestName, &wikiURL)
+	`, code).Scan(&contestID, &contestName, &wikiURL, &rankByWords, &minWords, &minBytes)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Contest not found")
 		return
@@ -3079,6 +3090,13 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// 3. Calculate standing for this user in this contest
+	orderClause := "ORDER BY accepted_count DESC, total_words DESC, total_bytes DESC"
+	if rankByWords == 1 {
+		orderClause = "ORDER BY total_words DESC, accepted_count DESC, total_bytes DESC"
+	} else if minBytes > 0 && minWords == 0 {
+		orderClause = "ORDER BY accepted_count DESC, total_bytes DESC, total_words DESC"
+	}
+
 	var standing *models.StandingEntry
 	standingsQuery := `
 		SELECT u.wiki_username,
@@ -3090,8 +3108,7 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 		JOIN users u ON a.submitter_id = u.id
 		WHERE a.contest_id = ?
 		GROUP BY u.id
-		ORDER BY accepted_count DESC, total_words DESC
-	`
+	` + "\n\t\t" + orderClause
 	stRows, err := h.db.Query(standingsQuery, contestID)
 	if err == nil {
 		rank := 1
@@ -3115,6 +3132,9 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 		ContestCode: code,
 		ContestName: contestName,
 		WikiURL:     wikiURL,
+		RankByWords: rankByWords == 1,
+		MinWords:    minWords,
+		MinBytes:    minBytes,
 		Standing:    standing,
 		Submissions: submissions,
 		Reviews:     reviews,

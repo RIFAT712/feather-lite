@@ -593,6 +593,9 @@ export interface ContestUserProfile {
   contest_code: string;
   contest_name: string;
   wiki_url: string;
+  rank_by_words?: boolean;
+  min_words?: number;
+  min_bytes?: number;
   standing?: StandingEntry;
   submissions: ContestUserSubmission[];
   reviews: GlobalProfileReview[];

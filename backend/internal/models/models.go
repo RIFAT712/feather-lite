@@ -336,6 +336,9 @@ type ContestUserProfile struct {
 	ContestCode string                  `json:"contest_code"`
 	ContestName string                  `json:"contest_name"`
 	WikiURL     string                  `json:"wiki_url"`
+	RankByWords bool                    `json:"rank_by_words"`
+	MinWords    int                     `json:"min_words"`
+	MinBytes    int                     `json:"min_bytes"`
 	Standing    *StandingEntry          `json:"standing,omitempty"`
 	Submissions []ContestUserSubmission `json:"submissions"`
 	Reviews     []GlobalProfileReview   `json:"reviews"`

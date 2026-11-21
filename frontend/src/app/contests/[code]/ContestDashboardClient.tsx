@@ -387,6 +387,19 @@ export default function ContestDashboardClient({
     }
   }, [contest, activeTab]);
 
+  // Contest metric mode (word vs byte evaluation)
+  const isWordBased = Boolean(
+    contest?.rank_by_words ||
+    ((contest?.min_words ?? 0) > 0 && (contest?.min_bytes ?? 0) === 0)
+  );
+  const isByteBased = Boolean(
+    !contest?.rank_by_words &&
+    (contest?.min_bytes ?? 0) > 0 &&
+    (contest?.min_words ?? 0) === 0
+  );
+  const showBytes = !isWordBased;
+  const showWords = !isByteBased;
+
   // Judging throughput calculations
   const judgingProgress = useMemo(() => {
     const accepted = juryStats?.accepted_articles ?? contest?.accepted_articles ?? 0;
@@ -515,13 +528,20 @@ export default function ContestDashboardClient({
     const isBn = locale === "bn";
     const isDetailed = exportMode === "detailed";
 
-    const headers = isBn
-      ? isDetailed
-        ? ["স্থান", "ব্যবহারকারী", "গৃহীত নিবন্ধ", "গৃহীত নিবন্ধের তালিকা", "মোট শব্দ", "মোট বাইট", "মোট জমাকৃত"]
-        : ["স্থান", "ব্যবহারকারী", "গৃহীত নিবন্ধ", "মোট শব্দ", "মোট বাইট", "মোট জমাকৃত"]
-      : isDetailed
-      ? ["Rank", "User", "Accepted", "Accepted Articles", "Total Words", "Total Bytes", "Submitted"]
-      : ["Rank", "User", "Accepted", "Total Words", "Total Bytes", "Submitted"];
+    const headers: string[] = [];
+    if (isBn) {
+      headers.push("স্থান", "ব্যবহারকারী", "গৃহীত নিবন্ধ");
+      if (isDetailed) headers.push("গৃহীত নিবন্ধের তালিকা");
+      if (showWords) headers.push("মোট শব্দ");
+      if (showBytes) headers.push("মোট বাইট");
+      headers.push("মোট জমাকৃত");
+    } else {
+      headers.push("Rank", "User", "Accepted");
+      if (isDetailed) headers.push("Accepted Articles");
+      if (showWords) headers.push("Total Words");
+      if (showBytes) headers.push("Total Bytes");
+      headers.push("Submitted");
+    }
 
     const lines: string[] = [
       '{| class="wikitable sortable" style="text-align:center"',
@@ -530,24 +550,23 @@ export default function ContestDashboardClient({
 
     standings.forEach((s) => {
       lines.push("|-");
+      const cells: string[] = [String(s.rank), `[[User:${s.username}|${s.username}]]`, String(s.accepted_count)];
       if (isDetailed) {
         const userArticles = acceptedArticlesByUser[s.username] || [];
         const formattedArticles = userArticles.length > 0
           ? userArticles.map((t) => `[[${t}]]`).join(", ")
           : "—";
-        lines.push(
-          `| ${s.rank} || [[User:${s.username}|${s.username}]] || ${s.accepted_count} || style="text-align:left" | ${formattedArticles} || ${s.total_words.toLocaleString()} || ${s.total_bytes.toLocaleString()} || ${s.submitted_count}`
-        );
-      } else {
-        lines.push(
-          `| ${s.rank} || [[User:${s.username}|${s.username}]] || ${s.accepted_count} || ${s.total_words.toLocaleString()} || ${s.total_bytes.toLocaleString()} || ${s.submitted_count}`
-        );
+        cells.push(`style="text-align:left" | ${formattedArticles}`);
       }
+      if (showWords) cells.push(s.total_words.toLocaleString());
+      if (showBytes) cells.push(s.total_bytes.toLocaleString());
+      cells.push(String(s.submitted_count));
+      lines.push(`| ${cells.join(" || ")}`);
     });
 
     lines.push("|}");
     return lines.join("\n");
-  }, [standings, acceptedArticlesByUser, exportMode, locale]);
+  }, [standings, acceptedArticlesByUser, exportMode, locale, showWords, showBytes]);
 
   const handleCopyWikitext = async () => {
     if (!wikitextTable) return;
@@ -576,31 +595,26 @@ export default function ContestDashboardClient({
   const handleDownloadCSV = () => {
     if (!standings || standings.length === 0) return;
     const isDetailed = exportMode === "detailed";
-    const headers = isDetailed
-      ? ["Rank", "User", "Accepted", "Accepted Articles", "Total Words", "Total Bytes", "Submitted"]
-      : ["Rank", "User", "Accepted", "Total Words", "Total Bytes", "Submitted"];
+    const headers: string[] = ["Rank", "User", "Accepted"];
+    if (isDetailed) headers.push("Accepted Articles");
+    if (showWords) headers.push("Total Words");
+    if (showBytes) headers.push("Total Bytes");
+    headers.push("Submitted");
 
     const rows = standings.map((s) => {
-      if (isDetailed) {
-        const userArticles = (acceptedArticlesByUser[s.username] || []).join("; ");
-        return [
-          s.rank,
-          `"${s.username.replace(/"/g, '""')}"`,
-          s.accepted_count,
-          `"${userArticles.replace(/"/g, '""')}"`,
-          s.total_words,
-          s.total_bytes,
-          s.submitted_count,
-        ];
-      }
-      return [
+      const row: (string | number)[] = [
         s.rank,
         `"${s.username.replace(/"/g, '""')}"`,
         s.accepted_count,
-        s.total_words,
-        s.total_bytes,
-        s.submitted_count,
       ];
+      if (isDetailed) {
+        const userArticles = (acceptedArticlesByUser[s.username] || []).join("; ");
+        row.push(`"${userArticles.replace(/"/g, '""')}"`);
+      }
+      if (showWords) row.push(s.total_words);
+      if (showBytes) row.push(s.total_bytes);
+      row.push(s.submitted_count);
+      return row;
     });
 
     const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -617,10 +631,21 @@ export default function ContestDashboardClient({
   const handleDownloadJSON = () => {
     if (!standings) return;
     const isDetailed = exportMode === "detailed";
-    const data = standings.map((s) => ({
-      ...s,
-      accepted_articles: isDetailed ? acceptedArticlesByUser[s.username] || [] : undefined,
-    }));
+    const data = standings.map((s) => {
+      const entry: Record<string, any> = {
+        rank: s.rank,
+        username: s.username,
+        role: s.role,
+        accepted_count: s.accepted_count,
+      };
+      if (showWords) entry.total_words = s.total_words;
+      if (showBytes) entry.total_bytes = s.total_bytes;
+      entry.submitted_count = s.submitted_count;
+      if (isDetailed) {
+        entry.accepted_articles = acceptedArticlesByUser[s.username] || [];
+      }
+      return entry;
+    });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -2222,12 +2247,12 @@ export default function ContestDashboardClient({
 
                             {/* Local Rules Pills */}
                             <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground pt-1">
-                              {sub.min_words > 0 && (
+                              {showWords && sub.min_words > 0 && (
                                 <span className="px-2 py-0.5 rounded-md bg-muted/60 border border-border/60">
                                   Min {sub.min_words} words
                                 </span>
                               )}
-                              {sub.min_bytes > 0 && (
+                              {showBytes && sub.min_bytes > 0 && (
                                 <span className="px-2 py-0.5 rounded-md bg-muted/60 border border-border/60">
                                   Min {sub.min_bytes} bytes
                                 </span>
@@ -2354,8 +2379,8 @@ export default function ContestDashboardClient({
                             <TableHead className="text-xs">{t("feather-campaign-wikis-contributed")}</TableHead>
                           )}
                           <TableHead className="text-right text-xs">{t("feather-standings-col-accepted")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-standings-col-words")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-standings-col-bytes")}</TableHead>
+                          {showWords && <TableHead className="text-right text-xs">{t("feather-standings-col-words")}</TableHead>}
+                          {showBytes && <TableHead className="text-right text-xs">{t("feather-standings-col-bytes")}</TableHead>}
                           <TableHead className="text-right text-xs">{t("feather-standings-col-submitted")}</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -2379,12 +2404,16 @@ export default function ContestDashboardClient({
                             <TableCell className="text-right">
                               <Skeleton className="h-4 w-10 ml-auto rounded" />
                             </TableCell>
-                            <TableCell className="text-right">
-                              <Skeleton className="h-4 w-14 ml-auto rounded" />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Skeleton className="h-4 w-14 ml-auto rounded" />
-                            </TableCell>
+                            {showWords && (
+                              <TableCell className="text-right">
+                                <Skeleton className="h-4 w-14 ml-auto rounded" />
+                              </TableCell>
+                            )}
+                            {showBytes && (
+                              <TableCell className="text-right">
+                                <Skeleton className="h-4 w-14 ml-auto rounded" />
+                              </TableCell>
+                            )}
                             <TableCell className="text-right">
                               <Skeleton className="h-4 w-10 ml-auto rounded" />
                             </TableCell>
@@ -2427,8 +2456,8 @@ export default function ContestDashboardClient({
                             <TableHead className="text-xs">{t("feather-campaign-wikis-contributed")}</TableHead>
                           )}
                           <TableHead className="text-right text-xs">{t("feather-standings-col-accepted")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-standings-col-words")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-standings-col-bytes")}</TableHead>
+                          {showWords && <TableHead className="text-right text-xs">{t("feather-standings-col-words")}</TableHead>}
+                          {showBytes && <TableHead className="text-right text-xs">{t("feather-standings-col-bytes")}</TableHead>}
                           <TableHead className="text-right text-xs">{t("feather-standings-col-submitted")}</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -2491,12 +2520,16 @@ export default function ContestDashboardClient({
                             <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
                               {n(s.accepted_count)}
                             </TableCell>
-                            <TableCell className="text-right font-mono text-xs">
-                              {n(s.total_words)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                              {n(s.total_bytes)}
-                            </TableCell>
+                            {showWords && (
+                              <TableCell className="text-right font-mono text-xs">
+                                {n(s.total_words)}
+                              </TableCell>
+                            )}
+                            {showBytes && (
+                              <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                                {n(s.total_bytes)}
+                              </TableCell>
+                            )}
                             <TableCell className="text-right text-xs text-muted-foreground">
                               {n(s.submitted_count)}
                             </TableCell>
@@ -2560,13 +2593,17 @@ export default function ContestDashboardClient({
                         )}
 
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground ps-8 pt-0.5">
-                          <span>
-                            {t("feather-review-preview-words", s.total_words)}
-                          </span>
-                          <span>·</span>
-                          <span>
-                            {t("feather-review-preview-bytes", s.total_bytes)}
-                          </span>
+                          {showWords && (
+                            <span>
+                              {t("feather-review-preview-words", s.total_words)}
+                            </span>
+                          )}
+                          {showWords && showBytes && <span>·</span>}
+                          {showBytes && (
+                            <span>
+                              {t("feather-review-preview-bytes", s.total_bytes)}
+                            </span>
+                          )}
                           <span>·</span>
                           <span>
                             <strong className="font-mono text-foreground">{n(s.submitted_count)}</strong> {t("feather-contest-submitted").toLowerCase()}
@@ -2667,8 +2704,8 @@ export default function ContestDashboardClient({
                           <TableHead className="text-xs">{t("feather-contest-col-article")}</TableHead>
                           <TableHead className="text-xs">{t("feather-contest-col-submitter")}</TableHead>
                           <TableHead className="text-center text-xs">{t("feather-contest-col-status")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>
+                          {showWords && <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>}
+                          {showBytes && <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>}
                           <TableHead className="text-right text-xs">{t("feather-contest-col-date")}</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -2687,12 +2724,16 @@ export default function ContestDashboardClient({
                             <TableCell className="text-center">
                               <Skeleton className="h-5 w-16 mx-auto rounded-full" />
                             </TableCell>
-                            <TableCell className="text-right">
-                              <Skeleton className="h-3.5 w-12 ml-auto rounded" />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Skeleton className="h-3.5 w-14 ml-auto rounded" />
-                            </TableCell>
+                            {showWords && (
+                              <TableCell className="text-right">
+                                <Skeleton className="h-3.5 w-12 ml-auto rounded" />
+                              </TableCell>
+                            )}
+                            {showBytes && (
+                              <TableCell className="text-right">
+                                <Skeleton className="h-3.5 w-14 ml-auto rounded" />
+                              </TableCell>
+                            )}
                             <TableCell className="text-right">
                               <Skeleton className="h-3.5 w-20 ml-auto rounded" />
                             </TableCell>
@@ -2812,9 +2853,16 @@ export default function ContestDashboardClient({
                                     <span>{n(sub.rejected)}</span>
                                   </span>
                                 )}
-                                <span className="text-[11px] font-mono text-muted-foreground hidden md:inline">
-                                  {n(sub.totalWords)} words
-                                </span>
+                                {showWords && (
+                                  <span className="text-[11px] font-mono text-muted-foreground hidden md:inline">
+                                    {n(sub.totalWords)} words
+                                  </span>
+                                )}
+                                {showBytes && (
+                                  <span className="text-[11px] font-mono text-muted-foreground hidden md:inline">
+                                    {n(sub.totalBytes)} bytes
+                                  </span>
+                                )}
                               </div>
                             </button>
 
@@ -2841,12 +2889,16 @@ export default function ContestDashboardClient({
                                     </div>
 
                                     <div className="flex items-center gap-3 text-xs shrink-0 self-end sm:self-auto">
-                                      <span className="font-mono text-muted-foreground text-[11px]">
-                                        {n(art.word_count)} words
-                                      </span>
-                                      <span className="font-mono text-muted-foreground/60 text-[11px]">
-                                        {n(art.byte_count)} bytes
-                                      </span>
+                                      {showWords && (
+                                        <span className="font-mono text-muted-foreground text-[11px]">
+                                          {n(art.word_count)} words
+                                        </span>
+                                      )}
+                                      {showBytes && (
+                                        <span className="font-mono text-muted-foreground/60 text-[11px]">
+                                          {n(art.byte_count)} bytes
+                                        </span>
+                                      )}
                                       <Badge
                                         variant={
                                           art.status === "accepted"
@@ -2896,8 +2948,8 @@ export default function ContestDashboardClient({
                           <TableHead className="text-xs">{t("feather-contest-col-article")}</TableHead>
                           <TableHead className="text-xs">{t("feather-contest-col-submitter")}</TableHead>
                           <TableHead className="text-center text-xs">{t("feather-contest-col-status")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>
+                          {showWords && <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>}
+                          {showBytes && <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>}
                           <TableHead className="text-right text-xs">{t("feather-contest-col-date")}</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -2949,12 +3001,16 @@ export default function ContestDashboardClient({
                                   : t("feather-contest-filter-failed")}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right font-mono text-xs">
-                              {n(art.word_count)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                              {n(art.byte_count)}
-                            </TableCell>
+                            {showWords && (
+                              <TableCell className="text-right font-mono text-xs">
+                                {n(art.word_count)}
+                              </TableCell>
+                            )}
+                            {showBytes && (
+                              <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                                {n(art.byte_count)}
+                              </TableCell>
+                            )}
                             <TableCell className="text-right text-xs text-muted-foreground">
                               {formatDate(art.submitted_at)}
                             </TableCell>
@@ -3014,13 +3070,17 @@ export default function ContestDashboardClient({
                         </div>
 
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
-                          <span className="font-mono text-foreground font-medium">
-                            {t("feather-review-preview-words", art.word_count)}
-                          </span>
-                          <span>·</span>
-                          <span className="font-mono text-muted-foreground">
-                            {t("feather-review-preview-bytes", art.byte_count)}
-                          </span>
+                          {showWords && (
+                            <span className="font-mono text-foreground font-medium">
+                              {t("feather-review-preview-words", art.word_count)}
+                            </span>
+                          )}
+                          {showWords && showBytes && <span>·</span>}
+                          {showBytes && (
+                            <span className="font-mono text-muted-foreground">
+                              {t("feather-review-preview-bytes", art.byte_count)}
+                            </span>
+                          )}
                           <span>·</span>
                           <span className="text-[10px]">
                             {formatDate(art.submitted_at)}
@@ -3051,34 +3111,38 @@ export default function ContestDashboardClient({
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Rule: Minimum Words */}
-                <div className="flex items-start gap-3 p-3.5 rounded-lg border border-border/70 bg-card/60">
-                  <div className="p-1.5 rounded-md bg-primary/10 text-primary shrink-0 mt-0.5">
-                    <Check className="h-4 w-4" />
+                {showWords && (
+                  <div className="flex items-start gap-3 p-3.5 rounded-lg border border-border/70 bg-card/60">
+                    <div className="p-1.5 rounded-md bg-primary/10 text-primary shrink-0 mt-0.5">
+                      <Check className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-semibold text-foreground">
+                        {t("feather-contest-min-words", contest.min_words ?? 0)}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {t("feather-contest-rule-min-words-desc", contest.min_words ?? 0)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-foreground">
-                      {t("feather-contest-min-words", contest.min_words ?? 0)}
-                    </h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {t("feather-contest-rule-min-words-desc", contest.min_words ?? 0)}
-                    </p>
-                  </div>
-                </div>
+                )}
 
                 {/* Rule: Minimum Bytes */}
-                <div className="flex items-start gap-3 p-3.5 rounded-lg border border-border/70 bg-card/60">
-                  <div className="p-1.5 rounded-md bg-primary/10 text-primary shrink-0 mt-0.5">
-                    <Check className="h-4 w-4" />
+                {showBytes && (
+                  <div className="flex items-start gap-3 p-3.5 rounded-lg border border-border/70 bg-card/60">
+                    <div className="p-1.5 rounded-md bg-primary/10 text-primary shrink-0 mt-0.5">
+                      <Check className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-semibold text-foreground">
+                        {t("feather-contest-min-bytes", contest.min_bytes ?? 0)}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {t("feather-contest-rule-min-bytes-desc", contest.min_bytes ?? 0)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-foreground">
-                      {t("feather-contest-min-bytes", contest.min_bytes ?? 0)}
-                    </h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {t("feather-contest-rule-min-bytes-desc", contest.min_bytes ?? 0)}
-                    </p>
-                  </div>
-                </div>
+                )}
 
                 {/* Rule: Page Creator Requirement */}
                 <div className="flex items-start gap-3 p-3.5 rounded-lg border border-border/70 bg-card/60">

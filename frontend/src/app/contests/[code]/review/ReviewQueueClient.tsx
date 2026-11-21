@@ -364,6 +364,19 @@ export default function ReviewQueueClient({
   const isDark = resolvedTheme === "dark";
 
   const [contest, setContest] = useState<Contest | null>(initialContest || null);
+
+  // Contest metric mode (word vs byte evaluation)
+  const isWordBased = Boolean(
+    contest?.rank_by_words ||
+    ((contest?.min_words ?? 0) > 0 && (contest?.min_bytes ?? 0) === 0)
+  );
+  const isByteBased = Boolean(
+    !contest?.rank_by_words &&
+    (contest?.min_bytes ?? 0) > 0 &&
+    (contest?.min_words ?? 0) === 0
+  );
+  const showBytes = !isWordBased;
+  const showWords = !isByteBased;
   const [user, setUser] = useState<UserSession | null>(initialUser || null);
   const [userLoaded, setUserLoaded] = useState<boolean>(() => Boolean(initialUser));
 
@@ -1995,12 +2008,12 @@ ${body}
                               ✓ Creator
                             </span>
                           )}
-                        {currentArticle.word_count > 0 && (
+                        {showWords && currentArticle.word_count > 0 && (
                           <span className="rq-tag">
                             {currentArticle.word_count.toLocaleString()} words
                           </span>
                         )}
-                        {currentArticle.byte_count > 0 && (
+                        {showBytes && currentArticle.byte_count > 0 && (
                           <span className="rq-tag">
                             {currentArticle.byte_count.toLocaleString()} bytes
                           </span>

@@ -107,6 +107,19 @@ export default function ContestUserProfileClient({
     );
   }
 
+  // Contest metric mode (word vs byte evaluation)
+  const isWordBased = Boolean(
+    profile.rank_by_words ||
+    ((profile.min_words ?? 0) > 0 && (profile.min_bytes ?? 0) === 0)
+  );
+  const isByteBased = Boolean(
+    !profile.rank_by_words &&
+    (profile.min_bytes ?? 0) > 0 &&
+    (profile.min_words ?? 0) === 0
+  );
+  const showBytes = !isWordBased;
+  const showWords = !isByteBased;
+
   // Filter out any validation failures so they do not appear in the user submissions list
   const validSubmissions = profile.submissions.filter((s) => s.status !== "validation_failed");
 
@@ -119,6 +132,10 @@ export default function ContestUserProfileClient({
     validSubmissions
       .filter((s) => s.status === "accepted")
       .reduce((sum, s) => sum + s.word_count, 0);
+  const totalBytes = profile.standing?.total_bytes ?? 
+    validSubmissions
+      .filter((s) => s.status === "accepted")
+      .reduce((sum, s) => sum + s.byte_count, 0);
 
   // Filter submissions
   const filteredSubmissions = validSubmissions.filter((s) =>
@@ -216,10 +233,10 @@ export default function ContestUserProfileClient({
 
             <div className="space-y-0.5">
               <div className="text-2xl sm:text-3xl font-bold text-primary">
-                {n(totalWords)}
+                {n(showWords ? totalWords : totalBytes)}
               </div>
               <div className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
-                {t("feather-profile-points")}
+                {showWords ? t("feather-profile-points") : t("feather-profile-th-bytes")}
               </div>
             </div>
           </div>
@@ -301,8 +318,8 @@ export default function ContestUserProfileClient({
                       <th className="py-2.5 px-3">{t("feather-profile-th-status")}</th>
                       <th className="py-2.5 px-3">{t("feather-profile-th-jury")}</th>
                       <th className="py-2.5 px-3">{t("feather-profile-th-comment")}</th>
-                      <th className="py-2.5 px-3 text-right">{t("feather-profile-th-words")}</th>
-                      <th className="py-2.5 px-3 text-right">{t("feather-profile-th-bytes")}</th>
+                      {showWords && <th className="py-2.5 px-3 text-right">{t("feather-profile-th-words")}</th>}
+                      {showBytes && <th className="py-2.5 px-3 text-right">{t("feather-profile-th-bytes")}</th>}
                       <th className="py-2.5 px-3">{t("feather-profile-th-submitted")}</th>
                     </tr>
                   </thead>
@@ -375,12 +392,16 @@ export default function ContestUserProfileClient({
                               <span className="text-muted-foreground/40">&mdash;</span>
                             )}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
-                            {n(sub.word_count)}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
-                            {n(sub.byte_count)}
-                          </td>
+                          {showWords && (
+                            <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
+                              {n(sub.word_count)}
+                            </td>
+                          )}
+                          {showBytes && (
+                            <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
+                              {n(sub.byte_count)}
+                            </td>
+                          )}
                           <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">
                             {formatUtcToTz(sub.submitted_at, "UTC", "MMM d, yyyy")}
                           </td>

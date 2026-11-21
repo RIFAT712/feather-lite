@@ -1019,17 +1019,6 @@ export default function ContestDashboardClient({
 
       {/* 1. Header Overview Card */}
       <Card className="mb-6 shadow-sm border-border/80 bg-gradient-to-b from-card via-card to-card/60 backdrop-blur-xs overflow-hidden relative">
-        {/* Subtle top accent bar matching contest status */}
-        <div
-          className={`h-1 w-full ${
-            isActive
-              ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400"
-              : contest.status === "pending_approval"
-              ? "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400"
-              : "bg-muted-foreground/30"
-          }`}
-        />
-
         <CardHeader className="p-4 sm:p-6 pb-4">
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
             <div className="space-y-3 flex-1 min-w-0">

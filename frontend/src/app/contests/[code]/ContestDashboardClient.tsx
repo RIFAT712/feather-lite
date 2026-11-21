@@ -3563,7 +3563,7 @@ export default function ContestDashboardClient({
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-4 w-4" />
+                      <Save className="h-4 w-4" />
                       <span>{t("feather-contest-settings-save")}</span>
                     </>
                   )}
@@ -4303,7 +4303,7 @@ export default function ContestDashboardClient({
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-4 w-4" />
+                      <Save className="h-4 w-4" />
                       <span>{t("feather-contest-settings-save")}</span>
                     </>
                   )}

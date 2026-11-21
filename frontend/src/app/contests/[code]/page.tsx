@@ -23,12 +23,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const title = `${contest.name} — Feather`;
+  const description = contest.description || `Wiki article contest ${contest.name} on Feather.`;
+
   return {
-    title: `${contest.name} — Feather`,
-    description: contest.description || `Wiki article contest ${contest.name} on Feather.`,
+    title,
+    description,
     openGraph: {
-      title: `${contest.name} — Feather`,
-      description: contest.description || `Wiki article contest ${contest.name} on Feather.`,
+      title,
+      description,
+      type: "website",
+      siteName: "Feather",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
     },
   };
 }

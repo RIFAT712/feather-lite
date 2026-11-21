@@ -820,11 +820,73 @@ export default function ContestDashboardClient({
     handleCopyWikitext();
   };
 
+  // Share Dialog & Link Preview states
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [copiedWikitextAnnouncement, setCopiedWikitextAnnouncement] = useState(false);
+
+  // Computed share URL
+  const shareUrl = useMemo(() => {
+    if (typeof window !== "undefined" && window.location.origin) {
+      return `${window.location.origin}/contests/${code}`;
+    }
+    return `https://feather-lite.toolforge.org/contests/${code}`;
+  }, [code]);
+
+  // Social share URLs
+  const whatsappShareUrl = useMemo(() => {
+    const text = `${contest?.name || "Feather Contest"}\n${shareUrl}`;
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  }, [contest?.name, shareUrl]);
+
+  const telegramShareUrl = useMemo(() => {
+    return `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(contest?.name || "Feather Contest")}`;
+  }, [contest?.name, shareUrl]);
+
+  const twitterShareUrl = useMemo(() => {
+    const text = `${contest?.name || "Feather Contest"} on Feather (@Wikimedia)`;
+    return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
+  }, [contest?.name, shareUrl]);
+
+  const facebookShareUrl = useMemo(() => {
+    return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+  }, [shareUrl]);
+
+  // Wikitext announcement snippet for Wikipedia community pages
+  const wikitextAnnouncement = useMemo(() => {
+    const contestName = contest?.name || "Contest";
+    const startDate = formatDateDDMMYYYY(contest?.start_date || "");
+    const endDate = formatDateDDMMYYYY(contest?.end_date || "");
+    if (locale === "bn") {
+      return `== ${contestName} শুরু হয়েছে! ==\nসুপ্রিয় উইকিপিডিয়ান,\n\n[${shareUrl} ${contestName}]${startDate && endDate ? ` (${startDate} — ${endDate})` : ""} শুরু হয়েছে। প্রতিযোগিতায় অংশগ্রহণ করতে, বিস্তারিত নিয়মাবলী জানতে এবং আপনার নিবন্ধ জমা দিতে দয়া করে [${shareUrl} ফেদার প্রতিযোগিতা ড্যাশবোর্ডে] যান।\n\nসকলের সক্রিয় অংশগ্রহণ ও সাফল্য কামনা করছি। ~~~~`;
+    }
+    return `== ${contestName} has started! ==\nDear Wikipedians,\n\n[${shareUrl} ${contestName}]${startDate && endDate ? ` (${startDate} — ${endDate})` : ""} is now underway. To participate, review contest guidelines, and submit your eligible articles, please visit the [${shareUrl} Feather contest dashboard].\n\nHappy editing! ~~~~`;
+  }, [contest?.name, contest?.start_date, contest?.end_date, formatDateDDMMYYYY, shareUrl, locale]);
+
+  const handleCopyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedShareLink(true);
+      toast.success(t("feather-contest-share-copied"));
+      setTimeout(() => setCopiedShareLink(false), 2000);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleCopyWikitextAnnouncement = async () => {
+    try {
+      await navigator.clipboard.writeText(wikitextAnnouncement);
+      setCopiedWikitextAnnouncement(true);
+      toast.success(t("feather-contest-share-wikitext-copied"));
+      setTimeout(() => setCopiedWikitextAnnouncement(false), 2000);
+    } catch {
+      toast.error("Failed to copy wikitext");
+    }
+  };
+
   const copyContestLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setIsCopied(true);
-    toast.success(t("feather-contest-link-copied"));
-    setTimeout(() => setIsCopied(false), 2000);
+    setIsShareDialogOpen(true);
   };
 
   if (contestLoading) {
@@ -1083,11 +1145,23 @@ export default function ContestDashboardClient({
       )}
 
       {/* 1. Header Overview Card */}
-      <Card className="mb-6 shadow-2xs border-border/80">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+      <Card className="mb-6 shadow-sm border-border/80 bg-gradient-to-b from-card via-card to-card/60 backdrop-blur-xs overflow-hidden relative">
+        {/* Subtle top accent bar matching contest status */}
+        <div
+          className={`h-1 w-full ${
+            isActive
+              ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400"
+              : contest.status === "pending_approval"
+              ? "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400"
+              : "bg-muted-foreground/30"
+          }`}
+        />
+
+        <CardHeader className="p-4 sm:p-6 pb-4">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+            <div className="space-y-3 flex-1 min-w-0">
+              {/* Status Indicator Badge & Wiki Pill Row */}
+              <div className="flex items-center gap-2 flex-wrap">
                 {/* Status Indicator Badge */}
                 {(() => {
                   const isPending = contest.status === "pending_approval";
@@ -1136,7 +1210,7 @@ export default function ContestDashboardClient({
 
                 {contest.is_umbrella ? (
                   <div
-                    className="text-xs text-foreground/90 flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-border/70 bg-muted/30 shrink-0 whitespace-nowrap font-medium"
+                    className="text-xs text-foreground/90 flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border border-border/70 bg-muted/30 shrink-0 whitespace-nowrap font-medium"
                     title={t("feather-campaign-badge")}
                   >
                     <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -1157,7 +1231,7 @@ export default function ContestDashboardClient({
                         href={contest.wiki_url || `https://${contest.wiki_dbname}.org`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 cursor-pointer transition-colors px-2 py-0.5 rounded-md border border-border/70 bg-muted/30 hover:bg-muted/60"
+                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 cursor-pointer transition-colors px-2.5 py-0.5 rounded-md border border-border/70 bg-muted/30 hover:bg-muted/60"
                         title={`${wikiInfo?.englishName || pMeta.name} (${contest.wiki_dbname})`}
                       >
                         <img
@@ -1181,118 +1255,137 @@ export default function ContestDashboardClient({
                 )}
               </div>
 
-              <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              {/* Contest Title */}
+              <CardTitle className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground leading-tight">
                 {contest.name}
               </CardTitle>
 
-              <CardDescription className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
+              {/* Description */}
+              <CardDescription className="text-xs sm:text-sm text-muted-foreground max-w-3xl leading-relaxed">
                 {contest.description || "No description provided."}
               </CardDescription>
             </div>
 
-            {/* Action CTAs */}
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
-              {contest.status !== "pending_approval" ? (
-                <Link
-                  href={`/contests/${code}/submit`}
-                  className={buttonVariants({
-                    variant: "default",
-                    size: "sm",
-                    className: "flex-1 sm:flex-none gap-1.5 cursor-pointer font-medium shadow-xs",
-                  })}
-                >
-                  <Upload className="h-4 w-4" />
-                  {t("feather-contest-action-submit")}
-                </Link>
-              ) : (
-                <Button
-                  disabled
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 sm:flex-none gap-1.5 text-xs text-muted-foreground opacity-60 cursor-not-allowed"
-                  title={t("feather-contest-pending-approval-banner")}
-                >
-                  <Upload className="h-4 w-4" />
-                  {t("feather-contest-action-submit")}
-                </Button>
-              )}
+            {/* Action Toolbar */}
+            <div className="flex flex-col sm:flex-row lg:flex-col items-stretch lg:items-end gap-2.5 shrink-0 w-full sm:w-auto">
+              {/* Primary User Actions */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {contest.status !== "pending_approval" ? (
+                  <Link
+                    href={`/contests/${code}/submit`}
+                    className={buttonVariants({
+                      variant: "default",
+                      size: "default",
+                      className:
+                        "flex-1 sm:flex-none gap-2 cursor-pointer font-semibold shadow-xs text-xs sm:text-sm px-4 py-2",
+                    })}
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span>{t("feather-contest-action-submit")}</span>
+                  </Link>
+                ) : (
+                  <Button
+                    disabled
+                    variant="outline"
+                    className="flex-1 sm:flex-none gap-1.5 text-xs text-muted-foreground opacity-60 cursor-not-allowed"
+                    title={t("feather-contest-pending-approval-banner")}
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span>{t("feather-contest-action-submit")}</span>
+                  </Button>
+                )}
 
-              {contest.is_umbrella && isOrganizer && (
-                <Button
-                  onClick={() => setIsAddCommunityOpen(true)}
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 sm:flex-none gap-1.5 cursor-pointer font-medium shadow-xs"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>{t("feather-campaign-add-community")}</span>
-                </Button>
-              )}
-
-              {!contest.is_umbrella && isJuryOrOrganizer && (
-                <Link
-                  href={`/contests/${code}/review`}
-                  className={buttonVariants({
-                    variant: "outline",
-                    size: "sm",
-                    className: "flex-1 sm:flex-none gap-1.5 cursor-pointer font-medium min-h-9 sm:min-h-8 text-xs",
-                  })}
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  {t("feather-contest-action-review")}
-                </Link>
-              )}
-
-              {!contest.is_umbrella && isJuryOrOrganizer && (
-                <Link
-                  href={`/contests/${code}/jury`}
-                  className={buttonVariants({
-                    variant: "outline",
-                    size: "sm",
-                    className: "flex-1 sm:flex-none gap-1.5 cursor-pointer font-medium min-h-9 sm:min-h-8 text-xs shadow-2xs",
-                  })}
-                  title={t("feather-contest-action-jury-stats")}
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t("feather-contest-action-jury-stats")}</span>
-                </Link>
-              )}
-
-              {isOrganizer && (
+                {/* Share Button (Opens dedicated Share & Link Preview Dialog) */}
                 <Button
                   variant="outline"
-                  size="sm"
-                  onClick={() => setActiveTab("settings")}
-                  className="flex-1 sm:flex-none gap-1.5 cursor-pointer font-medium text-xs shadow-2xs"
-                  title={t("feather-contest-tab-settings")}
+                  size="default"
+                  onClick={() => setIsShareDialogOpen(true)}
+                  className="gap-2 cursor-pointer font-medium text-xs sm:text-sm px-3.5 shadow-2xs hover:bg-muted/80"
+                  title={t("feather-contest-share-btn")}
                 >
-                  <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="hidden sm:inline">{t("feather-contest-tab-settings")}</span>
+                  <Share2 className="h-4 w-4 text-primary" />
+                  <span>{t("feather-contest-share-btn")}</span>
                 </Button>
-              )}
+              </div>
 
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={copyContestLink}
-                title={t("feather-contest-copy-link")}
-                className="cursor-pointer text-muted-foreground hover:text-foreground"
-              >
-                {isCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Share2 className="h-4 w-4" />}
-              </Button>
+              {/* Organizer & Jury Quick Tools */}
+              {(isJuryOrOrganizer || isOrganizer) && (
+                <div className="flex items-center gap-1.5 pt-1 lg:pt-0 w-full sm:w-auto justify-start lg:justify-end border-t lg:border-t-0 border-border/50">
+                  {contest.is_umbrella && isOrganizer && (
+                    <Button
+                      onClick={() => setIsAddCommunityOpen(true)}
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1.5 cursor-pointer font-medium text-xs h-8 px-2.5 text-muted-foreground hover:text-foreground border border-border/50 hover:bg-muted/60"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>{t("feather-campaign-add-community")}</span>
+                    </Button>
+                  )}
+
+                  {!contest.is_umbrella && isJuryOrOrganizer && (
+                    <Link
+                      href={`/contests/${code}/review`}
+                      className={buttonVariants({
+                        variant: "ghost",
+                        size: "sm",
+                        className:
+                          "gap-1.5 cursor-pointer font-medium text-xs h-8 px-2.5 text-muted-foreground hover:text-foreground border border-border/50 hover:bg-muted/60",
+                      })}
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>{t("feather-contest-action-review")}</span>
+                    </Link>
+                  )}
+
+                  {!contest.is_umbrella && isJuryOrOrganizer && (
+                    <Link
+                      href={`/contests/${code}/jury`}
+                      className={buttonVariants({
+                        variant: "ghost",
+                        size: "sm",
+                        className:
+                          "gap-1.5 cursor-pointer font-medium text-xs h-8 px-2.5 text-muted-foreground hover:text-foreground border border-border/50 hover:bg-muted/60",
+                      })}
+                      title={t("feather-contest-action-jury-stats")}
+                    >
+                      <BarChart3 className="h-3.5 w-3.5 text-blue-500" />
+                      <span>{t("feather-contest-action-jury-stats")}</span>
+                    </Link>
+                  )}
+
+                  {isOrganizer && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab("settings")}
+                      className="gap-1.5 cursor-pointer font-medium text-xs h-8 px-2.5 text-muted-foreground hover:text-foreground border border-border/50 hover:bg-muted/60"
+                      title={t("feather-contest-tab-settings")}
+                    >
+                      <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>{t("feather-contest-tab-settings")}</span>
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </CardHeader>
 
         {/* Timeline & Metadata Footer */}
-        <CardContent className="pt-3 border-t border-border/60">
+        <CardContent className="pt-3 pb-4 sm:pb-5 px-4 sm:px-6 border-t border-border/60 bg-muted/15">
           <div className="space-y-2.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2">
               <div className="flex items-center gap-2 font-medium">
                 <Calendar className="h-3.5 w-3.5 text-primary" />
-                <span>
+                <span className="font-semibold text-foreground/90 font-mono">
                   {formatDateDDMMYYYY(contest.start_date)} — {formatDateDDMMYYYY(contest.end_date)}
                 </span>
+                {contest.wiki_tz && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border/50">
+                    {contest.wiki_tz}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2 shrink-0">
@@ -1312,10 +1405,12 @@ export default function ContestDashboardClient({
             </div>
 
             {/* Visual Timeline Progress Bar */}
-            <div className="w-full bg-muted/60 rounded-full h-1.5 overflow-hidden">
+            <div className="w-full bg-muted/60 rounded-full h-2 overflow-hidden shadow-inner">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  countdownInfo.isEnded ? "bg-muted-foreground" : "bg-primary"
+                  countdownInfo.isEnded
+                    ? "bg-muted-foreground"
+                    : "bg-gradient-to-r from-blue-500 via-primary to-emerald-500"
                 }`}
                 style={{ width: `${countdownInfo.percent}%` }}
               />
@@ -1325,95 +1420,328 @@ export default function ContestDashboardClient({
       </Card>
 
       {/* 2. Key Metric Dashboard Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-6 sm:mb-8">
-        <Card className="border-border shadow-2xs">
-          <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-1">
-            <CardDescription className="text-xs font-medium flex items-center justify-between">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        {/* Card 1: Total Submitted */}
+        <Card className="border-border/80 shadow-2xs hover:border-border transition-all bg-card/60 backdrop-blur-xs group">
+          <CardHeader className="p-3.5 sm:p-4 pb-1 sm:pb-1">
+            <CardDescription className="text-xs font-medium flex items-center justify-between text-muted-foreground">
               <span>{contest.is_umbrella ? t("feather-campaign-stat-communities") : t("feather-contest-submitted")}</span>
-              {contest.is_umbrella ? (
-                <Layers className="h-4 w-4 text-primary shrink-0" />
-              ) : (
-                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-              )}
+              <div className="p-1.5 rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/20 group-hover:scale-105 transition-transform shrink-0">
+                {contest.is_umbrella ? <Layers className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+              </div>
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-            <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              {contest.is_umbrella
-                ? contest.sub_contest_count || contest.sub_contests?.length || 0
-                : contest.total_articles || 0}
+          <CardContent className="p-3.5 pt-0 sm:p-4 sm:pt-0">
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-mono">
+              {n(
+                contest.is_umbrella
+                  ? contest.sub_contest_count || contest.sub_contests?.length || 0
+                  : contest.total_articles || 0
+              )}
             </div>
+            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+              {t("feather-contest-stat-sub-context")}
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-2xs">
-          <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-1">
-            <CardDescription className="text-xs font-medium flex items-center justify-between">
+        {/* Card 2: Accepted */}
+        <Card className="border-border/80 shadow-2xs hover:border-emerald-500/30 transition-all bg-card/60 backdrop-blur-xs group">
+          <CardHeader className="p-3.5 sm:p-4 pb-1 sm:pb-1">
+            <CardDescription className="text-xs font-medium flex items-center justify-between text-muted-foreground">
               <span>{contest.is_umbrella ? t("feather-campaign-stat-submissions") : t("feather-contest-accepted")}</span>
-              {contest.is_umbrella ? (
-                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              )}
+              <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 group-hover:scale-105 transition-transform shrink-0">
+                <CheckCircle2 className="h-4 w-4" />
+              </div>
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-            <div className="flex items-baseline gap-1.5 sm:gap-2">
-              <span className={`text-xl sm:text-2xl font-bold tracking-tight ${contest.is_umbrella ? "text-foreground" : "text-emerald-600 dark:text-emerald-400"}`}>
-                {contest.is_umbrella ? contest.total_articles || 0 : contest.accepted_articles || 0}
+          <CardContent className="p-3.5 pt-0 sm:p-4 sm:pt-0">
+            <div className="flex items-baseline gap-2">
+              <span className={`text-2xl sm:text-3xl font-extrabold tracking-tight font-mono ${contest.is_umbrella ? "text-foreground" : "text-emerald-500 dark:text-emerald-400"}`}>
+                {n(contest.is_umbrella ? contest.total_articles || 0 : contest.accepted_articles || 0)}
               </span>
               {!contest.is_umbrella && contest.total_articles ? (
-                <span className="text-[11px] sm:text-xs text-muted-foreground">({acceptanceRate}%)</span>
+                <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
+                  {n(acceptanceRate)}%
+                </span>
               ) : null}
             </div>
+            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+              {t("feather-contest-stat-acc-context")}
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-2xs">
-          <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-1">
-            <CardDescription className="text-xs font-medium flex items-center justify-between">
+        {/* Card 3: Pending */}
+        <Card className="border-border/80 shadow-2xs hover:border-amber-500/30 transition-all bg-card/60 backdrop-blur-xs group">
+          <CardHeader className="p-3.5 sm:p-4 pb-1 sm:pb-1">
+            <CardDescription className="text-xs font-medium flex items-center justify-between text-muted-foreground">
               <span>{contest.is_umbrella ? t("feather-campaign-stat-accepted") : t("feather-contest-pending")}</span>
-              {contest.is_umbrella ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              ) : (
-                <Clock className="h-4 w-4 text-amber-500 shrink-0" />
-              )}
+              <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover:scale-105 transition-transform shrink-0">
+                <Clock className="h-4 w-4" />
+              </div>
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-            <div className="flex items-baseline gap-1.5 sm:gap-2">
+          <CardContent className="p-3.5 pt-0 sm:p-4 sm:pt-0">
+            <div className="flex items-baseline gap-2">
               <span
-                className={`text-xl sm:text-2xl font-bold tracking-tight ${
+                className={`text-2xl sm:text-3xl font-extrabold tracking-tight font-mono ${
                   contest.is_umbrella
-                    ? "text-emerald-600 dark:text-emerald-400"
+                    ? "text-emerald-500 dark:text-emerald-400"
                     : "text-amber-500 dark:text-amber-400"
                 }`}
               >
-                {contest.is_umbrella
-                  ? contest.accepted_articles || 0
-                  : contest.pending_articles || 0}
+                {n(
+                  contest.is_umbrella
+                    ? contest.accepted_articles || 0
+                    : contest.pending_articles || 0
+                )}
               </span>
               {contest.is_umbrella && contest.total_articles ? (
-                <span className="text-[11px] sm:text-xs text-muted-foreground">({acceptanceRate}%)</span>
+                <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
+                  {n(acceptanceRate)}%
+                </span>
               ) : null}
             </div>
+            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+              {t("feather-contest-stat-pen-context")}
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-2xs">
-          <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-1">
-            <CardDescription className="text-xs font-medium flex items-center justify-between">
+        {/* Card 4: Participants */}
+        <Card className="border-border/80 shadow-2xs hover:border-purple-500/30 transition-all bg-card/60 backdrop-blur-xs group">
+          <CardHeader className="p-3.5 sm:p-4 pb-1 sm:pb-1">
+            <CardDescription className="text-xs font-medium flex items-center justify-between text-muted-foreground">
               <span>{contest.is_umbrella ? t("feather-campaign-stat-participants") : t("feather-contest-participants")}</span>
-              <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-500 border border-purple-500/20 group-hover:scale-105 transition-transform shrink-0">
+                <Users className="h-4 w-4" />
+              </div>
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-            <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              {standings?.length || 0}
+          <CardContent className="p-3.5 pt-0 sm:p-4 sm:pt-0">
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-mono">
+              {n(standings?.length || 0)}
             </div>
+            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+              {t("feather-contest-stat-part-context")}
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Share Contest & Link Preview Dialog */}
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent className="max-w-xl sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
+              <Share2 className="h-5 w-5 text-primary shrink-0" />
+              <span>{t("feather-contest-share-modal-title")}</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              {t("feather-contest-share-modal-desc")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            {/* 1. Realistic Social Link Preview Card Mockup */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <span>{t("feather-contest-share-preview-card-title")}</span>
+                <span className="text-[10px] font-mono lowercase opacity-70">1200 × 630</span>
+              </div>
+
+              <div className="rounded-xl border border-border/80 bg-zinc-950 overflow-hidden shadow-md">
+                {/* Visual OG Banner Canvas */}
+                <div className="relative p-5 sm:p-6 bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-900 border-b border-border/60 overflow-hidden min-h-[170px] flex flex-col justify-between">
+                  {/* Subtle decorative glow circles */}
+                  <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-blue-500/15 blur-2xl pointer-events-none" />
+                  <div className="absolute -bottom-12 -left-8 w-44 h-44 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none" />
+
+                  {/* Brand & Pills Header */}
+                  <div className="relative z-10 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center font-bold text-white text-xs">
+                        F
+                      </div>
+                      <span className="font-extrabold text-white text-sm tracking-tight">Feather</span>
+                      <span className="text-[11px] text-zinc-400 hidden sm:inline">• Wikimedia Contest</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-mono uppercase px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-semibold">
+                        {contest.wiki_dbname || "WIKIPEDIA"}
+                      </span>
+                      <span
+                        className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                          contest.status === "active"
+                            ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                            : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                        }`}
+                      >
+                        {contest.status === "active" ? "ACTIVE" : contest.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Title & Description in Canvas */}
+                  <div className="relative z-10 my-3 space-y-1">
+                    <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight line-clamp-2 leading-snug">
+                      {contest.name}
+                    </h3>
+                    {contest.description && (
+                      <p className="text-xs text-zinc-400 line-clamp-1 leading-normal">
+                        {contest.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Bottom Strip */}
+                  <div className="relative z-10 flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-zinc-800/80 font-mono">
+                    <span className="text-[11px]">
+                      📅 {formatDateDDMMYYYY(contest.start_date)} — {formatDateDDMMYYYY(contest.end_date)}
+                    </span>
+                    <span className="text-[11px] text-zinc-300 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700">
+                      {n(contest.total_articles || 0)} {locale === "bn" ? "নিবন্ধ" : "articles"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Social Card Info Strip (URL + Meta snippet) */}
+                <div className="p-3 bg-zinc-900/90 text-xs space-y-0.5">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground/80">
+                    feather-lite.toolforge.org
+                  </div>
+                  <div className="font-bold text-foreground text-xs sm:text-sm line-clamp-1">
+                    {contest.name} — Feather
+                  </div>
+                  <div className="text-[11px] text-muted-foreground line-clamp-1">
+                    {contest.description || "Wikimedia Article Contest Dashboard"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Quick Copy URL Box */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                {t("feather-contest-share-url-label")}
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={shareUrl}
+                  readOnly
+                  className="font-mono text-xs bg-muted/40 selection:bg-primary/20"
+                />
+                <Button
+                  onClick={handleCopyShareLink}
+                  size="sm"
+                  className="gap-1.5 shrink-0 cursor-pointer font-medium"
+                >
+                  {copiedShareLink ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                  <span>{copiedShareLink ? t("feather-contest-share-copied") : t("feather-contest-share-copy-btn")}</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* 3. Direct 1-Click Social Sharing */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">
+                {t("feather-contest-share-socials-label")}
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {/* WhatsApp */}
+                <a
+                  href={whatsappShareUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-border/80 bg-card hover:bg-emerald-500/10 hover:border-emerald-500/40 text-xs font-medium text-foreground hover:text-emerald-500 transition-all cursor-pointer shadow-2xs"
+                >
+                  <svg className="h-4 w-4 fill-current text-emerald-500" viewBox="0 0 24 24">
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.777.72 2.791.72 3.181 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.768-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.044.101-.116.433-.506.549-.68.116-.173.231-.145.39-.086s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.099.824zm-3.392-10.416c-4.281 0-7.763 3.482-7.763 7.763 0 1.488.423 2.88 1.157 4.067l-1.225 4.475 4.59-1.204c1.139.689 2.476 1.085 3.901 1.085 4.281 0 7.763-3.482 7.763-7.763 0-4.281-3.482-7.763-7.763-7.763z" />
+                  </svg>
+                  <span>{t("feather-contest-share-whatsapp")}</span>
+                </a>
+
+                {/* Telegram */}
+                <a
+                  href={telegramShareUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-border/80 bg-card hover:bg-sky-500/10 hover:border-sky-500/40 text-xs font-medium text-foreground hover:text-sky-500 transition-all cursor-pointer shadow-2xs"
+                >
+                  <svg className="h-4 w-4 fill-current text-sky-500" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
+                  </svg>
+                  <span>{t("feather-contest-share-telegram")}</span>
+                </a>
+
+                {/* X / Twitter */}
+                <a
+                  href={twitterShareUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-border/80 bg-card hover:bg-foreground/5 hover:border-foreground/30 text-xs font-medium text-foreground transition-all cursor-pointer shadow-2xs"
+                >
+                  <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  <span>{t("feather-contest-share-twitter")}</span>
+                </a>
+
+                {/* Facebook */}
+                <a
+                  href={facebookShareUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-border/80 bg-card hover:bg-blue-600/10 hover:border-blue-600/40 text-xs font-medium text-foreground hover:text-blue-600 transition-all cursor-pointer shadow-2xs"
+                >
+                  <svg className="h-4 w-4 fill-current text-blue-600" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                  <span>{t("feather-contest-share-facebook")}</span>
+                </a>
+              </div>
+            </div>
+
+            {/* 4. Wikipedia Wikitext Announcement Snippet */}
+            <div className="space-y-1.5 pt-2 border-t border-border/60">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <FileCode className="h-3.5 w-3.5 text-primary" />
+                  <span>{t("feather-contest-share-wikitext-tab")}</span>
+                </label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyWikitextAnnouncement}
+                  className="h-7 text-xs gap-1.5 cursor-pointer font-medium"
+                >
+                  {copiedWikitextAnnouncement ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                  <span>{copiedWikitextAnnouncement ? t("feather-contest-share-wikitext-copied") : t("feather-contest-share-wikitext-copy")}</span>
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {t("feather-contest-share-wikitext-desc")}
+              </p>
+              <pre className="p-3 rounded-lg bg-muted/50 border border-border/80 text-[11px] font-mono leading-relaxed whitespace-pre-wrap max-h-32 overflow-y-auto select-all text-foreground/90">
+                {wikitextAnnouncement}
+              </pre>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2 border-t border-border/60">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsShareDialogOpen(false)}
+              className="cursor-pointer"
+            >
+              {t("feather-modal-close") || "Close"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Judging Progress & Throughput Breakdown Card */}
       {!contest.is_umbrella && judgingProgress.totalJudgeable > 0 && (

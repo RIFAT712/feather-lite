@@ -2616,7 +2616,7 @@ func (h *Handler) GetJuryStats(w http.ResponseWriter, r *http.Request) {
 		FROM users u
 		LEFT JOIN contest_juries cj ON u.id = cj.user_id AND cj.contest_id = ?
 		WHERE cj.contest_id IS NOT NULL 
-		   OR u.id IN (SELECT DISTINCT assigned_to_id FROM articles WHERE contest_id = ? AND assigned_to_id IS NOT NULL)
+		   OR u.id IN (SELECT DISTINCT assigned_to_id FROM articles WHERE contest_id = ? AND assigned_to_id IS NOT NULL AND status = 'pending')
 		   OR u.id IN (SELECT DISTINCT r.reviewer_id FROM reviews r JOIN articles a ON r.article_id = a.id WHERE a.contest_id = ?)
 	`
 	jRows, err := h.db.Query(juryQuery, contestID, contestID, contestID)

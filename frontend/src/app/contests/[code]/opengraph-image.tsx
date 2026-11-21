@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getServerContest, getServerStandings } from "@/lib/server-api";
+import { shapeLineToSvg, shapeParagraphToSvg } from "@/lib/svg-shaper";
 import fs from "fs/promises";
 import path from "path";
 
@@ -24,42 +25,23 @@ let cachedFonts: FontItem[] | null = null;
 async function loadFonts(): Promise<FontItem[]> {
   if (cachedFonts) return cachedFonts;
   try {
-    const fontsDir = path.join(process.cwd(), "public/fonts");
-    const [boldBuf, regBuf] = await Promise.all([
-      fs.readFile(path.join(fontsDir, "NotoSansBengali-Bold.ttf")),
-      fs.readFile(path.join(fontsDir, "NotoSansBengali-Regular.ttf")),
-    ]);
-    cachedFonts = [
-      {
-        name: "Noto Sans Bengali",
-        data: boldBuf.buffer.slice(boldBuf.byteOffset, boldBuf.byteOffset + boldBuf.byteLength),
-        weight: 700,
-        style: "normal",
-      },
-      {
-        name: "Noto Sans Bengali",
-        data: regBuf.buffer.slice(regBuf.byteOffset, regBuf.byteOffset + regBuf.byteLength),
-        weight: 400,
-        style: "normal",
-      },
-    ];
-    return cachedFonts;
-  } catch (err) {
-    try {
-      const [boldRes, regRes] = await Promise.all([
-        fetch("https://github.com/google/fonts/raw/main/ofl/notosansbengali/static/NotoSansBengali-Bold.ttf"),
-        fetch("https://github.com/google/fonts/raw/main/ofl/notosansbengali/static/NotoSansBengali-Regular.ttf"),
-      ]);
-      const [boldArr, regArr] = await Promise.all([boldRes.arrayBuffer(), regRes.arrayBuffer()]);
+    const fontPath = path.join(process.cwd(), "public/fonts/NotoSansBengali.ttf");
+    const fontBuf = await fs.readFile(fontPath);
+    if (fontBuf.length > 1000 && (fontBuf[0] === 0x00 || fontBuf[0] === 0x4f || fontBuf[0] === 0x74)) {
       cachedFonts = [
-        { name: "Noto Sans Bengali", data: boldArr, weight: 700, style: "normal" },
-        { name: "Noto Sans Bengali", data: regArr, weight: 400, style: "normal" },
+        {
+          name: "Noto Sans Bengali",
+          data: fontBuf.buffer.slice(fontBuf.byteOffset, fontBuf.byteOffset + fontBuf.byteLength),
+          weight: 700,
+          style: "normal",
+        },
       ];
       return cachedFonts;
-    } catch {
-      return [];
     }
+  } catch {
+    // Non-blocking fallback
   }
+  return [];
 }
 
 export default async function Image({ params }: { params: Promise<{ code: string }> }) {
@@ -124,6 +106,13 @@ export default async function Image({ params }: { params: Promise<{ code: string
     contest?.start_date && contest?.end_date
       ? `${formatDate(contest.start_date)} — ${formatDate(contest.end_date)}`
       : "";
+
+  // Shape complex Indic / Bengali typography via HarfBuzz & OpenType vectors
+  const titleFontSize = title.length > 32 ? 42 : 50;
+  const [titleSvg, descLines] = await Promise.all([
+    shapeLineToSvg(title, titleFontSize),
+    desc ? shapeParagraphToSvg(desc, 18, 1050, 2) : Promise.resolve([]),
+  ]);
 
   return new ImageResponse(
     (
@@ -237,28 +226,54 @@ export default async function Image({ params }: { params: Promise<{ code: string
           </div>
         </div>
 
-        {/* Middle Content */}
+        {/* Middle Content (Flawless HarfBuzz Vector Glyphs) */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "12px",
+            gap: "14px",
             zIndex: 10,
             maxWidth: "1080px",
           }}
         >
-          <div
-            style={{
-              fontSize: title.length > 35 ? "44px" : "54px",
-              fontWeight: 700,
-              lineHeight: 1.15,
-              letterSpacing: "-1px",
-              color: "#ffffff",
-            }}
-          >
-            {title}
-          </div>
-          {desc && (
+          {titleSvg.path ? (
+            <svg
+              width={titleSvg.width}
+              height={titleSvg.height}
+              viewBox={`0 0 ${titleSvg.width} ${titleSvg.height}`}
+              style={{ display: "flex", overflow: "visible" }}
+            >
+              <path d={titleSvg.path} fill="#ffffff" />
+            </svg>
+          ) : (
+            <div
+              style={{
+                fontSize: `${titleFontSize}px`,
+                fontWeight: 700,
+                lineHeight: 1.15,
+                letterSpacing: "-1px",
+                color: "#ffffff",
+              }}
+            >
+              {title}
+            </div>
+          )}
+
+          {descLines.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {descLines.map((line, idx) => (
+                <svg
+                  key={idx}
+                  width={line.width}
+                  height={line.height}
+                  viewBox={`0 0 ${line.width} ${line.height}`}
+                  style={{ display: "flex", overflow: "visible" }}
+                >
+                  <path d={line.path} fill="#a1a1aa" />
+                </svg>
+              ))}
+            </div>
+          ) : desc ? (
             <div
               style={{
                 fontSize: "19px",
@@ -270,7 +285,7 @@ export default async function Image({ params }: { params: Promise<{ code: string
             >
               {desc}
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Live Metrics Row (Submissions, Accepted, Participants, Time Left) */}

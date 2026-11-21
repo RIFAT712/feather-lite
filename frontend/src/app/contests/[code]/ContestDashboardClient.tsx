@@ -553,7 +553,8 @@ export default function ContestDashboardClient({
     const contestJuries = contest?.juries || [];
     const combined = [...contestJuries];
     (juryStats?.juries || []).forEach((j) => {
-      if (!combined.includes(j.username)) {
+      // Only include from juryStats if they are designated in contest.juries OR have actually evaluated/been assigned articles
+      if (!combined.includes(j.username) && (j.judged > 0 || j.assigned > 0)) {
         combined.push(j.username);
       }
     });

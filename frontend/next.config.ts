@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["harfbuzzjs", "opentype.js"],
   compress: true,
   poweredByHeader: false,
   async headers() {

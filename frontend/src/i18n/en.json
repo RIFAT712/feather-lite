@@ -693,5 +693,8 @@
   "feather-contest-stat-acc-context": "Approved by jury",
   "feather-contest-stat-pen-context": "Awaiting evaluation",
   "feather-contest-stat-part-context": "Active contributors",
-  "feather-contest-organizer-tools": "Jury & Admin Tools"
+  "feather-contest-organizer-tools": "Jury & Admin Tools",
+  "feather-contest-back-to-contest": "Back to contest",
+  "feather-contest-back-to-all": "Back to all contests",
+  "feather-contest-settings-rule-mainspace-hint": "Submissions must belong to Article namespace (0), excluding Draft or User spaces."
 }

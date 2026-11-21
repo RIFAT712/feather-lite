@@ -180,7 +180,7 @@ export default function SettingsClient({
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editName.trim()) {
-      toast.error(t("feather-create-err-name-req"));
+      toast.error(t("feather-create-name-required"));
       return;
     }
     setIsSavingSettings(true);
@@ -245,7 +245,7 @@ export default function SettingsClient({
           className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors group"
         >
           <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
-          <span>{t("feather-contest-back-to-all", "Back to contest")}</span>
+          <span>{t("feather-contest-back-to-contest")}</span>
         </Link>
 
         {pMeta && contest && (
@@ -520,13 +520,13 @@ export default function SettingsClient({
                     className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
                   />
                   <span className="text-xs font-semibold text-foreground">
-                    {t("feather-create-rule-words")}
+                    {t("feather-contest-settings-min-words")}
                   </span>
                 </label>
                 {hasEditMinWords && (
                   <FloatingInput
                     type="number"
-                    label={t("feather-create-min-words")}
+                    label={t("feather-create-min-words-label")}
                     value={editMinWords}
                     onChange={(e) => setEditMinWords(e.target.value)}
                     disabled={!isOrganizer}
@@ -546,13 +546,13 @@ export default function SettingsClient({
                     className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
                   />
                   <span className="text-xs font-semibold text-foreground">
-                    {t("feather-create-rule-bytes")}
+                    {t("feather-contest-settings-min-bytes")}
                   </span>
                 </label>
                 {hasEditMinBytes && (
                   <FloatingInput
                     type="number"
-                    label={t("feather-create-min-bytes")}
+                    label={t("feather-create-min-bytes-label")}
                     value={editMinBytes}
                     onChange={(e) => setEditMinBytes(e.target.value)}
                     disabled={!isOrganizer}
@@ -572,13 +572,13 @@ export default function SettingsClient({
                     className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
                   />
                   <span className="text-xs font-semibold text-foreground">
-                    {t("feather-create-rule-refs")}
+                    {t("feather-contest-settings-min-refs")}
                   </span>
                 </label>
                 {hasEditMinRefs && (
                   <FloatingInput
                     type="number"
-                    label={t("feather-create-min-refs")}
+                    label={t("feather-create-min-refs-label")}
                     value={editMinRefs}
                     onChange={(e) => setEditMinRefs(e.target.value)}
                     disabled={!isOrganizer}
@@ -606,7 +606,7 @@ export default function SettingsClient({
                 <div className="max-w-xs">
                   <FloatingInput
                     type="number"
-                    label={t("feather-contest-settings-max-sub-label")}
+                    label={t("feather-contest-settings-max-sub")}
                     value={editMaxSub}
                     onChange={(e) => setEditMaxSub(e.target.value)}
                     disabled={!isOrganizer}
@@ -693,7 +693,7 @@ export default function SettingsClient({
             <div className="pt-3 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-0.5">
                 <label className="text-xs font-semibold text-foreground">
-                  {t("feather-create-rank-metric-label")}
+                  {t("feather-create-ranking-mode")}
                 </label>
                 <p className="text-[11px] text-muted-foreground">
                   Determines whether standings rank participants by accepted articles or total word counts.

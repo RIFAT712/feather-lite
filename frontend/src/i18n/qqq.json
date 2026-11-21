@@ -693,5 +693,8 @@
   "feather-contest-stat-acc-context": "Context caption below accepted articles metric number.",
   "feather-contest-stat-pen-context": "Context caption below pending review articles metric number.",
   "feather-contest-stat-part-context": "Context caption below participants count metric number.",
-  "feather-contest-organizer-tools": "Tooltip or group header for jury and admin tools in contest hero header."
+  "feather-contest-organizer-tools": "Tooltip or group header for jury and admin tools in contest hero header.",
+  "feather-contest-back-to-contest": "Back navigation button returning to the contest dashboard",
+  "feather-contest-back-to-all": "Back navigation button returning to all contests list",
+  "feather-contest-settings-rule-mainspace-hint": "Explanation of mainspace article requirement"
 }

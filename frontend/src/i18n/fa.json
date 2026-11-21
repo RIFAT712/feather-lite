@@ -621,5 +621,8 @@
   "feather-nav-language-select": "انتخاب زبان",
   "feather-review-access-restricted-title": "بازبینی داوری محدود است",
   "feather-review-access-restricted-desc": "صف بازبینی داوری مختص اعضای هیئت داوران و برگزارکنندگان مسابقه است. لطفاً برای ادامه با حساب کاربری ویکی‌مدیا وارد شوید.",
-  "feather-review-not-jury-desc": "حساب کاربری شما () به عنوان عضو هیئت داوران این مسابقه تعیین نشده است. تنها داوران منصوب می‌توانند مقاله‌ها را ارزیابی کنند."
+  "feather-review-not-jury-desc": "حساب کاربری شما () به عنوان عضو هیئت داوران این مسابقه تعیین نشده است. تنها داوران منصوب می‌توانند مقاله‌ها را ارزیابی کنند.",
+  "feather-contest-back-to-contest": "بازگشت به مسابقه",
+  "feather-contest-back-to-all": "بازگشت به همه مسابقات",
+  "feather-contest-settings-rule-mainspace-hint": "مقاله‌های ارسالی باید به فضای نام اصلی مقاله‌ها (۰) تعلق داشته باشند."
 }

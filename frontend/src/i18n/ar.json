@@ -628,5 +628,8 @@
   "feather-nav-language-select": "اختر اللغة",
   "feather-review-access-restricted-title": "مراجعة التحكيم مقيدة",
   "feather-review-access-restricted-desc": "قائمة مراجعة التحكيم مقصورة على أعضاء لجنة التحكيم ومنظمي المسابقة. يرجى تسجيل الدخول بحسابك في ويكيميديا للمتابعة.",
-  "feather-review-not-jury-desc": "حسابك () غير مخصص كعضو في لجنة التحكيم لهذه المسابقة. يمكن فقط للمحكمين المعينين تقييم المقالات."
+  "feather-review-not-jury-desc": "حسابك () غير مخصص كعضو في لجنة التحكيم لهذه المسابقة. يمكن فقط للمحكمين المعينين تقييم المقالات.",
+  "feather-contest-back-to-contest": "العودة إلى المسابقة",
+  "feather-contest-back-to-all": "العودة إلى جميع المسابقات",
+  "feather-contest-settings-rule-mainspace-hint": "يجب أن تنتمي المقالات المقدمة إلى نطاق المقالات الرئيسي (0)."
 }

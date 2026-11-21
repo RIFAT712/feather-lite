@@ -724,7 +724,7 @@ export interface UpdateContestPayload {
 }
 
 export async function updateContest(code: string, payload: UpdateContestPayload): Promise<any> {
-  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}`, {
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}/settings`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",

@@ -365,12 +365,14 @@ export default function ContestDashboardClient({
     if (isNaN(d.getTime())) return dateStr;
     const day = String(d.getDate()).padStart(2, "0");
     const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
+    const year = String(d.getFullYear());
+    const formatted = `${day}/${month}/${year}`;
     if (locale === "bn") {
-      return `${n(day)}/${n(month)}/${n(year)}`;
+      const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+      return formatted.replace(/[0-9]/g, (ch) => bnDigits[Number(ch)]);
     }
-    return `${day}/${month}/${year}`;
-  }, [locale, n]);
+    return formatted;
+  }, [locale]);
 
   const isJuryOrOrganizer = useMemo(() => {
     if (!me?.is_authenticated) return false;

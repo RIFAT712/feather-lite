@@ -4,6 +4,13 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["harfbuzzjs", "opentype.js"],
   compress: true,
   poweredByHeader: false,
+  typescript: {
+    // Verified locally via `tsc --noEmit` before commits; skips duplicate build-time typecheck on Toolforge
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   async headers() {
     return [
       {

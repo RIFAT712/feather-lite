@@ -48,8 +48,13 @@ export default async function JuryStatsPage({ params }: PageProps) {
     user?.is_authenticated &&
       (user.role === "owner" ||
         user.role === "jury" ||
+        user.role === "admin" ||
         user.is_owner ||
         user.is_admin ||
+        (contest?.created_by_id && user.user_id && contest.created_by_id === user.user_id) ||
+        (contest?.created_by_username &&
+          user.wiki_username &&
+          contest.created_by_username.trim().toLowerCase() === user.wiki_username.trim().toLowerCase()) ||
         (contest?.juries && user.wiki_username && contest.juries.includes(user.wiki_username)))
   );
 

@@ -100,6 +100,21 @@ func Connect(cfg *config.Config) (*DB, error) {
 	// Clear any malformed lock records with monotonic clock artifacts
 	_, _ = db.Exec("UPDATE articles SET locked_until = NULL, locked_by_id = NULL WHERE locked_until LIKE '%m=+%';")
 
+	// One-time migration: Clean up legacy default-added platform owner from contest_juries where the owner was auto-injected upon contest creation
+	_, _ = db.Exec("CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY, applied_at DATETIME DEFAULT CURRENT_TIMESTAMP);")
+	var migApplied int
+	_ = db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE id = 'remove_default_owner_juries'").Scan(&migApplied)
+	if migApplied == 0 {
+		if cfg.OwnerUsername != "" {
+			_, _ = db.Exec(`
+				DELETE FROM contest_juries 
+				WHERE user_id IN (SELECT id FROM users WHERE LOWER(wiki_username) = LOWER(?))
+				  AND contest_id IN (SELECT id FROM contests WHERE created_by_id = contest_juries.user_id);
+			`, cfg.OwnerUsername)
+		}
+		_, _ = db.Exec("INSERT INTO schema_migrations (id) VALUES ('remove_default_owner_juries');")
+	}
+
 	// Background periodic WAL checkpoint to keep NFS storage clean and prevent malformed disk image errors
 	if cfg.DBType != "mysql" {
 		go func() {

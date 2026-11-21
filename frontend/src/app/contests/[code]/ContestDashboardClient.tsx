@@ -353,15 +353,18 @@ export default function ContestDashboardClient({
 
   const isJuryOrOrganizer = useMemo(() => {
     if (!me?.is_authenticated) return false;
-    if (me.role === "owner" || me.role === "jury") return true;
+    if (me.role === "owner" || me.role === "jury" || me.role === "admin" || (me as any)?.is_owner || (me as any)?.is_admin) return true;
+    if (contest?.created_by_id && me.user_id && contest.created_by_id === me.user_id) return true;
+    if (contest?.created_by_username && me.wiki_username && contest.created_by_username.trim().toLowerCase() === me.wiki_username.trim().toLowerCase()) return true;
     if (contest?.juries && me.wiki_username && contest.juries.includes(me.wiki_username)) return true;
     return false;
   }, [me, contest]);
 
   const isOrganizer = useMemo(() => {
     if (!me?.is_authenticated) return false;
-    if (me.role === "owner" || (me as any)?.is_owner) return true;
+    if (me.role === "owner" || me.role === "admin" || (me as any)?.is_owner || (me as any)?.is_admin) return true;
     if (contest?.created_by_id && me.user_id && contest.created_by_id === me.user_id) return true;
+    if (contest?.created_by_username && me.wiki_username && contest.created_by_username.trim().toLowerCase() === me.wiki_username.trim().toLowerCase()) return true;
     if (contest?.juries && me.wiki_username && contest.juries.includes(me.wiki_username)) return true;
     return false;
   }, [me, contest]);

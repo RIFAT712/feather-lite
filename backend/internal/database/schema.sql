@@ -1,5 +1,10 @@
 -- Schema for Feather 2.0 (High throughput, 50,000+ entries)
 
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    id TEXT PRIMARY KEY,
+    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     wiki_username TEXT UNIQUE NOT NULL,

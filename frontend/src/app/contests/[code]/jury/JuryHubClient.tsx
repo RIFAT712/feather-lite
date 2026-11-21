@@ -108,7 +108,14 @@ export default function JuryHubClient({
   // Authorization Check
   const isJuryOrOwner = useMemo(() => {
     if (!me?.is_authenticated) return false;
-    if (me.role === "owner" || me.role === "jury" || me.is_owner || me.is_admin) return true;
+    if (me.role === "owner" || me.role === "jury" || me.role === "admin" || me.is_owner || me.is_admin) return true;
+    if (contest?.created_by_id && me.user_id && contest.created_by_id === me.user_id) return true;
+    if (
+      contest?.created_by_username &&
+      me.wiki_username &&
+      contest.created_by_username.trim().toLowerCase() === me.wiki_username.trim().toLowerCase()
+    )
+      return true;
     if (contest?.juries && me.wiki_username && contest.juries.includes(me.wiki_username)) return true;
     return false;
   }, [me, contest]);

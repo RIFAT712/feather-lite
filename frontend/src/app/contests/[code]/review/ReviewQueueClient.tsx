@@ -463,6 +463,7 @@ export default function ReviewQueueClient({
     (user as any)?.is_owner ||
     (user as any)?.is_admin ||
     user?.role === "admin" ||
+    (contest?.created_by_id && user?.user_id && contest.created_by_id === user.user_id) ||
     (contest?.created_by_username &&
       myUsernameLower &&
       contest.created_by_username.trim().toLowerCase() === myUsernameLower)

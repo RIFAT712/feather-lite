@@ -605,12 +605,9 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build jury list - include current user as default jury if authenticated (Standard single-wiki contests only)
+	// Build jury list - only include juries explicitly specified in req.Juries
 	if !req.IsUmbrella {
 		juryUsernames := make(map[string]bool)
-		if currentUser != nil && currentUser.WikiUsername != "" {
-			juryUsernames[currentUser.WikiUsername] = true
-		}
 		for _, j := range req.Juries {
 			trimmed := strings.TrimSpace(j)
 			if trimmed != "" {
@@ -738,11 +735,8 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 			}
 			subID, _ := subRes.LastInsertId()
 
-			// Local juries for this sub-contest
+			// Local juries for this sub-contest - only include explicitly specified juries
 			localJuries := make(map[string]bool)
-			if currentUser != nil && currentUser.WikiUsername != "" {
-				localJuries[currentUser.WikiUsername] = true
-			}
 			for _, lj := range p.Juries {
 				if trimmed := strings.TrimSpace(lj); trimmed != "" {
 					localJuries[trimmed] = true
@@ -1270,9 +1264,6 @@ func (h *Handler) CreateSubContest(w http.ResponseWriter, r *http.Request) {
 	subID, _ := res.LastInsertId()
 
 	localJuries := make(map[string]bool)
-	if currentUser != nil && currentUser.WikiUsername != "" {
-		localJuries[currentUser.WikiUsername] = true
-	}
 	for _, j := range req.Juries {
 		if trimmed := strings.TrimSpace(j); trimmed != "" {
 			localJuries[trimmed] = true
@@ -1997,7 +1988,12 @@ func (h *Handler) isUserOrganizer(contestID int64, userID int64, role string) bo
 
 // balanceArticles distributes pending articles using the scarcity-first water-filling algorithm
 func (h *Handler) balanceArticles(contestID int64, items []balancer.ArticleItem) {
-	rows, err := h.db.Query(`SELECT id FROM users WHERE role IN ('jury', 'owner')`)
+	rows, err := h.db.Query(`
+		SELECT u.id 
+		FROM contest_juries cj
+		JOIN users u ON cj.user_id = u.id
+		WHERE cj.contest_id = ?
+	`, contestID)
 	if err != nil {
 		return
 	}

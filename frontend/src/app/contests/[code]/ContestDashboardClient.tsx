@@ -91,7 +91,7 @@ export default function ContestDashboardClient({
   const [copiedExport, setCopiedExport] = useState(false);
 
   // Submissions View Mode state (Flat list vs Grouped by submitter)
-  const [submissionsViewMode, setSubmissionsViewMode] = useState<"list" | "grouped">("list");
+  const [submissionsViewMode, setSubmissionsViewMode] = useState<"list" | "grouped">("grouped");
   const [expandedSubmitters, setExpandedSubmitters] = useState<Record<string, boolean>>({});
 
   // Add community modal state (for campaigns)

@@ -16,29 +16,40 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { code } = await params;
   const contest = await getServerContest(code);
 
-  if (!contest) {
-    return {
-      title: "Contest — Feather",
-      description: "Wikimedia Article Contest Dashboard",
-    };
-  }
-
-  const title = `${contest.name} — Feather`;
-  const description = contest.description || `Wiki article contest ${contest.name} on Feather.`;
+  const title = contest?.name ? `${contest.name} — Feather` : "Contest — Feather";
+  const description = contest?.description || `Wiki article contest ${contest?.name || code} on Feather.`;
+  const contestPath = `/contests/${encodeURIComponent(code)}`;
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://feather-lite.toolforge.org";
+  const contestUrl = `${siteUrl}${contestPath}`;
+  const ogImageUrl = `${siteUrl}${contestPath}/opengraph-image`;
 
   return {
     title,
     description,
+    alternates: {
+      canonical: contestPath,
+    },
     openGraph: {
       title,
       description,
+      url: contestUrl,
       type: "website",
       siteName: "Feather",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+          type: "image/png",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [ogImageUrl],
     },
   };
 }

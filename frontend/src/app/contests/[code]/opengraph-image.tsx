@@ -1,5 +1,9 @@
 import { ImageResponse } from "next/og";
 import { getServerContest } from "@/lib/server-api";
+import fs from "fs/promises";
+import path from "path";
+
+export const runtime = "nodejs";
 
 export const size = {
   width: 1200,
@@ -8,9 +12,62 @@ export const size = {
 
 export const contentType = "image/png";
 
+type FontItem = {
+  name: string;
+  data: ArrayBuffer;
+  weight: 700 | 400;
+  style: "normal";
+};
+
+let cachedFonts: FontItem[] | null = null;
+
+async function loadFonts(): Promise<FontItem[]> {
+  if (cachedFonts) return cachedFonts;
+  try {
+    const fontsDir = path.join(process.cwd(), "public/fonts");
+    const [boldBuf, regBuf] = await Promise.all([
+      fs.readFile(path.join(fontsDir, "NotoSansBengali-Bold.ttf")),
+      fs.readFile(path.join(fontsDir, "NotoSansBengali-Regular.ttf")),
+    ]);
+    cachedFonts = [
+      {
+        name: "Noto Sans Bengali",
+        data: boldBuf.buffer.slice(boldBuf.byteOffset, boldBuf.byteOffset + boldBuf.byteLength),
+        weight: 700,
+        style: "normal",
+      },
+      {
+        name: "Noto Sans Bengali",
+        data: regBuf.buffer.slice(regBuf.byteOffset, regBuf.byteOffset + regBuf.byteLength),
+        weight: 400,
+        style: "normal",
+      },
+    ];
+    return cachedFonts;
+  } catch (err) {
+    try {
+      const [boldRes, regRes] = await Promise.all([
+        fetch("https://github.com/google/fonts/raw/main/ofl/notosansbengali/static/NotoSansBengali-Bold.ttf"),
+        fetch("https://github.com/google/fonts/raw/main/ofl/notosansbengali/static/NotoSansBengali-Regular.ttf"),
+      ]);
+      const [boldArr, regArr] = await Promise.all([boldRes.arrayBuffer(), regRes.arrayBuffer()]);
+      cachedFonts = [
+        { name: "Noto Sans Bengali", data: boldArr, weight: 700, style: "normal" },
+        { name: "Noto Sans Bengali", data: regArr, weight: 400, style: "normal" },
+      ];
+      return cachedFonts;
+    } catch {
+      return [];
+    }
+  }
+}
+
 export default async function Image({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const contest = await getServerContest(code);
+  const [contest, fonts] = await Promise.all([
+    getServerContest(code),
+    loadFonts(),
+  ]);
 
   const title = contest?.name || "Feather Contest";
   const desc = contest?.description || "Wikimedia Article Contest Dashboard";
@@ -51,7 +108,7 @@ export default async function Image({ params }: { params: Promise<{ code: string
           backgroundColor: "#09090b",
           color: "#fafafa",
           padding: "50px 60px",
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontFamily: '"Noto Sans Bengali", system-ui, -apple-system, sans-serif',
           position: "relative",
           overflow: "hidden",
         }}
@@ -164,9 +221,9 @@ export default async function Image({ params }: { params: Promise<{ code: string
           <div
             style={{
               fontSize: title.length > 35 ? "44px" : "56px",
-              fontWeight: 800,
+              fontWeight: 700,
               lineHeight: 1.15,
-              letterSpacing: "-1.5px",
+              letterSpacing: "-1px",
               color: "#ffffff",
             }}
           >
@@ -220,6 +277,7 @@ export default async function Image({ params }: { params: Promise<{ code: string
     ),
     {
       ...size,
+      fonts: fonts && fonts.length > 0 ? fonts : undefined,
     }
   );
 }

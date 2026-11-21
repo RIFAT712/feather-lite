@@ -32,6 +32,24 @@ async function getFonts() {
   return { hbFont: cachedHbFont, otFont: cachedOtFont };
 }
 
+function serializePathCommands(commands: any[]): string {
+  let str = "";
+  for (const cmd of commands) {
+    if (cmd.type === "M") {
+      str += `M${cmd.x.toFixed(1)} ${cmd.y.toFixed(1)}`;
+    } else if (cmd.type === "L") {
+      str += `L${cmd.x.toFixed(1)} ${cmd.y.toFixed(1)}`;
+    } else if (cmd.type === "Q") {
+      str += `Q${cmd.x1.toFixed(1)} ${cmd.y1.toFixed(1)} ${cmd.x.toFixed(1)} ${cmd.y.toFixed(1)}`;
+    } else if (cmd.type === "C") {
+      str += `C${cmd.x1.toFixed(1)} ${cmd.y1.toFixed(1)} ${cmd.x2.toFixed(1)} ${cmd.y2.toFixed(1)} ${cmd.x.toFixed(1)} ${cmd.y.toFixed(1)}`;
+    } else if (cmd.type === "Z") {
+      str += "Z";
+    }
+  }
+  return str;
+}
+
 export async function shapeLineToSvg(text: string, fontSize: number): Promise<ShapedLine> {
   const clean = text.trim();
   if (!clean) return { path: "", width: 0, height: Math.ceil(fontSize * 1.3) };
@@ -55,7 +73,7 @@ export async function shapeLineToSvg(text: string, fontSize: number): Promise<Sh
         const gx = x + xOffset * scale;
         const gy = fontSize - yOffset * scale;
         const p = glyph.getPath(gx, gy, fontSize);
-        fullPath += p.toPathData(1) + " ";
+        fullPath += serializePathCommands(p.commands) + " ";
       }
       x += (g.xAdvance ?? 0) * scale;
     }
@@ -89,7 +107,7 @@ export async function shapeParagraphToSvg(
     if (test.width > maxWidth && current) {
       lines.push(current);
       current = w;
-      if (lines.length >= maxLines - 1) break;
+      if (lines.length >= maxLines) break;
     } else {
       current = next;
     }

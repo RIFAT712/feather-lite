@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getServerContest } from "@/lib/server-api";
+import { getServerContest, getServerStandings } from "@/lib/server-api";
 import fs from "fs/promises";
 import path from "path";
 
@@ -64,16 +64,48 @@ async function loadFonts(): Promise<FontItem[]> {
 
 export default async function Image({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const [contest, fonts] = await Promise.all([
+  const [contest, standings, fonts] = await Promise.all([
     getServerContest(code),
+    getServerStandings(code),
     loadFonts(),
   ]);
 
   const title = contest?.name || "Feather Contest";
   const desc = contest?.description || "Wikimedia Article Contest Dashboard";
   const wiki = contest?.wiki_dbname ? contest.wiki_dbname.toUpperCase() : "WIKIPEDIA";
-  const status = contest?.status === "active" ? "ACTIVE" : (contest?.status || "UPCOMING").toUpperCase();
-  const isEnded = contest?.status === "ended";
+
+  const participantsCount = standings?.length || 0;
+  const totalArticles = contest?.total_articles ?? 0;
+  const acceptedArticles = contest?.accepted_articles ?? 0;
+  const acceptanceRate = totalArticles > 0 ? Math.round((acceptedArticles / totalArticles) * 100) : 0;
+
+  const nowMs = Date.now();
+  const startMs = contest?.start_date ? new Date(contest.start_date).getTime() : 0;
+  const endMs = contest?.end_date ? new Date(contest.end_date).getTime() : 0;
+
+  let statusText = "UPCOMING";
+  let timeLeftText = "";
+  let isLive = false;
+  let isEnded = false;
+
+  if (endMs > 0 && nowMs >= endMs) {
+    statusText = "ENDED";
+    timeLeftText = "Ended";
+    isEnded = true;
+  } else if (startMs > 0 && nowMs < startMs) {
+    statusText = "UPCOMING";
+    const diffMs = startMs - nowMs;
+    const d = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const h = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+    timeLeftText = d > 0 ? `Starts in ${d}d ${h}h` : `Starts in ${h}h`;
+  } else {
+    statusText = "ACTIVE";
+    isLive = true;
+    const diffMs = endMs - nowMs;
+    const d = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const h = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+    timeLeftText = d > 0 ? `${d}d ${h}h left` : `${h}h left`;
+  }
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "";
@@ -93,9 +125,6 @@ export default async function Image({ params }: { params: Promise<{ code: string
       ? `${formatDate(contest.start_date)} — ${formatDate(contest.end_date)}`
       : "";
 
-  const totalArticles = contest?.total_articles ?? 0;
-  const totalSubmissionsText = `${totalArticles} Submissions`;
-
   return new ImageResponse(
     (
       <div
@@ -107,7 +136,7 @@ export default async function Image({ params }: { params: Promise<{ code: string
           justifyContent: "space-between",
           backgroundColor: "#09090b",
           color: "#fafafa",
-          padding: "50px 60px",
+          padding: "45px 55px",
           fontFamily: '"Noto Sans Bengali", system-ui, -apple-system, sans-serif',
           position: "relative",
           overflow: "hidden",
@@ -194,16 +223,16 @@ export default async function Image({ params }: { params: Promise<{ code: string
               style={{
                 display: "flex",
                 alignItems: "center",
-                backgroundColor: isEnded ? "#27272a" : "rgba(16, 185, 129, 0.15)",
-                border: `1px solid ${isEnded ? "#3f3f46" : "rgba(16, 185, 129, 0.3)"}`,
+                backgroundColor: isEnded ? "#27272a" : isLive ? "rgba(16, 185, 129, 0.15)" : "rgba(59, 130, 246, 0.15)",
+                border: `1px solid ${isEnded ? "#3f3f46" : isLive ? "rgba(16, 185, 129, 0.35)" : "rgba(59, 130, 246, 0.35)"}`,
                 borderRadius: "9999px",
                 padding: "6px 16px",
                 fontSize: "14px",
                 fontWeight: 700,
-                color: isEnded ? "#a1a1aa" : "#34d399",
+                color: isEnded ? "#a1a1aa" : isLive ? "#34d399" : "#60a5fa",
               }}
             >
-              {status}
+              {statusText}
             </div>
           </div>
         </div>
@@ -213,14 +242,14 @@ export default async function Image({ params }: { params: Promise<{ code: string
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "16px",
+            gap: "12px",
             zIndex: 10,
-            maxWidth: "1000px",
+            maxWidth: "1080px",
           }}
         >
           <div
             style={{
-              fontSize: title.length > 35 ? "44px" : "56px",
+              fontSize: title.length > 35 ? "44px" : "54px",
               fontWeight: 700,
               lineHeight: 1.15,
               letterSpacing: "-1px",
@@ -229,48 +258,132 @@ export default async function Image({ params }: { params: Promise<{ code: string
           >
             {title}
           </div>
+          {desc && (
+            <div
+              style={{
+                fontSize: "19px",
+                lineHeight: 1.45,
+                color: "#a1a1aa",
+                overflow: "hidden",
+                maxHeight: "56px",
+              }}
+            >
+              {desc}
+            </div>
+          )}
+        </div>
+
+        {/* Live Metrics Row (Submissions, Accepted, Participants, Time Left) */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "14px",
+            zIndex: 10,
+          }}
+        >
+          {/* 1. Submissions Chip */}
           <div
             style={{
-              fontSize: "20px",
-              lineHeight: 1.45,
-              color: "#a1a1aa",
-              overflow: "hidden",
-              maxHeight: "60px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              backgroundColor: "rgba(24, 24, 27, 0.85)",
+              border: "1px solid #27272a",
+              borderRadius: "12px",
+              padding: "12px 20px",
+              flex: 1,
             }}
           >
-            {desc}
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Submissions
+            </span>
+            <span style={{ fontSize: "24px", fontWeight: 800, color: "#ffffff" }}>
+              {totalArticles}
+            </span>
+          </div>
+
+          {/* 2. Accepted Chip */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              backgroundColor: "rgba(24, 24, 27, 0.85)",
+              border: "1px solid rgba(16, 185, 129, 0.25)",
+              borderRadius: "12px",
+              padding: "12px 20px",
+              flex: 1,
+            }}
+          >
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "#34d399", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Accepted
+            </span>
+            <span style={{ fontSize: "24px", fontWeight: 800, color: "#10b981" }}>
+              {acceptedArticles} {totalArticles > 0 ? `(${acceptanceRate}%)` : ""}
+            </span>
+          </div>
+
+          {/* 3. Participants Chip */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              backgroundColor: "rgba(24, 24, 27, 0.85)",
+              border: "1px solid rgba(168, 85, 247, 0.25)",
+              borderRadius: "12px",
+              padding: "12px 20px",
+              flex: 1,
+            }}
+          >
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "#c084fc", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Participants
+            </span>
+            <span style={{ fontSize: "24px", fontWeight: 800, color: "#a855f7" }}>
+              {participantsCount}
+            </span>
+          </div>
+
+          {/* 4. Time Left / Status Chip */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              backgroundColor: "rgba(24, 24, 27, 0.85)",
+              border: `1px solid ${isLive ? "rgba(16, 185, 129, 0.3)" : "rgba(59, 130, 246, 0.3)"}`,
+              borderRadius: "12px",
+              padding: "12px 20px",
+              flex: 1.2,
+            }}
+          >
+            <span style={{ fontSize: "12px", fontWeight: 600, color: isLive ? "#34d399" : "#60a5fa", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Timeline Status
+            </span>
+            <span style={{ fontSize: "22px", fontWeight: 800, color: isLive ? "#34d399" : "#93c5fd" }}>
+              {timeLeftText}
+            </span>
           </div>
         </div>
 
-        {/* Bottom Footer / Dates & Metrics */}
+        {/* Bottom Footer / Dates & Domain */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             borderTop: "1px solid #27272a",
-            paddingTop: "24px",
+            paddingTop: "18px",
             zIndex: 10,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#d4d4d8", fontSize: "16px", fontWeight: 600 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#d4d4d8", fontSize: "15px", fontWeight: 600 }}>
             <span>📅 {dateRange}</span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-            <div
-              style={{
-                backgroundColor: "#18181b",
-                border: "1px solid #27272a",
-                borderRadius: "8px",
-                padding: "8px 18px",
-                fontSize: "15px",
-                fontWeight: 600,
-                color: "#e4e4e7",
-              }}
-            >
-              {totalSubmissionsText}
-            </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#71717a", fontSize: "14px", fontWeight: 600 }}>
+            <span>feather-lite.toolforge.org</span>
           </div>
         </div>
       </div>

@@ -361,9 +361,10 @@ button { cursor: pointer; }
 .rq-panel-title { margin: 0; font-size: .95rem; font-weight: 600; color: var(--rq-text); }
 .rq-owner-switcher { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; border: 0; background: none; }
 .rq-owner-switcher-label { color: var(--rq-text-muted); font-size: .75rem; font-weight: 600; }
-.rq-owner-mode-buttons { display: inline-flex; gap: 1px; padding: 1px; border-radius: 6px; background: var(--rq-bg); }
-.rq-owner-mode-buttons button { border: 0; border-radius: 5px; padding: 3px 8px; background: transparent; color: var(--rq-text-muted); font-size: .73rem; font-weight: 600; }
-.rq-owner-mode-buttons button.is-active { background: var(--rq-accent); color: #fff; }
+.rq-owner-mode-buttons { display: inline-flex; gap: 2px; padding: 2px; border-radius: 6px; background: var(--rq-bg); border: 1px solid var(--rq-border-light); }
+.rq-owner-mode-buttons button { border: 0; border-radius: 4px; padding: 3px 9px; background: transparent; color: var(--rq-text-muted); font-size: .73rem; font-weight: 600; cursor: pointer; transition: all 120ms ease; }
+.rq-owner-mode-buttons button:hover:not(.is-active) { color: var(--rq-text); }
+.rq-owner-mode-buttons button.is-active { background: #2563eb !important; color: #ffffff !important; }
 .rq-owner-judge-select { min-width: 90px; flex: 1; padding: 3px 7px; border: 1px solid var(--rq-border-light); border-radius: 6px; background: var(--rq-surface); color: var(--rq-text); font-size: .75rem; }
 
 .rq-panel-scroll { flex: 1; overflow-y: auto; }

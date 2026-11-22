@@ -819,7 +819,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
 
                 {/* Actions Footer */}
                 <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-border/60">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
                     <Link
                       href={`/contests/${c.code}`}
                       className={buttonVariants({
@@ -838,12 +838,13 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                         className={buttonVariants({
                           variant: "outline",
                           size: "sm",
-                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 truncate",
+                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 max-w-full overflow-hidden flex-initial",
                         })}
+                        title={t("feather-campaign-tab-communities")}
                       >
-                        <Globe className="h-3 w-3 shrink-0" />
-                        <span className="truncate">
-                          {t("feather-campaign-tab-communities")}
+                        <Globe className="h-3.5 w-3.5 shrink-0 text-primary" />
+                        <span className="truncate min-w-0">
+                          {t("feather-campaign-stat-communities")}
                         </span>
                       </Link>
                     ) : (
@@ -852,16 +853,17 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                         className={buttonVariants({
                           variant: "outline",
                           size: "sm",
-                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 truncate",
+                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 max-w-full overflow-hidden flex-initial",
                         })}
+                        title={t("feather-contest-action-submit")}
                       >
                         <Send className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{t("feather-contest-action-submit")}</span>
+                        <span className="truncate min-w-0">{t("feather-contest-action-submit")}</span>
                       </Link>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-0.5 shrink-0 ml-1">
+                  <div className="flex items-center gap-0.5 shrink-0 ml-auto">
                     <Link
                       href={`/contests/${c.code}#standings`}
                       className={buttonVariants({

@@ -115,8 +115,8 @@ export default function Footer() {
                 <span className="text-[9px] text-muted-foreground font-normal leading-none">
                   {t("feather-footer-wikiconnect-sub", "Initiative of")}
                 </span>
-                <span className="text-[11px] font-bold text-foreground tracking-tight leading-none mt-0.5">
-                  {t("feather-footer-wikiconnect", "WikiConnect")}
+                <span className="text-[11px] font-bold text-foreground tracking-tight leading-none mt-0.5 whitespace-nowrap">
+                  {t("feather-footer-wikiconnect", "Bangla WikiConnect")}
                 </span>
               </div>
             </a>

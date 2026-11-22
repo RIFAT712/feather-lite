@@ -428,7 +428,7 @@
     "feather-footer-wmcs-credit": "WMCS hosting and powering credit label.",
     "feather-footer-wmcs-name": "Wikimedia Cloud Services brand name.",
     "feather-footer-toolforge-name": "Toolforge brand name.",
-    "feather-footer-wikiconnect": "{{optional}}\nBrand name for the WikiConnect initiative. Do not translate.",
+    "feather-footer-wikiconnect": "{{optional}}\nBrand name for the Bangla WikiConnect initiative. Do not translate unless the community uses a localized name.",
     "feather-footer-wikiconnect-sub": "Subline caption for WikiConnect badge.",
     "feather-footer-wmcs-sub": "Subline caption for Wikimedia Cloud Services badge.",
     "feather-footer-link-privacy": "Link label for privacy policy.",

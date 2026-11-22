@@ -755,5 +755,11 @@
     "feather-contest-organizer-tools": "Jury & admin tools",
     "feather-contest-back-to-contest": "Back to contest",
     "feather-contest-back-to-all": "Back to all contests",
-    "feather-contest-settings-rule-mainspace-hint": "Submissions must belong to article namespace (0), excluding draft or user spaces."
+    "feather-contest-settings-rule-mainspace-hint": "Submissions must belong to article namespace (0), excluding draft or user spaces.",
+    "feather-login-page-title": "Sign in to Feather",
+    "feather-login-page-desc": "Log in with your Wikimedia account to participate in contests, submit articles, and access jury tools.",
+    "feather-login-return-notice": "You will be automatically redirected back to your submission page after logging in.",
+    "feather-login-security-notice": "Feather authenticates via official Wikimedia OAuth 2.0. We will never see or store your password.",
+    "feather-login-redirecting": "Redirecting to your destination...",
+    "feather-login-back-home": "Back to Home"
 }

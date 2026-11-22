@@ -160,8 +160,8 @@ export default function Navbar() {
               </Button>
             </div>
           ) : (
-            <a
-              href={`${AUTH_BASE}/login`}
+            <Link
+              href={`/login?returnTo=${encodeURIComponent(pathname || "/")}`}
               className={buttonVariants({
                 variant: "default",
                 size: "sm",
@@ -171,7 +171,7 @@ export default function Navbar() {
               <WikimediaLogoIcon className="h-3.5 w-3.5 shrink-0" />
               <span className="hidden xl:inline">{t("feather-nav-login")}</span>
               <span className="xl:hidden">{t("feather-nav-login-short")}</span>
-            </a>
+            </Link>
           )}
         </div>
 
@@ -270,8 +270,8 @@ export default function Navbar() {
                 </Button>
               </div>
             ) : (
-              <a
-                href={`${AUTH_BASE}/login`}
+              <Link
+                href={`/login?returnTo=${encodeURIComponent(pathname || "/")}`}
                 onClick={() => setMobileMenuOpen(false)}
                 className={buttonVariants({
                   variant: "default",
@@ -281,7 +281,7 @@ export default function Navbar() {
               >
                 <WikimediaLogoIcon className="h-4 w-4" />
                 <span>{t("feather-nav-login")}</span>
-              </a>
+              </Link>
             )}
           </div>
         </div>

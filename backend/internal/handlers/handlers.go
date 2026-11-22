@@ -53,6 +53,18 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 // OAuth 2.0 Endpoints
 // -------------------------------------------------------------
 
+func sanitizeReturnTo(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	// Prevent open redirects: must start with / and not // or /\\
+	if strings.HasPrefix(raw, "/") && !strings.HasPrefix(raw, "//") && !strings.HasPrefix(raw, "/\\") {
+		return raw
+	}
+	return ""
+}
+
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
@@ -67,6 +79,22 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
+
+	// Save returnTo destination if provided
+	returnTo := sanitizeReturnTo(r.URL.Query().Get("returnTo"))
+	if returnTo == "" {
+		returnTo = sanitizeReturnTo(r.URL.Query().Get("redirect"))
+	}
+	if returnTo != "" {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "oauth_return_to",
+			Value:    returnTo,
+			Path:     "/",
+			MaxAge:   300,
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 
 	authURL := mwclient.GetAuthorizeURL(h.cfg, state)
 	http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
@@ -138,7 +166,20 @@ func (h *Handler) DevLogin(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	http.Redirect(w, r, h.cfg.FrontendURL, http.StatusSeeOther)
+	redirectTarget := h.cfg.FrontendURL
+	returnTo := sanitizeReturnTo(r.URL.Query().Get("returnTo"))
+	if returnTo == "" {
+		returnTo = sanitizeReturnTo(r.URL.Query().Get("redirect"))
+	}
+	if returnTo != "" {
+		if strings.HasPrefix(h.cfg.FrontendURL, "http://") || strings.HasPrefix(h.cfg.FrontendURL, "https://") {
+			redirectTarget = strings.TrimRight(h.cfg.FrontendURL, "/") + returnTo
+		} else {
+			redirectTarget = returnTo
+		}
+	}
+
+	http.Redirect(w, r, redirectTarget, http.StatusSeeOther)
 }
 
 func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
@@ -225,8 +266,30 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 	auth.SetAuthCookie(w, jwtToken)
 
+	// Determine redirect target (supports returnTo parameter via cookie)
+	redirectTarget := h.cfg.FrontendURL
+	if returnCookie, err := r.Cookie("oauth_return_to"); err == nil && returnCookie.Value != "" {
+		if target := sanitizeReturnTo(returnCookie.Value); target != "" {
+			if strings.HasPrefix(h.cfg.FrontendURL, "http://") || strings.HasPrefix(h.cfg.FrontendURL, "https://") {
+				redirectTarget = strings.TrimRight(h.cfg.FrontendURL, "/") + target
+			} else {
+				redirectTarget = target
+			}
+		}
+		// Clear oauth_return_to cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "oauth_return_to",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Unix(0, 0),
+			MaxAge:   -1,
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+
 	// Redirect to frontend
-	http.Redirect(w, r, h.cfg.FrontendURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, redirectTarget, http.StatusTemporaryRedirect)
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {

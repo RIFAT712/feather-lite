@@ -755,5 +755,11 @@
     "feather-contest-organizer-tools": "Tooltip or group header for jury and admin tools in contest hero header.",
     "feather-contest-back-to-contest": "Back navigation button returning to the contest dashboard",
     "feather-contest-back-to-all": "Back navigation button returning to all contests list",
-    "feather-contest-settings-rule-mainspace-hint": "Explanation of mainspace article requirement"
+    "feather-contest-settings-rule-mainspace-hint": "Explanation of mainspace article requirement",
+    "feather-login-page-title": "Title of the dedicated login page.",
+    "feather-login-page-desc": "Description on the login page explaining why Wikimedia login is required.",
+    "feather-login-return-notice": "Notice informing the user that they will be returned to their destination after authenticating.",
+    "feather-login-security-notice": "Security disclosure assuring users that authentication is handled by Wikimedia OAuth 2.0.",
+    "feather-login-redirecting": "Message shown when an already authenticated user is being redirected.",
+    "feather-login-back-home": "Link to go back to the home page from the login screen."
 }

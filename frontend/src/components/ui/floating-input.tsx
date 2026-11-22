@@ -72,7 +72,7 @@ export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputPro
         <label
           htmlFor={inputId}
           className={cn(
-            "pointer-events-none absolute left-2.5 px-1.5 py-0.5 transition-all duration-150 select-none rounded-xs z-10",
+            "pointer-events-none absolute left-2.5 px-1.5 py-0.5 transition-all duration-150 select-none rounded-xs z-10 flex items-center gap-0.5",
             labelBg,
             isFloating
               ? "top-0 -translate-y-1/2 text-xs font-medium leading-none"
@@ -85,7 +85,8 @@ export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputPro
             error && "text-destructive"
           )}
         >
-          {label}
+          <span>{label}</span>
+          {props.required && <span className="text-destructive">*</span>}
         </label>
         {error && <p className="mt-1 text-[11px] text-destructive">{error}</p>}
       </div>
@@ -160,7 +161,7 @@ export const FloatingTextarea = React.forwardRef<HTMLTextAreaElement, FloatingTe
         <label
           htmlFor={inputId}
           className={cn(
-            "pointer-events-none absolute left-2.5 px-1.5 py-0.5 transition-all duration-150 select-none rounded-xs z-10",
+            "pointer-events-none absolute left-2.5 px-1.5 py-0.5 transition-all duration-150 select-none rounded-xs z-10 flex items-center gap-0.5",
             labelBg,
             isFloating
               ? "top-0 -translate-y-1/2 text-xs font-medium leading-none"
@@ -173,7 +174,8 @@ export const FloatingTextarea = React.forwardRef<HTMLTextAreaElement, FloatingTe
             error && "text-destructive"
           )}
         >
-          {label}
+          <span>{label}</span>
+          {props.required && <span className="text-destructive">*</span>}
         </label>
         {error && <p className="mt-1 text-[11px] text-destructive">{error}</p>}
       </div>

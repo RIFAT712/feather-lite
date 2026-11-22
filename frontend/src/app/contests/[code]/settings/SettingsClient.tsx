@@ -373,7 +373,7 @@ export default function SettingsClient({
           <CardContent className="space-y-4 pt-4 px-4 sm:px-6 pb-5">
             {/* Contest Name */}
             <FloatingInput
-              label={`${t("feather-create-name-label")} *`}
+              label={t("feather-create-name-label")}
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               disabled={!isOrganizer}

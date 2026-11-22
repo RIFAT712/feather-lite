@@ -520,7 +520,7 @@ export default function NewContestPage() {
             {/* Contest Name */}
             <FloatingInput
               id="contest-name-input"
-              label={`${t("feather-create-name-label")} *`}
+              label={t("feather-create-name-label")}
               value={name}
               onChange={(e) => {
                 setName(e.target.value);

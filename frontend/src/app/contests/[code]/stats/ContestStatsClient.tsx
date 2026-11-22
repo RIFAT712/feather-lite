@@ -36,7 +36,6 @@ import {
   Flame,
   Layers,
   ChevronRight,
-  TrendingDown,
   Check,
   UserCheck,
 } from "lucide-react";
@@ -49,9 +48,6 @@ interface ContestStatsClientProps {
 
 const ACCENT_COLOR = "#355b80";
 const TEAL_COLOR = "#17a2a8";
-const EMERALD_COLOR = "#10b981";
-const AMBER_COLOR = "#f59e0b";
-const ROSE_COLOR = "#f43f5e";
 const LOG_FLOOR = 0.9;
 const DECADES = [1, 10, 100, 1000, 10000, 100000];
 
@@ -60,7 +56,7 @@ export default function ContestStatsClient({
   initialContest,
   initialStats,
 }: ContestStatsClientProps) {
-  const { t, formatDate, n, locale } = useI18n();
+  const { t, formatDate, n } = useI18n();
 
   // Queries
   const { data: contest } = useQuery<Contest>({
@@ -71,7 +67,6 @@ export default function ContestStatsClient({
 
   const {
     data: stats,
-    isLoading: isStatsLoading,
     isError: isStatsError,
     refetch: refetchStats,
   } = useQuery<ContestStatsResponse>({
@@ -250,72 +245,76 @@ export default function ContestStatsClient({
   // X-axis ticks (spaced across days)
   const xTicks = useMemo(() => {
     if (daily.length === 0) return [];
-    if (daily.length <= 7) {
-      return daily.map((d, i) => ({ label: d.date.slice(5), x: getX(i) }));
+    if (daily.length <= 6) {
+      return daily.map((d, i) => ({
+        label: d.date.length >= 10 ? d.date.slice(5) : d.date,
+        x: getX(i),
+      }));
     }
-    const step = Math.ceil(daily.length / 6);
+    const count = 6;
     const ticks = [];
-    for (let i = 0; i < daily.length; i += step) {
-      ticks.push({ label: daily[i].date.slice(5), x: getX(i) });
-    }
-    if (ticks[ticks.length - 1].x < MARGIN.left + PLOT_WIDTH - 30) {
+    const step = (daily.length - 1) / (count - 1);
+    for (let i = 0; i < count; i++) {
+      const idx = Math.min(daily.length - 1, Math.round(i * step));
+      const d = daily[idx];
       ticks.push({
-        label: daily[daily.length - 1].date.slice(5),
-        x: getX(daily.length - 1),
+        label: d.date.length >= 10 ? d.date.slice(5) : d.date,
+        x: getX(idx),
       });
     }
     return ticks;
-  }, [daily, getX, MARGIN.left, PLOT_WIDTH]);
+  }, [daily, getX]);
 
-  // Drag & pointer handlers for interactive zoom and tooltip
+  // Mouse / Drag Handlers
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (e.button !== 0 || daily.length < 2) return;
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left;
-    setDragState({ startX: x, currentX: x });
-    e.currentTarget.setPointerCapture(e.pointerId);
+    if (!svgRef.current || daily.length < 2) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * SVG_WIDTH;
+    if (x >= MARGIN.left && x <= MARGIN.left + PLOT_WIDTH) {
+      setDragState({ startX: x, currentX: x });
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left;
+    if (!svgRef.current || daily.length === 0) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * SVG_WIDTH;
 
-    if (dragState) {
-      setDragState((prev) => (prev ? { ...prev, currentX: x } : null));
+    // Hover index tracking
+    if (x >= MARGIN.left && x <= MARGIN.left + PLOT_WIDTH) {
+      const ratio = (x - MARGIN.left) / PLOT_WIDTH;
+      const idx = Math.round(ratio * (daily.length - 1));
+      setHoverIndex(Math.max(0, Math.min(daily.length - 1, idx)));
+    } else {
+      setHoverIndex(null);
     }
 
-    if (daily.length > 0) {
+    if (dragState) {
       const clampedX = Math.max(MARGIN.left, Math.min(MARGIN.left + PLOT_WIDTH, x));
-      const ratio = (clampedX - MARGIN.left) / PLOT_WIDTH;
-      const idx = Math.round(ratio * (daily.length - 1));
-      setHoverIndex(idx);
+      setDragState((prev) => (prev ? { ...prev, currentX: clampedX } : null));
     }
   };
 
-  const handlePointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!dragState) return;
-    const leftX = Math.min(dragState.startX, dragState.currentX);
-    const rightX = Math.max(dragState.startX, dragState.currentX);
-    setDragState(null);
-    e.currentTarget.releasePointerCapture(e.pointerId);
-
-    if (rightX - leftX > 25 && daily.length > 1) {
-      const r1 = Math.max(0, Math.min(1, (leftX - MARGIN.left) / PLOT_WIDTH));
-      const r2 = Math.max(0, Math.min(1, (rightX - MARGIN.left) / PLOT_WIDTH));
-      const i1 = Math.round(r1 * (daily.length - 1));
-      const i2 = Math.round(r2 * (daily.length - 1));
-      if (i2 > i1) {
-        setZoomRange({ from: daily[i1].date, to: daily[i2].date });
+  const handlePointerUp = () => {
+    if (dragState && daily.length > 1) {
+      const x1 = Math.min(dragState.startX, dragState.currentX);
+      const x2 = Math.max(dragState.startX, dragState.currentX);
+      if (x2 - x1 > 20) {
+        const r1 = (x1 - MARGIN.left) / PLOT_WIDTH;
+        const r2 = (x2 - MARGIN.left) / PLOT_WIDTH;
+        const i1 = Math.max(0, Math.min(daily.length - 1, Math.floor(r1 * (daily.length - 1))));
+        const i2 = Math.max(0, Math.min(daily.length - 1, Math.ceil(r2 * (daily.length - 1))));
+        if (i2 > i1) {
+          setZoomRange({ from: daily[i1].date, to: daily[i2].date });
+        }
       }
     }
+    setDragState(null);
   };
 
   const handlePointerLeave = () => {
-    if (!dragState) {
-      setHoverIndex(null);
-    }
+    setDragState(null);
+    setHoverIndex(null);
   };
 
   // Top participants max count for proportional bar widths
@@ -342,11 +341,31 @@ export default function ContestStatsClient({
   // Project meta
   const projectMeta = contest ? getProjectMeta(contest.wiki_dbname) : null;
 
+  // Timing & Countdown
+  const now = new Date();
+  const startDate = contest?.start_date ? new Date(contest.start_date) : null;
+  const endDate = contest?.end_date ? new Date(contest.end_date) : null;
+
+  const isUpcoming = startDate ? now < startDate : false;
+  const isEnded = endDate ? now > endDate : false;
+  const isActive = !isUpcoming && !isEnded;
+
+  let countdownLabel = "";
+  if (isUpcoming && startDate) {
+    const diffDays = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    countdownLabel = diffDays === 1 ? "Starts in 1 day" : `Starts in ${diffDays} days`;
+  } else if (isActive && endDate) {
+    const diffDays = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    countdownLabel = diffDays === 1 ? "1 day remaining" : `${diffDays} days remaining`;
+  } else if (isEnded) {
+    countdownLabel = "Contest concluded";
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground pb-16">
-      {/* 1. Header Banner */}
+      {/* 1. Header Banner (Widescreen 1600px) */}
       <div className="border-b border-border/70 bg-card/60 backdrop-blur-md sticky top-0 z-20">
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href={`/contests/${code}`}
@@ -376,15 +395,52 @@ export default function ContestStatsClient({
                   </Badge>
                 )}
                 <Badge
-                  variant={contest?.status === "active" ? "default" : "secondary"}
+                  variant={isActive ? "default" : isUpcoming ? "outline" : "secondary"}
                   className={`text-[10px] ${
-                    contest?.status === "active"
+                    isActive
                       ? "bg-emerald-600 hover:bg-emerald-600 text-white"
+                      : isUpcoming
+                      ? "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 font-semibold"
                       : ""
                   }`}
                 >
-                  {contest?.status === "active" ? t("feather-contest-status-active") : t("feather-contest-status-ended")}
+                  {isActive
+                    ? t("feather-contest-status-active")
+                    : isUpcoming
+                    ? "Upcoming"
+                    : t("feather-contest-status-ended")}
                 </Badge>
+
+                {countdownLabel && (
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] font-medium gap-1 hidden sm:inline-flex ${
+                      isUpcoming
+                        ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/5"
+                        : isActive
+                        ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {isUpcoming ? (
+                      <Clock className="h-3 w-3 text-amber-500" />
+                    ) : isActive ? (
+                      <Flame className="h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
+                    )}
+                    <span>{countdownLabel}</span>
+                  </Badge>
+                )}
+
+                {contest?.start_date && contest?.end_date && (
+                  <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-muted-foreground ml-1.5 font-mono">
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground/70" />
+                    <span>
+                      {formatDate(contest.start_date)} – {formatDate(contest.end_date)}
+                    </span>
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -413,7 +469,7 @@ export default function ContestStatsClient({
         </div>
       </div>
 
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-6">
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Error Alert */}
         {isStatsError && (
           <div className="p-4 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-xs font-semibold flex items-center gap-2">
@@ -519,7 +575,7 @@ export default function ContestStatsClient({
                     <span>Reviewers:</span>
                   </span>
                   <span className="text-foreground">
-                    <strong className="font-bold">{n(summary.active_juries)} / {n(summary.total_juries)}</strong> active
+                    <strong className="font-bold">{n(summary.active_juries)} / {n(summary.total_juries || contest?.juries?.length || 0)}</strong> active
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-0.5">
@@ -670,75 +726,164 @@ export default function ContestStatsClient({
                 )}
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Series Switches */}
-                <div className="inline-flex items-center gap-1 bg-muted/40 p-0.5 rounded-full border border-border/60">
-                  <button
-                    type="button"
-                    onClick={() => setShownSeries((s) => ({ ...s, submitted: !s.submitted }))}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                      shownSeries.submitted
-                        ? "bg-background text-foreground shadow-2xs"
-                        : "text-muted-foreground line-through opacity-50"
-                    }`}
-                  >
-                    <span
-                      className="w-3.5 h-0.5 rounded-full inline-block"
-                      style={{ backgroundColor: ACCENT_COLOR }}
-                    />
-                    <span>{t("feather-stats-series-submitted")}</span>
-                  </button>
+              {daily.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Series Switches */}
+                  <div className="inline-flex items-center gap-1 bg-muted/40 p-0.5 rounded-full border border-border/60">
+                    <button
+                      type="button"
+                      onClick={() => setShownSeries((s) => ({ ...s, submitted: !s.submitted }))}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        shownSeries.submitted
+                          ? "bg-background text-foreground shadow-2xs"
+                          : "text-muted-foreground line-through opacity-50"
+                      }`}
+                    >
+                      <span
+                        className="w-3.5 h-0.5 rounded-full inline-block"
+                        style={{ backgroundColor: ACCENT_COLOR }}
+                      />
+                      <span>{t("feather-stats-series-submitted")}</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setShownSeries((s) => ({ ...s, judged: !s.judged }))}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                      shownSeries.judged
-                        ? "bg-background text-foreground shadow-2xs"
-                        : "text-muted-foreground line-through opacity-50"
-                    }`}
-                  >
-                    <span
-                      className="w-3.5 h-0.5 border-t border-dashed inline-block"
-                      style={{ borderColor: TEAL_COLOR }}
-                    />
-                    <span>{t("feather-stats-series-judged")}</span>
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => setShownSeries((s) => ({ ...s, judged: !s.judged }))}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        shownSeries.judged
+                          ? "bg-background text-foreground shadow-2xs"
+                          : "text-muted-foreground line-through opacity-50"
+                      }`}
+                    >
+                      <span
+                        className="w-3.5 h-0.5 border-t border-dashed inline-block"
+                        style={{ borderColor: TEAL_COLOR }}
+                      />
+                      <span>{t("feather-stats-series-judged")}</span>
+                    </button>
+                  </div>
 
-                {/* Scale Switch */}
-                <div className="inline-flex items-center p-0.5 rounded-full bg-muted/40 border border-border/60 text-xs font-semibold">
-                  <button
-                    type="button"
-                    onClick={() => setScaleType("linear")}
-                    className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
-                      scaleType === "linear"
-                        ? "bg-background text-foreground shadow-2xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {t("feather-stats-scale-linear")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setScaleType("logarithmic")}
-                    className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
-                      scaleType === "logarithmic"
-                        ? "bg-background text-foreground shadow-2xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {t("feather-stats-scale-log")}
-                  </button>
+                  {/* Scale Switch */}
+                  <div className="inline-flex items-center p-0.5 rounded-full bg-muted/40 border border-border/60 text-xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setScaleType("linear")}
+                      className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
+                        scaleType === "linear"
+                          ? "bg-background text-foreground shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t("feather-stats-scale-linear")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScaleType("logarithmic")}
+                      className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
+                        scaleType === "logarithmic"
+                          ? "bg-background text-foreground shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t("feather-stats-scale-log")}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </CardHeader>
 
           <CardContent className="p-0 relative">
             {daily.length === 0 ? (
-              <div className="py-16 text-center text-xs text-muted-foreground">
-                {t("feather-stats-empty")}
+              <div className="p-6 sm:p-8 space-y-6">
+                <div className="max-w-3xl space-y-2">
+                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Contest Horizon & Real-Time Velocity Tracking</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-foreground">
+                    Awaiting initial article submissions
+                  </h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    Feather tracks submissions, word counts, and jury decisions in real time. Once participants begin submitting articles, interactive daily throughput curves, cumulative word volume, zoomable date windows, and linear/logarithmic plots will automatically activate here.
+                  </p>
+                </div>
+
+                {/* 3-Stage Progress Timeline */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                  <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                      <span>1. Contest Initialized</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-normal">
+                      Rules configured for {projectMeta?.name || contest?.wiki_dbname || "Wikipedia"}. Minimum requirements: {contest?.min_words || 0} words, {contest?.min_bytes || 0} bytes.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.04] space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                      <Users className="h-4 w-4 shrink-0 text-indigo-500" />
+                      <span>2. Jury Team Verified</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-normal">
+                      {contest?.juries?.length || summary.total_juries || 0} assigned jury members in rotation with scarcity-first automated queue balancing.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-border/80 bg-muted/20 space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                      <Clock className="h-4 w-4 shrink-0 text-amber-500" />
+                      <span>3. Velocity Analytics</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-normal">
+                      Interactive chart plots real-time velocity curves as submissions and reviews occur.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick actions */}
+                <div className="flex items-center gap-2.5 flex-wrap pt-2">
+                  <Link
+                    href={`/contests/${code}`}
+                    className={buttonVariants({
+                      variant: "default",
+                      size: "sm",
+                      className: "text-xs cursor-pointer gap-1.5",
+                    })}
+                  >
+                    <span>{t("feather-contest-back-to-contest")}</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+
+                  <Link
+                    href={`/contests/${code}/jury`}
+                    className={buttonVariants({
+                      variant: "outline",
+                      size: "sm",
+                      className: "text-xs cursor-pointer gap-1.5",
+                    })}
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 text-indigo-500" />
+                    <span>Jury Hub</span>
+                  </Link>
+
+                  {contest?.wiki_url && (
+                    <a
+                      href={`https://${contest.wiki_url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={buttonVariants({
+                        variant: "ghost",
+                        size: "sm",
+                        className: "text-xs cursor-pointer gap-1.5 text-muted-foreground hover:text-foreground",
+                      })}
+                    >
+                      <span>Visit Wiki</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                </div>
               </div>
             ) : (
               <div>
@@ -827,7 +972,7 @@ export default function ContestStatsClient({
                       />
                     )}
 
-                    {/* Hover indicator (matching Image 1 crosshair and curve markers) */}
+                    {/* Hover indicator (matching crosshair and curve markers) */}
                     {hoverIndex !== null && hoverIndex < daily.length && (
                       <g>
                         <line
@@ -877,7 +1022,7 @@ export default function ContestStatsClient({
                     ))}
                   </svg>
 
-                  {/* Tooltip (matching Image 1 floating beside vertical crosshair) */}
+                  {/* Tooltip (floating beside vertical crosshair) */}
                   {hoverIndex !== null && hoverIndex < daily.length && (() => {
                     const tooltipPercent = (getX(hoverIndex) / SVG_WIDTH) * 100;
                     const isRightSide = tooltipPercent > 65;
@@ -926,7 +1071,7 @@ export default function ContestStatsClient({
                   </div>
                 </div>
 
-                {/* 4-Item Side Stats Strip (Zury style) */}
+                {/* 4-Item Side Stats Strip */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-border/60 bg-muted/10 divide-x divide-y sm:divide-y-0 divide-border/60 text-xs">
                   <div className="p-3.5 space-y-0.5 text-center">
                     <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
@@ -983,210 +1128,367 @@ export default function ContestStatsClient({
           </CardContent>
         </Card>
 
-        {/* 4. Section 2: Two Columns Grid (Top Participants & Status/Words/Largest Articles) */}
+        {/* 4. Section 2: Two Columns Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* COLUMN 1: Top 10 Participants Horizontal Stacked Bar Chart */}
-          <Card className="shadow-2xs border-border/80">
-            <CardHeader className="py-4 px-5 border-b border-border/60 bg-muted/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-amber-500" />
-                  <CardTitle className="text-sm font-bold text-foreground">
-                    {t("feather-stats-top-participants")}
-                  </CardTitle>
+          {/* COLUMN 1: Top 10 Participants OR Jury Panel Preview */}
+          {counts.total === 0 ? (
+            <Card className="shadow-2xs border-border/80">
+              <CardHeader className="py-4 px-5 border-b border-border/60 bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-indigo-500" />
+                    <CardTitle className="text-sm font-bold text-foreground">
+                      {t("feather-contest-tab-juries")} ({contest?.juries?.length || summary.total_juries || 0})
+                    </CardTitle>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/70">
+                    Scarcity-first balancing
+                  </Badge>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
-                    <CheckCircle2 className="h-3 w-3" />
-                    <span>Accepted</span>
-                  </span>
-                  <span className="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
-                    <Clock className="h-3 w-3" />
-                    <span>Pending</span>
-                  </span>
-                  <span className="flex items-center gap-1 font-medium text-rose-600 dark:text-rose-400">
-                    <XCircle className="h-3 w-3" />
-                    <span>Rejected</span>
-                  </span>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 space-y-3.5">
-              {topParticipants.length === 0 ? (
-                <div className="py-12 text-center text-xs text-muted-foreground">
-                  {t("feather-stats-empty")}
-                </div>
-              ) : (
-                topParticipants.map((p, idx) => {
-                  const accPct = maxParticipantSubmissions > 0 ? (p.accepted / maxParticipantSubmissions) * 100 : 0;
-                  const penPct = maxParticipantSubmissions > 0 ? (p.pending / maxParticipantSubmissions) * 100 : 0;
-                  const rejPct = maxParticipantSubmissions > 0 ? (p.rejected / maxParticipantSubmissions) * 100 : 0;
-
-                  return (
-                    <div key={p.username} className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
+              </CardHeader>
+              <CardContent className="p-4 space-y-3">
+                {contest?.juries && contest.juries.length > 0 ? (
+                  <div className="divide-y divide-border/60 rounded-lg border border-border/60 bg-muted/10 overflow-hidden">
+                    {contest.juries.map((jury) => (
+                      <div
+                        key={jury}
+                        className="p-3 flex items-center justify-between gap-2 hover:bg-muted/30 transition-colors text-xs"
+                      >
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-mono text-[11px] text-muted-foreground w-4 text-right">
-                            #{idx + 1}
+                          <UserBadge username={jury} />
+                          <span className="font-semibold text-foreground truncate">
+                            {jury}
                           </span>
-                          <Link
-                            href={`/contests/${code}/users/${encodeURIComponent(p.username)}`}
-                            className="font-semibold text-foreground hover:text-primary hover:underline truncate"
-                          >
-                            {p.username}
-                          </Link>
-                          <UserBadge username={p.username} />
+                          {contest.created_by_username === jury && (
+                            <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                              Lead organizer
+                            </Badge>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 text-xs font-mono shrink-0">
-                          <span className="font-bold text-foreground">{n(p.total)} articles</span>
-                          {p.words > 0 && (
-                            <span className="text-muted-foreground text-[11px]">({n(p.words)} words)</span>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge variant="outline" className="text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>Ready to review</span>
+                          </Badge>
+                          {contest.wiki_url && (
+                            <a
+                              href={`https://${contest.wiki_url}/wiki/User_talk:${encodeURIComponent(jury)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-muted-foreground hover:text-foreground p-1"
+                              title={`User talk on ${contest.wiki_dbname}`}
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
                           )}
                         </div>
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-xs text-muted-foreground">
+                    No jury members configured yet.
+                  </div>
+                )}
 
-                      {/* Stacked Horizontal Bar */}
-                      <div className="h-2.5 w-full bg-muted/60 rounded-full overflow-hidden flex">
-                        {accPct > 0 && (
-                          <div
-                            style={{ width: `${accPct}%` }}
-                            className="bg-emerald-500 transition-all duration-300"
-                            title={`Accepted: ${p.accepted}`}
-                          />
-                        )}
-                        {penPct > 0 && (
-                          <div
-                            style={{ width: `${penPct}%` }}
-                            className="bg-amber-400 transition-all duration-300"
-                            title={`Pending: ${p.pending}`}
-                          />
-                        )}
-                        {rejPct > 0 && (
-                          <div
-                            style={{ width: `${rejPct}%` }}
-                            className="bg-rose-500 transition-all duration-300"
-                            title={`Rejected: ${p.rejected}`}
-                          />
-                        )}
-                      </div>
+                {contest?.created_by_username && !contest.juries?.includes(contest.created_by_username) && (
+                  <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <UserCheck className="h-3.5 w-3.5 text-indigo-500" />
+                      <span>Lead Organizer:</span>
+                      <span className="font-semibold text-foreground">{contest.created_by_username}</span>
                     </div>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
-
-          {/* COLUMN 2: Status Breakdown & Largest Articles */}
-          <div className="space-y-6">
-            {/* Status Breakdown & Avg Words */}
+                    <UserBadge username={contest.created_by_username} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
             <Card className="shadow-2xs border-border/80">
               <CardHeader className="py-4 px-5 border-b border-border/60 bg-muted/20">
-                <CardTitle className="text-sm font-bold text-foreground flex items-center justify-between">
-                  <span>Word & Status Distribution</span>
-                  <span className="text-xs font-mono font-normal text-muted-foreground">
-                    Avg: {n(words.avg_words.toFixed(0))} words/article
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04]">
-                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase">
-                      Accepted
-                    </div>
-                    <div className="text-xl font-black text-foreground font-mono mt-0.5">
-                      {n(counts.accepted)}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {acceptedPct}% of total
-                    </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-amber-500" />
+                    <CardTitle className="text-sm font-bold text-foreground">
+                      {t("feather-stats-top-participants")}
+                    </CardTitle>
                   </div>
-
-                  <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.04]">
-                    <div className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold uppercase">
-                      Pending
-                    </div>
-                    <div className="text-xl font-black text-foreground font-mono mt-0.5">
-                      {n(counts.pending)}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {pendingPct}% of total
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-lg border border-rose-500/20 bg-rose-500/[0.04]">
-                    <div className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold uppercase">
-                      Rejected
-                    </div>
-                    <div className="text-xl font-black text-foreground font-mono mt-0.5">
-                      {n(counts.rejected)}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {rejectedPct}% of total
-                    </div>
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="h-3 w-3" />
+                      <span>Accepted</span>
+                    </span>
+                    <span className="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
+                      <Clock className="h-3 w-3" />
+                      <span>Pending</span>
+                    </span>
+                    <span className="flex items-center gap-1 font-medium text-rose-600 dark:text-rose-400">
+                      <XCircle className="h-3 w-3" />
+                      <span>Rejected</span>
+                    </span>
                   </div>
                 </div>
-
-                {/* Largest Articles Top List */}
-                <div className="space-y-2 pt-2 border-t border-border/60">
-                  <div className="text-xs font-bold text-foreground flex items-center justify-between">
-                    <span>{t("feather-stats-largest-articles")}</span>
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              </CardHeader>
+              <CardContent className="p-4 space-y-3.5">
+                {topParticipants.length === 0 ? (
+                  <div className="py-12 text-center text-xs text-muted-foreground">
+                    {t("feather-stats-empty")}
                   </div>
+                ) : (
+                  topParticipants.map((p, idx) => {
+                    const accPct = maxParticipantSubmissions > 0 ? (p.accepted / maxParticipantSubmissions) * 100 : 0;
+                    const penPct = maxParticipantSubmissions > 0 ? (p.pending / maxParticipantSubmissions) * 100 : 0;
+                    const rejPct = maxParticipantSubmissions > 0 ? (p.rejected / maxParticipantSubmissions) * 100 : 0;
 
-                  {stats?.largest_articles && stats.largest_articles.length > 0 ? (
-                    <div className="divide-y divide-border/60 rounded-lg border border-border/60 bg-muted/10 overflow-hidden">
-                      {stats.largest_articles.map((art, idx) => (
-                        <div
-                          key={art.id}
-                          className="p-2.5 flex items-center justify-between gap-2 hover:bg-muted/30 transition-colors text-xs"
-                        >
+                    return (
+                      <div key={p.username} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="font-mono text-[11px] text-muted-foreground w-4 text-right">
                               #{idx + 1}
                             </span>
-                            <span className="font-semibold text-foreground truncate">
-                              {art.title}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground truncate">
-                              by {art.submitter}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="font-mono font-bold text-primary">
-                              {n(art.word_count)} words
-                            </span>
-                            <Badge
-                              variant={
-                                art.status === "accepted"
-                                  ? "default"
-                                  : art.status === "pending"
-                                  ? "secondary"
-                                  : "outline"
-                              }
-                              className={`text-[9px] px-1.5 py-0 capitalize ${
-                                art.status === "accepted"
-                                  ? "bg-emerald-600 text-white"
-                                  : art.status === "pending"
-                                  ? "bg-amber-500/10 text-amber-600"
-                                  : "text-rose-600"
-                              }`}
+                            <Link
+                              href={`/contests/${code}/users/${encodeURIComponent(p.username)}`}
+                              className="font-semibold text-foreground hover:text-primary hover:underline truncate"
                             >
-                              {art.status}
-                            </Badge>
+                              {p.username}
+                            </Link>
+                            <UserBadge username={p.username} />
+                          </div>
+                          <div className="flex items-center gap-2 text-xs font-mono shrink-0">
+                            <span className="font-bold text-foreground">{n(p.total)} articles</span>
+                            {p.words > 0 && (
+                              <span className="text-muted-foreground text-[11px]">({n(p.words)} words)</span>
+                            )}
                           </div>
                         </div>
-                      ))}
+
+                        {/* Stacked Horizontal Bar */}
+                        <div className="h-2.5 w-full bg-muted/60 rounded-full overflow-hidden flex">
+                          {accPct > 0 && (
+                            <div
+                              style={{ width: `${accPct}%` }}
+                              className="bg-emerald-500 transition-all duration-300"
+                              title={`Accepted: ${p.accepted}`}
+                            />
+                          )}
+                          {penPct > 0 && (
+                            <div
+                              style={{ width: `${penPct}%` }}
+                              className="bg-amber-400 transition-all duration-300"
+                              title={`Pending: ${p.pending}`}
+                            />
+                          )}
+                          {rejPct > 0 && (
+                            <div
+                              style={{ width: `${rejPct}%` }}
+                              className="bg-rose-500 transition-all duration-300"
+                              title={`Rejected: ${p.rejected}`}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* COLUMN 2: Status Breakdown & Largest Articles OR Contest Rules Preview */}
+          {counts.total === 0 ? (
+            <Card className="shadow-2xs border-border/80">
+              <CardHeader className="py-4 px-5 border-b border-border/60 bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-sm font-bold text-foreground">
+                      Contest Criteria & Rules Preview
+                    </CardTitle>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px]">
+                    {projectMeta?.name || contest?.wiki_dbname || "Wikipedia"}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3.5">
+                <div className="grid grid-cols-2 gap-2.5 text-xs">
+                  <div className="p-3 rounded-lg border border-border/70 bg-card space-y-1">
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 font-medium">
+                      <FileText className="h-3.5 w-3.5 text-primary" />
+                      <span>Minimum Words</span>
                     </div>
-                  ) : (
-                    <div className="text-xs text-muted-foreground py-2 text-center">
-                      No articles recorded yet.
+                    <div className="text-base font-bold text-foreground font-mono">
+                      {n(contest?.min_words || 0)} words
                     </div>
-                  )}
+                  </div>
+
+                  <div className="p-3 rounded-lg border border-border/70 bg-card space-y-1">
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 font-medium">
+                      <Layers className="h-3.5 w-3.5 text-indigo-500" />
+                      <span>Minimum Bytes</span>
+                    </div>
+                    <div className="text-base font-bold text-foreground font-mono">
+                      {n(contest?.min_bytes || 0)} bytes
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg border border-border/70 bg-card space-y-1">
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 font-medium">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>Minimum References</span>
+                    </div>
+                    <div className="text-base font-bold text-foreground font-mono">
+                      {n(contest?.min_refs || 0)} refs
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg border border-border/70 bg-card space-y-1">
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 font-medium">
+                      <ShieldCheck className="h-3.5 w-3.5 text-teal-500" />
+                      <span>Talk Page Template</span>
+                    </div>
+                    <div className="text-xs font-semibold text-foreground font-mono truncate">
+                      {contest?.add_talk_template ? (contest.talk_template_name || "Enabled") : "Disabled"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-border/50 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between py-0.5">
+                    <span>Author restriction:</span>
+                    <span className="font-semibold text-foreground">
+                      {contest?.rule_must_be_creator ? "Must be article creator (new articles)" : "Expansions and improvements allowed"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-0.5">
+                    <span>Allowed namespace:</span>
+                    <span className="font-semibold text-foreground">
+                      {contest?.rule_mainspace_only ? "Mainspace (Articles) only" : "All namespaces"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-0.5">
+                    <span>Creation window:</span>
+                    <span className="font-semibold text-foreground">
+                      {contest?.rule_created_in_window ? "Created within contest dates" : "Any creation date"}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Status Breakdown & Avg Words */}
+              <Card className="shadow-2xs border-border/80">
+                <CardHeader className="py-4 px-5 border-b border-border/60 bg-muted/20">
+                  <CardTitle className="text-sm font-bold text-foreground flex items-center justify-between">
+                    <span>Word & Status Distribution</span>
+                    <span className="text-xs font-mono font-normal text-muted-foreground">
+                      Avg: {n(words.avg_words.toFixed(0))} words/article
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4">
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04]">
+                      <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase">
+                        Accepted
+                      </div>
+                      <div className="text-xl font-black text-foreground font-mono mt-0.5">
+                        {n(counts.accepted)}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {acceptedPct}% of total
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.04]">
+                      <div className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold uppercase">
+                        Pending
+                      </div>
+                      <div className="text-xl font-black text-foreground font-mono mt-0.5">
+                        {n(counts.pending)}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {pendingPct}% of total
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-lg border border-rose-500/20 bg-rose-500/[0.04]">
+                      <div className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold uppercase">
+                        Rejected
+                      </div>
+                      <div className="text-xl font-black text-foreground font-mono mt-0.5">
+                        {n(counts.rejected)}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {rejectedPct}% of total
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Largest Articles Top List */}
+                  <div className="space-y-2 pt-2 border-t border-border/60">
+                    <div className="text-xs font-bold text-foreground flex items-center justify-between">
+                      <span>{t("feather-stats-largest-articles")}</span>
+                      <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                    </div>
+
+                    {stats?.largest_articles && stats.largest_articles.length > 0 ? (
+                      <div className="divide-y divide-border/60 rounded-lg border border-border/60 bg-muted/10 overflow-hidden">
+                        {stats.largest_articles.map((art, idx) => (
+                          <div
+                            key={art.id}
+                            className="p-2.5 flex items-center justify-between gap-2 hover:bg-muted/30 transition-colors text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-mono text-[11px] text-muted-foreground w-4 text-right">
+                                #{idx + 1}
+                              </span>
+                              <span className="font-semibold text-foreground truncate">
+                                {art.title}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground truncate">
+                                by {art.submitter}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="font-mono font-bold text-primary">
+                                {n(art.word_count)} words
+                              </span>
+                              <Badge
+                                variant={
+                                  art.status === "accepted"
+                                    ? "default"
+                                    : art.status === "pending"
+                                    ? "secondary"
+                                    : "outline"
+                                }
+                                className={`text-[9px] px-1.5 py-0 capitalize ${
+                                  art.status === "accepted"
+                                    ? "bg-emerald-600 text-white"
+                                    : art.status === "pending"
+                                    ? "bg-amber-500/10 text-amber-600"
+                                    : "text-rose-600"
+                                }`}
+                              >
+                                {art.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground py-2 text-center">
+                        No articles recorded yet.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
         {/* 5. Section 3: Cumulative Submissions & Words Growth Chart */}
@@ -1275,7 +1577,7 @@ export default function ContestStatsClient({
           </Card>
         )}
 
-        {/* 6. Section 4: Reviewer / Jury Performance Table (Zury style) */}
+        {/* 6. Section 4: Reviewer / Jury Performance Table */}
         <Card className="shadow-2xs border-border/80 overflow-hidden">
           <CardHeader className="py-4 px-5 border-b border-border/60 bg-muted/20">
             <div className="flex items-center justify-between">
@@ -1286,16 +1588,12 @@ export default function ContestStatsClient({
                 </CardTitle>
               </div>
               <span className="text-xs text-muted-foreground font-mono">
-                {stats?.jury_performance?.length || 0} reviewers
+                {stats?.jury_performance?.length || contest?.juries?.length || 0} reviewers
               </span>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {!stats?.jury_performance || stats.jury_performance.length === 0 ? (
-              <div className="py-12 text-center text-xs text-muted-foreground">
-                No evaluations conducted yet.
-              </div>
-            ) : (
+            {stats?.jury_performance && stats.jury_performance.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent bg-muted/40">
@@ -1356,6 +1654,60 @@ export default function ContestStatsClient({
                   ))}
                 </TableBody>
               </Table>
+            ) : contest?.juries && contest.juries.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent bg-muted/40">
+                    <TableHead className="text-xs">{t("feather-stats-col-user")}</TableHead>
+                    <TableHead className="text-right text-xs">Reviews</TableHead>
+                    <TableHead className="text-right text-xs text-emerald-700 dark:text-emerald-400">
+                      {t("feather-stats-col-accepted")}
+                    </TableHead>
+                    <TableHead className="text-right text-xs text-rose-700 dark:text-rose-400">
+                      {t("feather-stats-col-rejected")}
+                    </TableHead>
+                    <TableHead className="text-right text-xs">{t("feather-stats-col-rate")}</TableHead>
+                    <TableHead className="text-right text-xs">{t("feather-stats-col-active-days")}</TableHead>
+                    <TableHead className="text-right text-xs">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contest.juries.map((jury) => (
+                    <TableRow key={jury} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="text-xs font-semibold">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-foreground">{jury}</span>
+                          <UserBadge username={jury} />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums font-bold text-muted-foreground">
+                        0
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                        0
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                        0
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                        —
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                        0 days
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        <Badge variant="outline" className="text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/5">
+                          Assigned & ready
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="py-12 text-center text-xs text-muted-foreground">
+                No evaluations conducted yet.
+              </div>
             )}
           </CardContent>
         </Card>
@@ -1381,8 +1733,26 @@ export default function ContestStatsClient({
           </CardHeader>
           <CardContent className="p-0">
             {!standings || standings.length === 0 ? (
-              <div className="py-12 text-center text-xs text-muted-foreground">
-                {t("feather-stats-empty")}
+              <div className="p-8 text-center space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  No submissions have been recorded yet for this contest.
+                </p>
+                <p className="text-xs text-muted-foreground/80">
+                  Real-time participant leaderboard rankings and accepted word points will populate here once reviews begin.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href={`/contests/${code}`}
+                    className={buttonVariants({
+                      variant: "outline",
+                      size: "sm",
+                      className: "text-xs cursor-pointer gap-1",
+                    })}
+                  >
+                    <span>View contest dashboard</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
               </div>
             ) : (
               <Table>

@@ -118,4 +118,17 @@ func TestGetContestStats(t *testing.T) {
 			t.Errorf("Today %s not found in daily points", today)
 		}
 	}
+
+	if resp.Summary.TotalSubmissions != 2 {
+		t.Errorf("Expected summary TotalSubmissions 2, got %d", resp.Summary.TotalSubmissions)
+	}
+	if resp.Summary.DecidedCount != 1 {
+		t.Errorf("Expected summary DecidedCount 1, got %d", resp.Summary.DecidedCount)
+	}
+	if len(resp.TopParticipants) == 0 {
+		t.Errorf("Expected top participants, got none")
+	}
+	if len(resp.LargestArticles) == 0 {
+		t.Errorf("Expected largest articles, got none")
+	}
 }

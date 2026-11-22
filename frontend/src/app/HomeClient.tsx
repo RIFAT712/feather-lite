@@ -37,6 +37,7 @@ import {
   Globe,
   LayoutGrid,
   BookOpen,
+  Calendar,
 } from "lucide-react";
 
 interface HomeClientProps {
@@ -45,7 +46,7 @@ interface HomeClientProps {
 }
 
 export default function HomeClient({ initialContests, initialOverview }: HomeClientProps) {
-  const { t, n, locale, isRtl } = useI18n();
+  const { t, n, locale, isRtl, formatDate } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"active" | "all" | "ended">("active");
   const [typeFilter, setTypeFilter] = useState<"all" | "campaigns" | "single">("all");
@@ -716,17 +717,14 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       })()}
                     </div>
 
-                    <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 shrink-0">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      {isEnded
-                        ? t("feather-contest-ended")
-                        : time.notStarted
-                        ? (time.diffDays <= 1
-                            ? (time.hours > 0 ? t("feather-contest-starts-in-hours", time.hours) : t("feather-contest-starts-in-today"))
-                            : t("feather-contest-starts-in-days", time.diffDays))
-                        : time.diffDays <= 0
-                        ? t("feather-contest-today-end")
-                        : t("feather-contest-days-left", time.diffDays)}
+                    <span
+                      className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 shrink-0"
+                      title={`${formatDate(c.start_date)} – ${formatDate(c.end_date)}`}
+                    >
+                      <Calendar className="h-3 w-3 text-muted-foreground/70" />
+                      <span>
+                        {formatDate(c.start_date, { month: "short", day: "numeric" })} – {formatDate(c.end_date, { month: "short", day: "numeric" })}
+                      </span>
                     </span>
                   </div>
 
@@ -749,9 +747,17 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                   {/* Timeline Tracker */}
                   <div className="space-y-1 pt-0.5">
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span className="flex items-center gap-1 text-[10.5px]">
+                      <span className="flex items-center gap-1 text-[10.5px] font-medium">
                         <Clock className="h-3 w-3 text-muted-foreground/70" />
-                        {isEnded ? t("feather-contest-ended") : time.notStarted ? t("feather-time-starts-in") : t("feather-time-remaining")}
+                        {isEnded
+                          ? t("feather-contest-ended")
+                          : time.notStarted
+                          ? (time.diffDays <= 1
+                              ? (time.hours > 0 ? t("feather-contest-starts-in-hours", time.hours) : t("feather-contest-starts-in-today"))
+                              : t("feather-contest-starts-in-days", time.diffDays))
+                          : time.diffDays <= 0
+                          ? t("feather-contest-today-end")
+                          : t("feather-contest-days-left", time.diffDays)}
                       </span>
                       <span className="font-mono text-[10px]">
                         {t("feather-time-elapsed", isEnded ? 100 : time.percent)}

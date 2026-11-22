@@ -83,6 +83,7 @@ func main() {
 		api.Put("/contests/{code}", h.UpdateContest)
 		api.Put("/contests/{code}/settings", h.UpdateContest)
 		api.Delete("/contests/{code}", h.DeleteContest)
+		api.Post("/contests/{code}/restore", h.RestoreContest)
 		api.Post("/contests/{code}/sub-contests", h.CreateSubContest)
 		api.Get("/contests/{code}/available-contests", h.GetAvailableContests)
 		api.Post("/contests/{code}/attach-contest", h.AttachContest)
@@ -108,6 +109,7 @@ func main() {
 		api.Post("/admin/contests/{code}/approve", h.ApproveContest)
 		api.Post("/admin/contests/{code}/reject", h.RejectContest)
 		api.Delete("/admin/contests/{code}", h.DeleteContest)
+		api.Post("/admin/contests/{code}/restore", h.RestoreContest)
 
 		api.Post("/articles/{id}/review", h.ReviewArticle)
 		api.Post("/articles/{id}/review/undo", h.UndoReview)

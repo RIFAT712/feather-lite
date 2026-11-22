@@ -792,7 +792,7 @@ func (h *Handler) ListContests(w http.ResponseWriter, r *http.Request) {
 		       c.start_date, c.end_date, c.status, c.is_draft,
 		       COALESCE(c.is_umbrella, 0) as is_umbrella,
 		       c.parent_contest_id,
-		       (SELECT COUNT(*) FROM contests sub WHERE sub.parent_contest_id = c.id) as sub_contest_count,
+		       (SELECT COUNT(*) FROM contests sub WHERE sub.parent_contest_id = c.id AND sub.status != 'deleted') as sub_contest_count,
 		       COUNT(DISTINCT a.id) as total_articles,
 		       COUNT(DISTINCT CASE WHEN a.status = 'accepted' THEN a.id END) as accepted_articles,
 		       COUNT(DISTINCT cj.user_id) as total_juries,
@@ -800,11 +800,11 @@ func (h *Handler) ListContests(w http.ResponseWriter, r *http.Request) {
 		       c.created_by_id,
 		       COALESCE(creator.wiki_username, '') as created_by_username
 		FROM contests c
-		LEFT JOIN articles a ON (c.id = a.contest_id OR (c.is_umbrella = 1 AND a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = c.id)))
+		LEFT JOIN articles a ON (c.id = a.contest_id OR (c.is_umbrella = 1 AND a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = c.id AND status != 'deleted')))
 		LEFT JOIN contest_juries cj ON c.id = cj.contest_id
 		LEFT JOIN users u ON cj.user_id = u.id
 		LEFT JOIN users creator ON c.created_by_id = creator.id
-		WHERE c.is_draft = 0 AND c.parent_contest_id IS NULL
+		WHERE c.is_draft = 0 AND c.parent_contest_id IS NULL AND c.status != 'deleted'
 		  AND (c.status != 'pending_approval' OR (c.created_by_id = ? AND ? > 0) OR ? = 1)
 		GROUP BY c.id
 		ORDER BY c.id DESC
@@ -882,6 +882,17 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusInternalServerError, "Database query error")
 		return
 	}
+
+	if c.Status == "deleted" {
+		currentUser := auth.GetUser(r.Context())
+		isAdminOrOwner := h.isPlatformAdminOrOwner(currentUser)
+		isCreator := currentUser != nil && c.CreatedByID != nil && *c.CreatedByID == currentUser.UserID
+		if !isAdminOrOwner && !isCreator {
+			jsonError(w, http.StatusNotFound, "Contest not found")
+			return
+		}
+	}
+
 	c.IsUmbrella = isUmbrellaInt == 1
 	c.DistributeJuryQueue = distributeJuryQueueInt == 1
 
@@ -898,7 +909,7 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 			FROM contests s
 			LEFT JOIN articles a ON s.id = a.contest_id
 			LEFT JOIN contest_juries cj ON s.id = cj.contest_id
-			WHERE s.parent_contest_id = ?
+			WHERE s.parent_contest_id = ? AND s.status != 'deleted'
 			GROUP BY s.id
 			ORDER BY s.name ASC
 		`, c.ID)
@@ -941,7 +952,7 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 				SELECT s.id, s.code, s.name, s.wiki_dbname, s.wiki_url, s.wiki_lang, s.wiki_tz, s.status,
 				       s.min_words, s.min_bytes, 0, 0, 0, 0, 0
 				FROM contests s
-				WHERE s.parent_contest_id = ? AND s.id != ?
+				WHERE s.parent_contest_id = ? AND s.id != ? AND s.status != 'deleted'
 				ORDER BY s.name ASC
 			`, *c.ParentContestID, c.ID)
 			if err == nil {
@@ -2705,7 +2716,7 @@ func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
 	if isUmbrella == 1 {
 		statusRows, err = h.db.Query(`
 			SELECT status, COUNT(id) FROM articles
-			WHERE contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ?)
+			WHERE contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted')
 			GROUP BY status
 		`, contestID, contestID)
 	} else {
@@ -2729,19 +2740,50 @@ func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
 		statusCounts["total"] = total
 	}
 
+	// 1. Word Statistics Breakdown
+	var words models.ContestWordStats
+	var wordRow *sql.Row
+	if isUmbrella == 1 {
+		wordRow = h.db.QueryRow(`
+			SELECT 
+				COALESCE(SUM(word_count), 0),
+				COALESCE(SUM(CASE WHEN status = 'accepted' THEN word_count ELSE 0 END), 0),
+				COALESCE(SUM(CASE WHEN status = 'pending' THEN word_count ELSE 0 END), 0),
+				COALESCE(SUM(CASE WHEN status = 'rejected' THEN word_count ELSE 0 END), 0),
+				COALESCE(AVG(word_count), 0.0)
+			FROM articles
+			WHERE (contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted'))
+			  AND status != 'validation_failed'
+		`, contestID, contestID)
+	} else {
+		wordRow = h.db.QueryRow(`
+			SELECT 
+				COALESCE(SUM(word_count), 0),
+				COALESCE(SUM(CASE WHEN status = 'accepted' THEN word_count ELSE 0 END), 0),
+				COALESCE(SUM(CASE WHEN status = 'pending' THEN word_count ELSE 0 END), 0),
+				COALESCE(SUM(CASE WHEN status = 'rejected' THEN word_count ELSE 0 END), 0),
+				COALESCE(AVG(word_count), 0.0)
+			FROM articles
+			WHERE contest_id = ? AND status != 'validation_failed'
+		`, contestID)
+	}
+	_ = wordRow.Scan(&words.TotalWords, &words.AcceptedWords, &words.PendingWords, &words.RejectedWords, &words.AvgWords)
+
+	// 2. Submissions and Words by Day
 	submissionsByDay := make(map[string]int)
+	wordsByDay := make(map[string]int)
 	var subRows *sql.Rows
 	if isUmbrella == 1 {
 		subRows, err = h.db.Query(`
-			SELECT DATE(submitted_at) as sday, COUNT(id)
+			SELECT DATE(submitted_at) as sday, COUNT(id), COALESCE(SUM(word_count), 0)
 			FROM articles
-			WHERE (contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ?))
+			WHERE (contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted'))
 			  AND submitted_at IS NOT NULL
 			GROUP BY DATE(submitted_at)
 		`, contestID, contestID)
 	} else {
 		subRows, err = h.db.Query(`
-			SELECT DATE(submitted_at) as sday, COUNT(id)
+			SELECT DATE(submitted_at) as sday, COUNT(id), COALESCE(SUM(word_count), 0)
 			FROM articles
 			WHERE contest_id = ? AND submitted_at IS NOT NULL
 			GROUP BY DATE(submitted_at)
@@ -2751,17 +2793,19 @@ func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
 		defer subRows.Close()
 		for subRows.Next() {
 			var day sql.NullString
-			var cnt int
-			if err := subRows.Scan(&day, &cnt); err == nil && day.Valid && day.String != "" {
+			var cnt, wCnt int
+			if err := subRows.Scan(&day, &cnt, &wCnt); err == nil && day.Valid && day.String != "" {
 				d := day.String
 				if len(d) >= 10 {
 					d = d[:10]
 				}
 				submissionsByDay[d] += cnt
+				wordsByDay[d] += wCnt
 			}
 		}
 	}
 
+	// 3. Reviews by Day
 	judgedByDay := make(map[string]int)
 	var jRows *sql.Rows
 	if isUmbrella == 1 {
@@ -2769,7 +2813,7 @@ func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
 			SELECT DATE(r.timestamp) as rday, COUNT(r.id)
 			FROM reviews r
 			JOIN articles a ON r.article_id = a.id
-			WHERE (a.contest_id = ? OR a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ?))
+			WHERE (a.contest_id = ? OR a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted'))
 			  AND r.status != 'skipped'
 			  AND r.timestamp IS NOT NULL
 			GROUP BY DATE(r.timestamp)
@@ -2814,6 +2858,20 @@ func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(allDates)
 
 	daily := make([]models.ContestDailyStat, 0)
+	var busiestDay string
+	var busiestDayCount int
+	activeSubmissionDays := 0
+
+	for d, cnt := range submissionsByDay {
+		if cnt > 0 {
+			activeSubmissionDays++
+		}
+		if cnt > busiestDayCount {
+			busiestDayCount = cnt
+			busiestDay = d
+		}
+	}
+
 	if len(allDates) > 0 {
 		minDateStr := allDates[0]
 		maxDateStr := allDates[len(allDates)-1]
@@ -2834,28 +2892,250 @@ func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
 				daysSpan = 366
 			}
 			curr := tMin
+			cumCount := 0
+			cumWords := 0
 			for i := 0; i < daysSpan; i++ {
 				ds := curr.Format("2006-01-02")
+				cnt := submissionsByDay[ds]
+				wCnt := wordsByDay[ds]
+				cumCount += cnt
+				cumWords += wCnt
 				daily = append(daily, models.ContestDailyStat{
-					Date:   ds,
-					Count:  submissionsByDay[ds],
-					Judged: judgedByDay[ds],
+					Date:            ds,
+					Count:           cnt,
+					Words:           wCnt,
+					Judged:          judgedByDay[ds],
+					CumulativeCount: cumCount,
+					CumulativeWords: cumWords,
 				})
 				curr = curr.AddDate(0, 0, 1)
 			}
 		}
 	}
 
+	// 4. This Week Submissions (Last 7 Days)
+	sevenDaysAgoStr := time.Now().UTC().AddDate(0, 0, -7).Format("2006-01-02 15:04:05")
+	var thisWeekSubmissions int
+	if isUmbrella == 1 {
+		_ = h.db.QueryRow(`
+			SELECT COUNT(id) FROM articles 
+			WHERE (contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted'))
+			  AND submitted_at >= ?
+		`, contestID, contestID, sevenDaysAgoStr).Scan(&thisWeekSubmissions)
+	} else {
+		_ = h.db.QueryRow(`
+			SELECT COUNT(id) FROM articles 
+			WHERE contest_id = ? AND submitted_at >= ?
+		`, contestID, sevenDaysAgoStr).Scan(&thisWeekSubmissions)
+	}
+
+	// 5. Participants Counts
+	var totalParticipants, acceptedParticipants int
+	if isUmbrella == 1 {
+		_ = h.db.QueryRow(`
+			SELECT 
+				COUNT(DISTINCT submitter_id),
+				COUNT(DISTINCT CASE WHEN status = 'accepted' THEN submitter_id END)
+			FROM articles 
+			WHERE contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted')
+		`, contestID, contestID).Scan(&totalParticipants, &acceptedParticipants)
+	} else {
+		_ = h.db.QueryRow(`
+			SELECT 
+				COUNT(DISTINCT submitter_id),
+				COUNT(DISTINCT CASE WHEN status = 'accepted' THEN submitter_id END)
+			FROM articles 
+			WHERE contest_id = ?
+		`, contestID).Scan(&totalParticipants, &acceptedParticipants)
+	}
+
+	// 6. Top 10 Participants by Contribution
+	topParticipants := make([]models.ContestParticipantStat, 0)
+	var topRows *sql.Rows
+	if isUmbrella == 1 {
+		topRows, err = h.db.Query(`
+			SELECT 
+				COALESCE(u.wiki_username, 'Unknown') as username,
+				COUNT(a.id) as total,
+				COUNT(CASE WHEN a.status = 'accepted' THEN 1 END) as accepted,
+				COUNT(CASE WHEN a.status = 'pending' THEN 1 END) as pending,
+				COUNT(CASE WHEN a.status = 'rejected' THEN 1 END) as rejected,
+				COALESCE(SUM(a.word_count), 0) as words
+			FROM articles a
+			JOIN users u ON a.submitter_id = u.id
+			WHERE (a.contest_id = ? OR a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted'))
+			  AND a.status != 'validation_failed'
+			GROUP BY a.submitter_id
+			ORDER BY accepted DESC, words DESC, total DESC
+			LIMIT 10
+		`, contestID, contestID)
+	} else {
+		topRows, err = h.db.Query(`
+			SELECT 
+				COALESCE(u.wiki_username, 'Unknown') as username,
+				COUNT(a.id) as total,
+				COUNT(CASE WHEN a.status = 'accepted' THEN 1 END) as accepted,
+				COUNT(CASE WHEN a.status = 'pending' THEN 1 END) as pending,
+				COUNT(CASE WHEN a.status = 'rejected' THEN 1 END) as rejected,
+				COALESCE(SUM(a.word_count), 0) as words
+			FROM articles a
+			JOIN users u ON a.submitter_id = u.id
+			WHERE a.contest_id = ? AND a.status != 'validation_failed'
+			GROUP BY a.submitter_id
+			ORDER BY accepted DESC, words DESC, total DESC
+			LIMIT 10
+		`, contestID)
+	}
+	if err == nil {
+		defer topRows.Close()
+		for topRows.Next() {
+			var p models.ContestParticipantStat
+			if err := topRows.Scan(&p.Username, &p.Total, &p.Accepted, &p.Pending, &p.Rejected, &p.Words); err == nil {
+				topParticipants = append(topParticipants, p)
+			}
+		}
+	}
+
+	// 7. Top 5 Largest Articles
+	largestArticles := make([]models.ContestLargestArticle, 0)
+	var lgRows *sql.Rows
+	if isUmbrella == 1 {
+		lgRows, err = h.db.Query(`
+			SELECT a.id, a.title, a.word_count, a.byte_count, COALESCE(u.wiki_username, 'Unknown'), a.status
+			FROM articles a
+			JOIN users u ON a.submitter_id = u.id
+			WHERE (a.contest_id = ? OR a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted'))
+			  AND a.status != 'validation_failed'
+			ORDER BY a.word_count DESC
+			LIMIT 5
+		`, contestID, contestID)
+	} else {
+		lgRows, err = h.db.Query(`
+			SELECT a.id, a.title, a.word_count, a.byte_count, COALESCE(u.wiki_username, 'Unknown'), a.status
+			FROM articles a
+			JOIN users u ON a.submitter_id = u.id
+			WHERE a.contest_id = ? AND a.status != 'validation_failed'
+			ORDER BY a.word_count DESC
+			LIMIT 5
+		`, contestID)
+	}
+	if err == nil {
+		defer lgRows.Close()
+		for lgRows.Next() {
+			var la models.ContestLargestArticle
+			if err := lgRows.Scan(&la.ID, &la.Title, &la.WordCount, &la.ByteCount, &la.Submitter, &la.Status); err == nil {
+				largestArticles = append(largestArticles, la)
+			}
+		}
+	}
+
+	// 8. Jury Performance Breakdown Table
+	juryPerformance := make([]models.ContestJuryPerformance, 0)
+	var jPerfRows *sql.Rows
+	if isUmbrella == 1 {
+		jPerfRows, err = h.db.Query(`
+			SELECT 
+				COALESCE(u.wiki_username, 'Unknown') as username,
+				COUNT(r.id) as total_reviews,
+				COUNT(CASE WHEN r.status = 'accepted' THEN 1 END) as accepted_count,
+				COUNT(CASE WHEN r.status = 'rejected' THEN 1 END) as rejected_count,
+				COUNT(DISTINCT DATE(r.timestamp)) as active_days,
+				COALESCE(MAX(r.timestamp), '') as last_reviewed_at
+			FROM reviews r
+			JOIN users u ON r.reviewer_id = u.id
+			JOIN articles a ON r.article_id = a.id
+			WHERE (a.contest_id = ? OR a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted'))
+			  AND r.status != 'skipped'
+			GROUP BY r.reviewer_id
+			ORDER BY total_reviews DESC
+		`, contestID, contestID)
+	} else {
+		jPerfRows, err = h.db.Query(`
+			SELECT 
+				COALESCE(u.wiki_username, 'Unknown') as username,
+				COUNT(r.id) as total_reviews,
+				COUNT(CASE WHEN r.status = 'accepted' THEN 1 END) as accepted_count,
+				COUNT(CASE WHEN r.status = 'rejected' THEN 1 END) as rejected_count,
+				COUNT(DISTINCT DATE(r.timestamp)) as active_days,
+				COALESCE(MAX(r.timestamp), '') as last_reviewed_at
+			FROM reviews r
+			JOIN users u ON r.reviewer_id = u.id
+			JOIN articles a ON r.article_id = a.id
+			WHERE a.contest_id = ? AND r.status != 'skipped'
+			GROUP BY r.reviewer_id
+			ORDER BY total_reviews DESC
+		`, contestID)
+	}
+	totalReviews := 0
+	if err == nil {
+		defer jPerfRows.Close()
+		for jPerfRows.Next() {
+			var jp models.ContestJuryPerformance
+			if err := jPerfRows.Scan(&jp.Username, &jp.TotalReviews, &jp.AcceptedCount, &jp.RejectedCount, &jp.ActiveDays, &jp.LastReviewedAt); err == nil {
+				if jp.TotalReviews > 0 {
+					jp.AcceptanceRate = (float64(jp.AcceptedCount) / float64(jp.TotalReviews)) * 100.0
+				}
+				totalReviews += jp.TotalReviews
+				juryPerformance = append(juryPerformance, jp)
+			}
+		}
+	}
+
+	// 9. Total assigned juries & Organizers
+	var totalJuries int
+	if isUmbrella == 1 {
+		_ = h.db.QueryRow(`
+			SELECT COUNT(DISTINCT user_id) FROM contest_juries
+			WHERE contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted')
+		`, contestID, contestID).Scan(&totalJuries)
+	} else {
+		_ = h.db.QueryRow(`SELECT COUNT(DISTINCT user_id) FROM contest_juries WHERE contest_id = ?`, contestID).Scan(&totalJuries)
+	}
+
+	decidedCount := (statusCounts["accepted"] + statusCounts["rejected"])
+	judgeableCount := decidedCount + statusCounts["pending"]
+	progressPercent := 0
+	if judgeableCount > 0 {
+		progressPercent = int(math.Round((float64(decidedCount) / float64(judgeableCount)) * 100.0))
+	}
+
+	dailyAvgSubmissions := 0.0
+	totalContestDays := len(daily)
+	if totalContestDays > 0 {
+		dailyAvgSubmissions = float64(statusCounts["total"]) / float64(totalContestDays)
+	}
+
+	retentionPercent := 100.0 // Default 100% active
+
+	summary := models.ContestStatsSummary{
+		TotalSubmissions:     statusCounts["total"],
+		ThisWeekSubmissions:  thisWeekSubmissions,
+		TotalParticipants:    totalParticipants,
+		AcceptedParticipants: acceptedParticipants,
+		ActiveJuries:         len(juryPerformance),
+		TotalJuries:          totalJuries,
+		TotalReviews:         totalReviews,
+		OrganizersCount:      1,
+		ProgressPercent:      progressPercent,
+		DecidedCount:         decidedCount,
+		RetentionPercent:     retentionPercent,
+		BusiestDay:           busiestDay,
+		BusiestDayCount:      busiestDayCount,
+		DailyAvgSubmissions:  dailyAvgSubmissions,
+		ActiveSubmissionDays: activeSubmissionDays,
+		TotalContestDays:     totalContestDays,
+	}
+
 	var latestArticleID, latestReviewID int64
 	if isUmbrella == 1 {
 		_ = h.db.QueryRow(`
 			SELECT COALESCE(MAX(id), 0) FROM articles 
-			WHERE contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ?)
+			WHERE contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted')
 		`, contestID, contestID).Scan(&latestArticleID)
 		_ = h.db.QueryRow(`
 			SELECT COALESCE(MAX(r.id), 0) FROM reviews r
 			JOIN articles a ON r.article_id = a.id
-			WHERE a.contest_id = ? OR a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ?)
+			WHERE a.contest_id = ? OR a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted')
 		`, contestID, contestID).Scan(&latestReviewID)
 	} else {
 		_ = h.db.QueryRow(`SELECT COALESCE(MAX(id), 0) FROM articles WHERE contest_id = ?`, contestID).Scan(&latestArticleID)
@@ -2869,9 +3149,14 @@ func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
 	signature := fmt.Sprintf("%d:%d:%d", statusCounts["total"], latestArticleID, latestReviewID)
 
 	resp := models.ContestStatsResponse{
-		StatusCounts: statusCounts,
-		Daily:        daily,
-		Signature:    signature,
+		StatusCounts:    statusCounts,
+		Words:           words,
+		Summary:         summary,
+		Daily:           daily,
+		TopParticipants: topParticipants,
+		LargestArticles: largestArticles,
+		JuryPerformance: juryPerformance,
+		Signature:       signature,
 	}
 	jsonResponse(w, http.StatusOK, resp)
 }
@@ -3419,7 +3704,7 @@ func (h *Handler) GetAdminOverview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var overview models.AdminOverview
-	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0").Scan(&overview.TotalContests)
+	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0 AND status != 'deleted'").Scan(&overview.TotalContests)
 	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0 AND status = 'pending_approval'").Scan(&overview.PendingContests)
 	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0 AND status = 'active'").Scan(&overview.ActiveContests)
 	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0 AND status = 'ended'").Scan(&overview.EndedContests)
@@ -3443,7 +3728,7 @@ func (h *Handler) GetAdminContests(w http.ResponseWriter, r *http.Request) {
 		       c.start_date, c.end_date, c.status, c.is_draft,
 		       COALESCE(c.is_umbrella, 0) as is_umbrella,
 		       c.parent_contest_id,
-		       (SELECT COUNT(*) FROM contests sub WHERE sub.parent_contest_id = c.id) as sub_contest_count,
+		       (SELECT COUNT(*) FROM contests sub WHERE sub.parent_contest_id = c.id AND sub.status != 'deleted') as sub_contest_count,
 		       COUNT(DISTINCT a.id) as total_articles,
 		       COUNT(DISTINCT CASE WHEN a.status = 'accepted' THEN a.id END) as accepted_articles,
 		       COUNT(DISTINCT cj.user_id) as total_juries,
@@ -3628,60 +3913,71 @@ func (h *Handler) DeleteContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := h.db.Begin()
+	// Soft-delete: mark contest and sub-contests as 'deleted' without wiping articles, reviews, or jobs
+	_, err = h.db.Exec("UPDATE contests SET status = 'deleted' WHERE id = ? OR parent_contest_id = ?", contestID, contestID)
 	if err != nil {
-		jsonError(w, http.StatusInternalServerError, "Transaction error")
-		return
-	}
-	defer tx.Rollback()
-
-	// Collect all contest IDs (main contest + sub-contests)
-	contestIDs := []int64{contestID}
-	subRows, err := tx.Query("SELECT id FROM contests WHERE parent_contest_id = ?", contestID)
-	if err == nil {
-		for subRows.Next() {
-			var subID int64
-			if err := subRows.Scan(&subID); err == nil {
-				contestIDs = append(contestIDs, subID)
-			}
-		}
-		subRows.Close()
-	}
-
-	for _, cid := range contestIDs {
-		// 1. Delete talk_page_jobs
-		_, _ = tx.Exec("DELETE FROM talk_page_jobs WHERE contest_id = ?", cid)
-		// 2. Delete reviews associated with articles of this contest
-		_, _ = tx.Exec("DELETE FROM reviews WHERE article_id IN (SELECT id FROM articles WHERE contest_id = ?)", cid)
-		// 3. Delete articles
-		_, _ = tx.Exec("DELETE FROM articles WHERE contest_id = ?", cid)
-		// 4. Delete jury restrictions
-		_, _ = tx.Exec("DELETE FROM contest_jury_restrictions WHERE contest_id = ?", cid)
-		// 5. Delete jury associations
-		_, _ = tx.Exec("DELETE FROM contest_juries WHERE contest_id = ?", cid)
-		// 6. Delete sub-contest record if not main
-		if cid != contestID {
-			_, _ = tx.Exec("DELETE FROM contests WHERE id = ?", cid)
-		}
-	}
-
-	// 7. Delete main contest
-	_, err = tx.Exec("DELETE FROM contests WHERE id = ?", contestID)
-	if err != nil {
-		log.Printf("[DeleteContest] Error deleting contest %s (%d): %v", code, contestID, err)
+		log.Printf("[DeleteContest] Error soft-deleting contest %s (%d): %v", code, contestID, err)
 		jsonError(w, http.StatusInternalServerError, "Failed to delete contest")
 		return
 	}
 
-	if err := tx.Commit(); err != nil {
-		jsonError(w, http.StatusInternalServerError, "Failed to commit deletion")
-		return
-	}
-
-	log.Printf("[DeleteContest] Contest %s ('%s', ID: %d) permanently deleted by %s", code, contestName, contestID, currentUser.WikiUsername)
+	log.Printf("[DeleteContest] Contest %s ('%s', ID: %d) soft-deleted by %s", code, contestName, contestID, currentUser.WikiUsername)
 	jsonResponse(w, http.StatusOK, map[string]any{
 		"status":  "ok",
 		"message": fmt.Sprintf("Contest '%s' deleted successfully", contestName),
+	})
+}
+
+// RestoreContest restores a soft-deleted contest back to active or ended.
+func (h *Handler) RestoreContest(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil || currentUser.UserID <= 0 {
+		jsonError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	code := chi.URLParam(r, "code")
+	if code == "" {
+		jsonError(w, http.StatusBadRequest, "Contest code required")
+		return
+	}
+
+	var contestID int64
+	var createdByID *int64
+	var contestName string
+	err := h.db.QueryRow("SELECT id, created_by_id, name FROM contests WHERE code = ?", code).Scan(&contestID, &createdByID, &contestName)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	isAdminOrOwner := h.isPlatformAdminOrOwner(currentUser)
+	isCreator := createdByID != nil && *createdByID == currentUser.UserID
+
+	if !isAdminOrOwner && !isCreator {
+		jsonError(w, http.StatusForbidden, "You do not have permission to restore this contest")
+		return
+	}
+
+	// Restore: if past end_date, set to 'ended', otherwise 'active'
+	_, err = h.db.Exec(`
+		UPDATE contests 
+		SET status = CASE WHEN end_date < CURRENT_TIMESTAMP THEN 'ended' ELSE 'active' END 
+		WHERE id = ? OR parent_contest_id = ?
+	`, contestID, contestID)
+	if err != nil {
+		log.Printf("[RestoreContest] Error restoring contest %s (%d): %v", code, contestID, err)
+		jsonError(w, http.StatusInternalServerError, "Failed to restore contest")
+		return
+	}
+
+	log.Printf("[RestoreContest] Contest %s ('%s', ID: %d) restored by %s", code, contestName, contestID, currentUser.WikiUsername)
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"status":  "ok",
+		"message": fmt.Sprintf("Contest '%s' restored successfully", contestName),
 	})
 }
 
@@ -3930,8 +4226,8 @@ func (h *Handler) GetOverview(w http.ResponseWriter, r *http.Request) {
 		FROM articles
 	`).Scan(&totals.Words, &totals.Articles, &totals.Submissions, &totals.People)
 
-	_ = h.db.QueryRow("SELECT COUNT(DISTINCT wiki_dbname) FROM contests WHERE is_draft = 0").Scan(&totals.Wikis)
-	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0").Scan(&totals.Contests)
+	_ = h.db.QueryRow("SELECT COUNT(DISTINCT wiki_dbname) FROM contests WHERE is_draft = 0 AND status != 'deleted'").Scan(&totals.Wikis)
+	_ = h.db.QueryRow("SELECT COUNT(*) FROM contests WHERE parent_contest_id IS NULL AND is_draft = 0 AND status != 'deleted'").Scan(&totals.Contests)
 
 	now := time.Now().UTC()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)

@@ -134,7 +134,7 @@ func (w *TalkQueueWorker) processNextJob() {
 		LEFT JOIN users u ON c.created_by_id = u.id
 		LEFT JOIN articles a ON q.article_id = a.id
 		LEFT JOIN users sub ON a.submitter_id = sub.id
-		WHERE q.status = 'queued' 
+		WHERE q.status = 'queued' AND c.status != 'deleted' 
 		  AND (q.retry_after IS NULL OR q.retry_after <= CURRENT_TIMESTAMP)
 		ORDER BY q.attempts ASC, q.id ASC
 		LIMIT 1

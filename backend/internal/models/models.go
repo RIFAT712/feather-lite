@@ -384,14 +384,77 @@ type PlatformOverview struct {
 }
 
 type ContestDailyStat struct {
-	Date   string `json:"date"`
-	Count  int    `json:"count"`
-	Judged int    `json:"judged"`
+	Date            string `json:"date"`
+	Count           int    `json:"count"`
+	Words           int    `json:"words"`
+	Judged          int    `json:"judged"`
+	CumulativeCount int    `json:"cumulative_count"`
+	CumulativeWords int    `json:"cumulative_words"`
+}
+
+type ContestWordStats struct {
+	TotalWords    int     `json:"total_words"`
+	AcceptedWords int     `json:"accepted_words"`
+	PendingWords  int     `json:"pending_words"`
+	RejectedWords int     `json:"rejected_words"`
+	AvgWords      float64 `json:"avg_words"`
+}
+
+type ContestParticipantStat struct {
+	Username string `json:"username"`
+	Total    int    `json:"total"`
+	Accepted int    `json:"accepted"`
+	Pending  int    `json:"pending"`
+	Rejected int    `json:"rejected"`
+	Words    int    `json:"words"`
+}
+
+type ContestLargestArticle struct {
+	ID        int64  `json:"id"`
+	Title     string `json:"title"`
+	WordCount int    `json:"word_count"`
+	ByteCount int    `json:"byte_count"`
+	Submitter string `json:"submitter"`
+	Status    string `json:"status"`
+}
+
+type ContestJuryPerformance struct {
+	Username       string  `json:"username"`
+	TotalReviews   int     `json:"total_reviews"`
+	AcceptedCount  int     `json:"accepted_count"`
+	RejectedCount  int     `json:"rejected_count"`
+	AcceptanceRate float64 `json:"acceptance_rate"`
+	ActiveDays     int     `json:"active_days"`
+	LastReviewedAt string  `json:"last_reviewed_at"`
+}
+
+type ContestStatsSummary struct {
+	TotalSubmissions     int     `json:"total_submissions"`
+	ThisWeekSubmissions  int     `json:"this_week_submissions"`
+	TotalParticipants    int     `json:"total_participants"`
+	AcceptedParticipants int     `json:"accepted_participants"`
+	ActiveJuries         int     `json:"active_juries"`
+	TotalJuries          int     `json:"total_juries"`
+	TotalReviews         int     `json:"total_reviews"`
+	OrganizersCount      int     `json:"organizers_count"`
+	ProgressPercent      int     `json:"progress_percent"`
+	DecidedCount         int     `json:"decided_count"`
+	RetentionPercent     float64 `json:"retention_percent"`
+	BusiestDay           string  `json:"busiest_day"`
+	BusiestDayCount      int     `json:"busiest_day_count"`
+	DailyAvgSubmissions  float64 `json:"daily_avg_submissions"`
+	ActiveSubmissionDays int     `json:"active_submission_days"`
+	TotalContestDays     int     `json:"total_contest_days"`
 }
 
 type ContestStatsResponse struct {
-	StatusCounts map[string]int     `json:"status_counts"`
-	Daily        []ContestDailyStat `json:"daily"`
-	Signature    string             `json:"signature"`
+	StatusCounts    map[string]int           `json:"status_counts"`
+	Words           ContestWordStats         `json:"words"`
+	Summary         ContestStatsSummary      `json:"summary"`
+	Daily           []ContestDailyStat       `json:"daily"`
+	TopParticipants []ContestParticipantStat `json:"top_participants"`
+	LargestArticles []ContestLargestArticle  `json:"largest_articles"`
+	JuryPerformance []ContestJuryPerformance `json:"jury_performance"`
+	Signature       string                   `json:"signature"`
 }
 

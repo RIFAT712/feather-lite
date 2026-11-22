@@ -142,7 +142,65 @@ export interface JuryStatsResponse {
 export interface ContestDailyStat {
   date: string;
   count: number;
+  words: number;
   judged: number;
+  cumulative_count: number;
+  cumulative_words: number;
+}
+
+export interface ContestWordStats {
+  total_words: number;
+  accepted_words: number;
+  pending_words: number;
+  rejected_words: number;
+  avg_words: number;
+}
+
+export interface ContestParticipantStat {
+  username: string;
+  total: number;
+  accepted: number;
+  pending: number;
+  rejected: number;
+  words: number;
+}
+
+export interface ContestLargestArticle {
+  id: number;
+  title: string;
+  word_count: number;
+  byte_count: number;
+  submitter: string;
+  status: string;
+}
+
+export interface ContestJuryPerformance {
+  username: string;
+  total_reviews: number;
+  accepted_count: number;
+  rejected_count: number;
+  acceptance_rate: number;
+  active_days: number;
+  last_reviewed_at: string;
+}
+
+export interface ContestStatsSummary {
+  total_submissions: number;
+  this_week_submissions: number;
+  total_participants: number;
+  accepted_participants: number;
+  active_juries: number;
+  total_juries: number;
+  total_reviews: number;
+  organizers_count: number;
+  progress_percent: number;
+  decided_count: number;
+  retention_percent: number;
+  busiest_day: string;
+  busiest_day_count: number;
+  daily_avg_submissions: number;
+  active_submission_days: number;
+  total_contest_days: number;
 }
 
 export interface ContestStatsResponse {
@@ -153,7 +211,12 @@ export interface ContestStatsResponse {
     pending: number;
     validation_failed?: number;
   };
+  words: ContestWordStats;
+  summary: ContestStatsSummary;
   daily: ContestDailyStat[];
+  top_participants: ContestParticipantStat[];
+  largest_articles: ContestLargestArticle[];
+  jury_performance: ContestJuryPerformance[];
   signature?: string;
 }
 
@@ -852,6 +915,18 @@ export async function deleteContest(code: string): Promise<{ status: string; mes
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || "Failed to delete contest");
+  }
+  return res.json();
+}
+
+export async function restoreContest(code: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}/restore`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to restore contest");
   }
   return res.json();
 }

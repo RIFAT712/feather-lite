@@ -973,7 +973,7 @@ export default function SettingsClient({
           {contest && (
             <div className="p-3.5 my-2 rounded-lg bg-destructive/[0.04] border border-destructive/20 text-xs space-y-1.5">
               <div className="text-muted-foreground font-medium">
-                You are about to permanently delete:
+                You are about to delete:
               </div>
               <div className="font-semibold text-foreground flex items-center justify-between">
                 <span>{contest.name}</span>

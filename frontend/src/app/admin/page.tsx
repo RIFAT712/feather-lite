@@ -10,6 +10,7 @@ import {
   approveContest,
   rejectContest,
   deleteContest,
+  restoreContest,
   Contest,
   AdminOverview,
 } from "@/lib/api";
@@ -45,6 +46,7 @@ import {
   Users,
   Search,
   Check,
+  RotateCcw,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -117,6 +119,21 @@ export default function AdminPage() {
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to reject contest");
+    },
+  });
+
+  // Restore Mutation
+  const restoreMutation = useMutation({
+    mutationFn: (code: string) => restoreContest(code),
+    onSuccess: (_, code) => {
+      toast.success(t("feather-admin-restored-success"));
+      queryClient.invalidateQueries({ queryKey: ["adminOverview"] });
+      queryClient.invalidateQueries({ queryKey: ["adminContests"] });
+      queryClient.invalidateQueries({ queryKey: ["contests"] });
+      queryClient.invalidateQueries({ queryKey: ["contest", code] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to restore contest");
     },
   });
 
@@ -529,7 +546,7 @@ export default function AdminPage() {
             </div>
 
             <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-              {["all", "active", "pending_approval", "ended", "rejected"].map((s) => (
+              {["all", "active", "pending_approval", "ended", "rejected", "deleted"].map((s) => (
                 <Button
                   key={s}
                   variant={statusFilter === s ? "default" : "outline"}
@@ -586,6 +603,11 @@ export default function AdminPage() {
                           Rejected
                         </Badge>
                       )}
+                      {contest.status === "deleted" && (
+                        <Badge variant="outline" className="text-[10px] text-rose-600 dark:text-rose-400 border-rose-500/40 bg-rose-500/10">
+                          Deleted
+                        </Badge>
+                      )}
                       {contest.is_umbrella && (
                         <Badge variant="secondary" className="text-[10px] gap-1">
                           <Layers className="h-2.5 w-2.5" />
@@ -627,16 +649,29 @@ export default function AdminPage() {
                       </Button>
                     )}
 
-                    {isOwner && (
+                    {contest.status === "deleted" ? (
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => setContestToDelete(contest)}
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer rounded-md"
-                        title={t("feather-admin-delete")}
+                        disabled={restoreMutation.isPending}
+                        onClick={() => restoreMutation.mutate(contest.code)}
+                        className="h-8 text-xs text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer gap-1"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <RotateCcw className="h-3 w-3" />
+                        <span>{t("feather-admin-restore")}</span>
                       </Button>
+                    ) : (
+                      isOwner && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setContestToDelete(contest)}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer rounded-md"
+                          title={t("feather-admin-delete")}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )
                     )}
                   </div>
                 </div>

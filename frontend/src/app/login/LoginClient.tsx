@@ -33,7 +33,7 @@ export default function LoginClient({ returnTo }: LoginClientProps) {
   const isSubmitReturn = returnTo.includes("/submit");
 
   return (
-    <div className="container mx-auto px-4 py-16 sm:py-24 flex flex-col items-center justify-center min-h-[calc(100vh-14rem)]">
+    <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[calc(100dvh-4rem)]">
       <div className="w-full max-w-[420px]">
         {/* Main Minimalist Sign-in Card */}
         <div className="rounded-2xl border border-border/80 bg-card p-8 sm:p-10 shadow-sm">

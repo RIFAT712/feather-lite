@@ -10,7 +10,12 @@ export default function Footer() {
   const pathname = usePathname();
   const { t, locale } = useI18n();
 
-  if (pathname && /\/contests\/[^/]+\/review(?:\/|$)/.test(pathname)) {
+  if (
+    pathname &&
+    (/\/contests\/[^/]+\/review(?:\/|$)/.test(pathname) ||
+      pathname === "/login" ||
+      pathname.startsWith("/login/"))
+  ) {
     return null;
   }
 

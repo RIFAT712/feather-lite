@@ -731,12 +731,20 @@ export interface UpdateContestPayload {
 }
 
 export async function updateContest(code: string, payload: UpdateContestPayload): Promise<any> {
-  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}/settings`, {
+  let res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}/settings`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify(payload),
   });
+  if (res.status === 404) {
+    res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || err.message || "Failed to update contest");

@@ -183,6 +183,18 @@ export default function SettingsClient({
       toast.error(t("feather-create-name-required"));
       return;
     }
+    if (!editStartDate || isNaN(new Date(editStartDate).getTime())) {
+      toast.error("Please provide a valid start date");
+      return;
+    }
+    if (!editEndDate || isNaN(new Date(editEndDate).getTime())) {
+      toast.error("Please provide a valid end date");
+      return;
+    }
+    if (new Date(editEndDate) < new Date(editStartDate)) {
+      toast.error("End date cannot be earlier than start date");
+      return;
+    }
     setIsSavingSettings(true);
     try {
       await updateContest(code, {

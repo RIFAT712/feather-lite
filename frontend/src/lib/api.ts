@@ -39,6 +39,7 @@ export interface Contest {
   wiki_url: string;
   wiki_lang: string;
   wiki_tz?: string;
+  onwiki_page_url?: string;
   start_date: string;
   end_date: string;
   status: string;
@@ -522,6 +523,7 @@ export interface CreateSubContestPayload {
   wiki_url: string;
   wiki_lang: string;
   wiki_tz?: string;
+  onwiki_page_url?: string;
   min_words?: number;
   min_bytes?: number;
   min_refs?: number;
@@ -559,6 +561,7 @@ export interface CreateContestPayload {
   add_talk_template?: boolean;
   talk_template_name?: string;
   distribute_jury_queue?: boolean;
+  onwiki_page_url?: string;
   juries?: string[];
 }
 
@@ -817,6 +820,7 @@ export interface UpdateContestPayload {
   add_talk_template: boolean;
   talk_template_name?: string;
   distribute_jury_queue?: boolean;
+  onwiki_page_url?: string;
   juries?: string[];
 }
 

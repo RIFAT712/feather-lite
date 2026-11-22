@@ -12,7 +12,8 @@ import {
   UserSession, KeysetResponse, JuryStatsResponse, JuryMemberProgress
 } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
-import { getProjectMeta, getWikiInfo } from "@/lib/wikis";
+import { getProjectMeta, getWikiInfo, getOnwikiPageLink } from "@/lib/wikis";
+import { MetaWikiLogoIcon } from "@/components/icons/CodexIcons";
 import WikiSelector from "@/components/contests/WikiSelector";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1305,30 +1306,34 @@ export default function ContestDashboardClient({
                 })()}
 
                 {contest.is_umbrella ? (
-                  <div
-                    className="text-xs text-foreground/90 flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border border-border/70 bg-muted/30 shrink-0 whitespace-nowrap font-medium"
-                    title={t("feather-campaign-badge")}
+                  <a
+                    href={contest.onwiki_page_url ? getOnwikiPageLink(contest.onwiki_page_url, "https://meta.wikimedia.org") : "#communities"}
+                    {...(contest.onwiki_page_url ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    className="text-xs text-foreground/90 flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border border-border/70 bg-muted/30 hover:bg-muted/60 transition-colors shrink-0 whitespace-nowrap font-medium cursor-pointer"
+                    title={contest.onwiki_page_url ? `Meta-Wiki — ${contest.onwiki_page_url}` : t("feather-campaign-badge")}
                   >
-                    <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <MetaWikiLogoIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>{t("feather-campaign-badge")}</span>
                     {(contest.sub_contest_count || contest.sub_contests?.length) ? (
                       <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.2 rounded font-mono">
                         {t("feather-campaign-communities-count", contest.sub_contest_count || contest.sub_contests?.length || 0)}
                       </span>
                     ) : null}
-                  </div>
+                    {contest.onwiki_page_url && <ExternalLink className="h-2.5 w-2.5 opacity-60 ml-0.5" />}
+                  </a>
                 ) : (
                   (() => {
                     const pMeta = getProjectMeta(contest.wiki_dbname);
                     const pName = t(`feather-project-${pMeta.id}`) || (locale === "bn" ? pMeta.nativeName : pMeta.name);
                     const wikiInfo = getWikiInfo(contest.wiki_dbname);
+                    const targetHref = getOnwikiPageLink(contest.onwiki_page_url, contest.wiki_url || `https://${contest.wiki_dbname}.org`);
                     return (
                       <a
-                        href={contest.wiki_url || `https://${contest.wiki_dbname}.org`}
+                        href={targetHref}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 cursor-pointer transition-colors px-2.5 py-0.5 rounded-md border border-border/70 bg-muted/30 hover:bg-muted/60"
-                        title={`${wikiInfo?.englishName || pMeta.name} (${contest.wiki_dbname})`}
+                        title={contest.onwiki_page_url ? `${wikiInfo?.englishName || pMeta.name} — ${contest.onwiki_page_url}` : `${wikiInfo?.englishName || pMeta.name} (${contest.wiki_dbname})`}
                       >
                         <img
                           src={pMeta.icon}

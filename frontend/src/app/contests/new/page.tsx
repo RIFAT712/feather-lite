@@ -54,6 +54,7 @@ export default function NewContestPage() {
   // Form State (NO custom code/slug input - automatically 4 random characters)
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [onwikiPageUrl, setOnwikiPageUrl] = useState("");
 
   // Contest Type: "standard" (single wiki) vs "umbrella" (multi-community campaign)
   const [contestType, setContestType] = useState<"standard" | "umbrella">("standard");
@@ -183,6 +184,7 @@ export default function NewContestPage() {
           if (hasContent) {
             if (typeof draft.name === "string") setName(draft.name);
             if (typeof draft.description === "string") setDescription(draft.description);
+            if (typeof draft.onwikiPageUrl === "string") setOnwikiPageUrl(draft.onwikiPageUrl);
             if (draft.contestType === "standard" || draft.contestType === "umbrella") {
               setContestType(draft.contestType);
             }
@@ -250,6 +252,7 @@ export default function NewContestPage() {
         const payload = {
           name,
           description,
+          onwikiPageUrl,
           contestType,
           selectedExistingContests,
           wikiDbName,
@@ -291,6 +294,7 @@ export default function NewContestPage() {
     isLoadedFromDraft,
     name,
     description,
+    onwikiPageUrl,
     contestType,
     selectedExistingContests,
     wikiDbName,
@@ -391,6 +395,7 @@ export default function NewContestPage() {
       wiki_url: isUmbrella ? (selectedExistingContests[0]?.wiki_url || "") : (wikiURL.trim() || "https://bn.wikipedia.org"),
       wiki_lang: isUmbrella ? (selectedExistingContests[0]?.wiki_lang || "en") : (wikiLang.trim() || "bn"),
       wiki_tz: wikiTZ.trim() || "UTC",
+      onwiki_page_url: onwikiPageUrl.trim() || undefined,
       start_date: new Date(startDate).toISOString(),
       end_date: new Date(endDate).toISOString(),
       is_umbrella: isUmbrella,
@@ -536,6 +541,20 @@ export default function NewContestPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
             />
+
+            {/* On-wiki contest page */}
+            <div className="space-y-1">
+              <FloatingInput
+                id="contest-onwiki-page-input"
+                label={t("feather-create-onwiki-page-label")}
+                value={onwikiPageUrl}
+                onChange={(e) => setOnwikiPageUrl(e.target.value)}
+                placeholder="Wikipedia:উইকিটেশব প্রতিযোগিতা ২০২৬ or https://..."
+              />
+              <p className="text-[11px] text-muted-foreground px-1">
+                {t("feather-create-onwiki-page-hint")}
+              </p>
+            </div>
 
             {/* Contest Type: Standard vs Multi-Community Campaign */}
             <div className="space-y-2 pt-1">

@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS contests (
     results_published_at DATETIME,
     add_talk_template INTEGER NOT NULL DEFAULT 0,
     talk_template_name TEXT DEFAULT '',
+    onwiki_page_url TEXT DEFAULT '',
     distribute_jury_queue INTEGER NOT NULL DEFAULT 0,
     is_umbrella INTEGER NOT NULL DEFAULT 0,
     parent_contest_id INTEGER REFERENCES contests(id) ON DELETE SET NULL,

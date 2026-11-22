@@ -123,6 +123,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       // Replace $1, $2, etc. (Translatewiki standard)
       // Automatically format number/bigint parameters with native digits and locale grouping!
       if (params.length > 0) {
+        // Handle {{PLURAL:$n|one|other}} (Translatewiki / MediaWiki standard)
+        text = text.replace(/\{\{PLURAL:\$([0-9]+)\|([^|{}]+)\|([^|{}]+)\}\}/gi, (_match, paramIdxStr, singular, plural) => {
+          const pIndex = parseInt(paramIdxStr, 10) - 1;
+          const val = params[pIndex];
+          const num = typeof val === "number" || typeof val === "bigint" ? Number(val) : parseFloat(String(val));
+          if (!isNaN(num) && num === 1) {
+            return singular;
+          }
+          return plural;
+        });
+
         params.forEach((param, index) => {
           const placeholder = `$${index + 1}`;
           let formattedParam: string;

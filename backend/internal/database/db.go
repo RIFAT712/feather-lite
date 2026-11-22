@@ -88,6 +88,7 @@ func Connect(cfg *config.Config) (*DB, error) {
 	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN is_umbrella INTEGER NOT NULL DEFAULT 0;")
 	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN parent_contest_id INTEGER REFERENCES contests(id) ON DELETE SET NULL;")
 	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN distribute_jury_queue INTEGER NOT NULL DEFAULT 0;")
+	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN onwiki_page_url TEXT;")
 	_, _ = db.Exec("ALTER TABLE talk_page_jobs ADD COLUMN retry_after DATETIME;")
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_contests_parent ON contests(parent_contest_id);")
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_contests_is_umbrella ON contests(is_umbrella);")

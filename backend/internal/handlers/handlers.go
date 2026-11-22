@@ -519,14 +519,14 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 
 	insertContestQuery := `
 		INSERT INTO contests (
-			code, name, description, wiki_dbname, wiki_url, wiki_lang, wiki_tz,
+			code, name, description, wiki_dbname, wiki_url, wiki_lang, wiki_tz, onwiki_page_url,
 			start_date, end_date, status, is_draft,
 			rule_must_be_creator, rule_no_redirect, rule_no_disambig, rule_mainspace_only, rule_created_in_window,
 			custom_creation_start_date, custom_creation_end_date,
 			min_bytes, min_words, min_refs, max_submissions_per_user, rank_by_words,
 			add_talk_template, talk_template_name, distribute_jury_queue, is_umbrella, parent_contest_id, created_by_id
 		) VALUES (
-			?, ?, ?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?,
 			?, ?, ?, ?, ?,
 			?, ?,
@@ -587,7 +587,7 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 
 	res, err := tx.Exec(
 		insertContestQuery,
-		code, req.Name, req.Description, wikiDbName, wikiURL, wikiLang, wikiTZ,
+		code, req.Name, req.Description, wikiDbName, wikiURL, wikiLang, wikiTZ, strings.TrimSpace(req.OnwikiPageURL),
 		startDate, endDate, status, isDraft,
 		mustBeCreator, noRedirect, noDisambig, mainspaceOnly, createdInWindow,
 		customCreationStart, customCreationEnd,
@@ -788,7 +788,7 @@ func (h *Handler) ListContests(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := `
-		SELECT c.id, c.code, c.name, c.description, c.wiki_dbname, c.wiki_url, c.wiki_lang, 
+		SELECT c.id, c.code, c.name, c.description, c.wiki_dbname, c.wiki_url, c.wiki_lang, COALESCE(c.onwiki_page_url, '') as onwiki_page_url,
 		       c.start_date, c.end_date, c.status, c.is_draft,
 		       COALESCE(c.is_umbrella, 0) as is_umbrella,
 		       c.parent_contest_id,
@@ -826,7 +826,7 @@ func (h *Handler) ListContests(w http.ResponseWriter, r *http.Request) {
 		var juryNames string
 		var isUmbrellaInt int
 		err := rows.Scan(
-			&c.ID, &c.Code, &c.Name, &c.Description, &c.WikiDbName, &c.WikiURL, &c.WikiLang,
+			&c.ID, &c.Code, &c.Name, &c.Description, &c.WikiDbName, &c.WikiURL, &c.WikiLang, &c.OnwikiPageURL,
 			&c.StartDate, &c.EndDate, &c.Status, &c.IsDraft,
 			&isUmbrellaInt, &c.ParentContestID, &c.SubContestCount,
 			&c.TotalArticles, &c.AcceptedArticles, &c.TotalJuries, &juryNames,
@@ -854,6 +854,7 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 
 	query := `
 		SELECT c.id, c.code, c.name, c.description, c.wiki_dbname, c.wiki_url, c.wiki_lang, c.wiki_tz,
+		       COALESCE(c.onwiki_page_url, '') as onwiki_page_url,
 		       c.start_date, c.end_date, c.status, c.is_draft, c.rule_must_be_creator, c.rule_no_redirect,
 		       c.rule_no_disambig, c.rule_mainspace_only, c.rule_created_in_window,
 		       c.custom_creation_start_date, c.custom_creation_end_date, c.min_bytes,
@@ -868,6 +869,7 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 	var isUmbrellaInt, distributeJuryQueueInt int
 	err := h.db.QueryRow(query, code).Scan(
 		&c.ID, &c.Code, &c.Name, &c.Description, &c.WikiDbName, &c.WikiURL, &c.WikiLang, &c.WikiTZ,
+		&c.OnwikiPageURL,
 		&c.StartDate, &c.EndDate, &c.Status, &c.IsDraft, &c.RuleMustBeCreator, &c.RuleNoRedirect,
 		&c.RuleNoDisambig, &c.RuleMainspaceOnly, &c.RuleCreatedInWindow,
 		&c.CustomCreationStartDate, &c.CustomCreationEndDate, &c.MinBytes,
@@ -1108,6 +1110,7 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 			status = ?,
 			is_draft = ?,
 			wiki_tz = ?,
+			onwiki_page_url = ?,
 			rule_must_be_creator = ?,
 			rule_no_redirect = ?,
 			rule_no_disambig = ?,
@@ -1123,7 +1126,7 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 			distribute_jury_queue = ?
 		WHERE id = ?
 	`,
-		req.Name, strings.TrimSpace(req.Description), startDate, endDate, status, isDraft, tz,
+		req.Name, strings.TrimSpace(req.Description), startDate, endDate, status, isDraft, tz, strings.TrimSpace(req.OnwikiPageURL),
 		mustBeCreator, noRedirect, noDisambig, mainspaceOnly, createdInWindow,
 		req.MinBytes, req.MinWords, req.MinRefs, req.MaxSubmissionsPerUser, rankByWords,
 		addTalkTemplate, strings.TrimSpace(req.TalkTemplateName), distributeJuryQueue,
@@ -1638,9 +1641,12 @@ func (h *Handler) GetUserCreatedArticles(w http.ResponseWriter, r *http.Request)
 	}
 
 	var contest models.Contest
+	var customStart, customEnd sql.NullTime
+	var createdInWindowInt int
 	err := h.db.QueryRow(`
-		SELECT id, wiki_url, start_date, end_date FROM contests WHERE code = ?
-	`, code).Scan(&contest.ID, &contest.WikiURL, &contest.StartDate, &contest.EndDate)
+		SELECT id, wiki_url, start_date, end_date, COALESCE(rule_created_in_window, 1), custom_creation_start_date, custom_creation_end_date
+		FROM contests WHERE code = ?
+	`, code).Scan(&contest.ID, &contest.WikiURL, &contest.StartDate, &contest.EndDate, &createdInWindowInt, &customStart, &customEnd)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Contest not found")
 		return
@@ -1651,6 +1657,10 @@ func (h *Handler) GetUserCreatedArticles(w http.ResponseWriter, r *http.Request)
 
 	startTS := contest.StartDate.Format(time.RFC3339)
 	endTS := contest.EndDate.Format(time.RFC3339)
+	if createdInWindowInt == 0 && customStart.Valid && customEnd.Valid {
+		startTS = customStart.Time.Format(time.RFC3339)
+		endTS = customEnd.Time.Format(time.RFC3339)
+	}
 
 	creations, err := mwclient.FetchUserCreatedArticles(contest.WikiURL, username, startTS, endTS)
 	if err != nil {
@@ -1695,16 +1705,17 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 
 	var contest models.Contest
 	var distributeJuryQueueInt int
+	var ruleNoDisambigInt int
 	err := h.db.QueryRow(`
 		SELECT id, name, status, wiki_url, min_bytes, min_words, min_refs, max_submissions_per_user,
-		       rule_must_be_creator, rule_no_redirect, rule_created_in_window,
+		       rule_must_be_creator, rule_no_redirect, COALESCE(rule_no_disambig, 1), rule_created_in_window,
 		       custom_creation_start_date, custom_creation_end_date, start_date, end_date,
 		       COALESCE(distribute_jury_queue, 0)
 		FROM contests WHERE code = ?
 	`, code).Scan(
 		&contest.ID, &contest.Name, &contest.Status, &contest.WikiURL, &contest.MinBytes,
 		&contest.MinWords, &contest.MinRefs, &contest.MaxSubmissionsPerUser,
-		&contest.RuleMustBeCreator, &contest.RuleNoRedirect, &contest.RuleCreatedInWindow,
+		&contest.RuleMustBeCreator, &contest.RuleNoRedirect, &ruleNoDisambigInt, &contest.RuleCreatedInWindow,
 		&contest.CustomCreationStartDate, &contest.CustomCreationEndDate,
 		&contest.StartDate, &contest.EndDate, &distributeJuryQueueInt,
 	)
@@ -1713,6 +1724,7 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	contest.DistributeJuryQueue = distributeJuryQueueInt == 1
+	contest.RuleNoDisambig = ruleNoDisambigInt == 1
 
 	if contest.Status == "pending_approval" {
 		jsonError(w, http.StatusForbidden, "Contest is currently pending administrator approval")
@@ -1816,6 +1828,9 @@ func (h *Handler) SubmitArticles(w http.ResponseWriter, r *http.Request) {
 		} else if contest.RuleNoRedirect && pageInfo.IsRedirect {
 			status = "validation_failed"
 			validationErr = "Page is a redirect"
+		} else if contest.RuleNoDisambig && pageInfo.IsDisambig {
+			status = "validation_failed"
+			validationErr = "Page is a disambiguation page"
 		} else if contest.RuleMustBeCreator && !strings.EqualFold(pageInfo.Creator, submitter) {
 			status = "validation_failed"
 			validationErr = fmt.Sprintf("Author mismatch: creator is '%s', submitted by '%s'", pageInfo.Creator, submitter)
@@ -3724,7 +3739,7 @@ func (h *Handler) GetAdminContests(w http.ResponseWriter, r *http.Request) {
 	statusFilter := r.URL.Query().Get("status")
 
 	query := `
-		SELECT c.id, c.code, c.name, c.description, c.wiki_dbname, c.wiki_url, c.wiki_lang, 
+		SELECT c.id, c.code, c.name, c.description, c.wiki_dbname, c.wiki_url, c.wiki_lang, COALESCE(c.onwiki_page_url, '') as onwiki_page_url,
 		       c.start_date, c.end_date, c.status, c.is_draft,
 		       COALESCE(c.is_umbrella, 0) as is_umbrella,
 		       c.parent_contest_id,
@@ -3763,7 +3778,7 @@ func (h *Handler) GetAdminContests(w http.ResponseWriter, r *http.Request) {
 		var c models.Contest
 		var isUmbrellaInt int
 		err := rows.Scan(
-			&c.ID, &c.Code, &c.Name, &c.Description, &c.WikiDbName, &c.WikiURL, &c.WikiLang,
+			&c.ID, &c.Code, &c.Name, &c.Description, &c.WikiDbName, &c.WikiURL, &c.WikiLang, &c.OnwikiPageURL,
 			&c.StartDate, &c.EndDate, &c.Status, &c.IsDraft,
 			&isUmbrellaInt, &c.ParentContestID, &c.SubContestCount,
 			&c.TotalArticles, &c.AcceptedArticles, &c.TotalJuries,

@@ -35,6 +35,7 @@ type PageInfo struct {
 	Title        string    `json:"title"`
 	Exists       bool      `json:"exists"`
 	IsRedirect   bool      `json:"is_redirect"`
+	IsDisambig   bool      `json:"is_disambig"`
 	Creator      string    `json:"creator"`
 	CreationDate time.Time `json:"creation_date"`
 	ByteSize     int       `json:"byte_size"`
@@ -410,12 +411,13 @@ func CheckIsAdminOnAnyWiki(username string) (bool, error) {
 type mwQueryResponse struct {
 	Query struct {
 		Pages []struct {
-			PageID    int    `json:"pageid"`
-			Title     string `json:"title"`
-			Missing   bool   `json:"missing"`
-			Redirect  bool   `json:"redirect"`
-			Length    int    `json:"length"`
-			Touched   string `json:"touched"`
+			PageID    int            `json:"pageid"`
+			Title     string         `json:"title"`
+			Missing   bool           `json:"missing"`
+			Redirect  bool           `json:"redirect"`
+			Length    int            `json:"length"`
+			Touched   string         `json:"touched"`
+			PageProps map[string]any `json:"pageprops"`
 			Revisions []struct {
 				User      string `json:"user"`
 				Timestamp string `json:"timestamp"`
@@ -434,7 +436,8 @@ func FetchPageInfo(wikiURL string, title string) (*PageInfo, error) {
 	apiEndpoint := strings.TrimRight(wikiURL, "/") + "/w/api.php"
 	params := url.Values{}
 	params.Set("action", "query")
-	params.Set("prop", "info|revisions")
+	params.Set("prop", "info|revisions|pageprops")
+	params.Set("ppprop", "disambiguation")
 	params.Set("rvprop", "user|timestamp|size|content")
 	params.Set("rvslots", "main")
 	params.Set("rvlimit", "1")
@@ -482,10 +485,21 @@ func FetchPageInfo(wikiURL string, title string) (*PageInfo, error) {
 		refCount = wikitext.CountRefs(rawText)
 	}
 
+	isDisambig := false
+	if page.PageProps != nil {
+		if _, ok := page.PageProps["disambiguation"]; ok {
+			isDisambig = true
+		}
+	}
+	if IsDisambigTitle(page.Title) {
+		isDisambig = true
+	}
+
 	return &PageInfo{
 		Title:        page.Title,
 		Exists:       true,
 		IsRedirect:   page.Redirect,
+		IsDisambig:   isDisambig,
 		Creator:      creator,
 		CreationDate: creationTime,
 		ByteSize:     page.Length,
@@ -691,7 +705,139 @@ func FetchUserCreatedArticles(wikiURL, username, startTS, endTS string) ([]UserC
 	if out == nil {
 		out = []UserCreation{}
 	}
+
+	// Filter out disambiguation pages, redirects, and missing/deleted pages
+	if len(out) > 0 {
+		filtered, err := FilterDisambigsAndRedirects(wikiURL, out)
+		if err == nil {
+			out = filtered
+		}
+	}
+
 	return out, nil
+}
+
+// IsDisambigTitle checks common disambiguation title patterns across Wikimedia languages
+func IsDisambigTitle(title string) bool {
+	tLower := strings.ToLower(strings.TrimSpace(title))
+	return strings.HasSuffix(tLower, " (disambiguation)") ||
+		strings.HasSuffix(tLower, " (দ্ব্যর্থতা নিরসন)") ||
+		strings.Contains(tLower, "(দ্ব্যর্থতা নিরসন)") ||
+		strings.Contains(tLower, "(disambiguation)")
+}
+
+// FilterDisambigsAndRedirects queries MediaWiki in chunks of 50 to strip redirects, disambiguation pages, and deleted entries.
+func FilterDisambigsAndRedirects(wikiURL string, creations []UserCreation) ([]UserCreation, error) {
+	if len(creations) == 0 {
+		return []UserCreation{}, nil
+	}
+
+	apiEndpoint := strings.TrimRight(wikiURL, "/") + "/w/api.php"
+	var filtered []UserCreation
+	chunkSize := 50
+
+	for i := 0; i < len(creations); i += chunkSize {
+		end := i + chunkSize
+		if end > len(creations) {
+			end = len(creations)
+		}
+		chunk := creations[i:end]
+
+		titleList := make([]string, len(chunk))
+		for j, c := range chunk {
+			titleList[j] = c.Title
+		}
+
+		params := url.Values{}
+		params.Set("action", "query")
+		params.Set("prop", "info|pageprops")
+		params.Set("ppprop", "disambiguation")
+		params.Set("format", "json")
+		params.Set("formatversion", "2")
+		params.Set("titles", strings.Join(titleList, "|"))
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", apiEndpoint, params.Encode()), nil)
+		if err != nil {
+			for _, c := range chunk {
+				if !IsDisambigTitle(c.Title) {
+					filtered = append(filtered, c)
+				}
+			}
+			continue
+		}
+		req.Header.Set("User-Agent", DefaultUserAgent)
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			log.Printf("[FilterDisambigsAndRedirects] request error for chunk: %v", err)
+			for _, c := range chunk {
+				if !IsDisambigTitle(c.Title) {
+					filtered = append(filtered, c)
+				}
+			}
+			continue
+		}
+
+		var res struct {
+			Query struct {
+				Normalized []struct {
+					From string `json:"from"`
+					To   string `json:"to"`
+				} `json:"normalized"`
+				Pages []struct {
+					Title     string         `json:"title"`
+					Missing   bool           `json:"missing"`
+					Redirect  bool           `json:"redirect"`
+					PageProps map[string]any `json:"pageprops"`
+				} `json:"pages"`
+			} `json:"query"`
+		}
+
+		decodeErr := json.NewDecoder(resp.Body).Decode(&res)
+		resp.Body.Close()
+		if decodeErr != nil {
+			for _, c := range chunk {
+				if !IsDisambigTitle(c.Title) {
+					filtered = append(filtered, c)
+				}
+			}
+			continue
+		}
+
+		invalidSet := make(map[string]bool)
+		for _, p := range res.Query.Pages {
+			isDisambig := false
+			if p.PageProps != nil {
+				if _, ok := p.PageProps["disambiguation"]; ok {
+					isDisambig = true
+				}
+			}
+			if IsDisambigTitle(p.Title) {
+				isDisambig = true
+			}
+			if p.Missing || p.Redirect || isDisambig {
+				invalidSet[strings.ToLower(p.Title)] = true
+			}
+		}
+
+		for _, norm := range res.Query.Normalized {
+			if invalidSet[strings.ToLower(norm.To)] {
+				invalidSet[strings.ToLower(norm.From)] = true
+			}
+		}
+
+		for _, c := range chunk {
+			cLower := strings.ToLower(c.Title)
+			if !invalidSet[cLower] && !IsDisambigTitle(c.Title) {
+				filtered = append(filtered, c)
+			}
+		}
+	}
+
+	if filtered == nil {
+		filtered = []UserCreation{}
+	}
+	return filtered, nil
 }
 
 // FetchUserSuggestions queries MediaWiki action=query&list=allusers for username autocomplete.

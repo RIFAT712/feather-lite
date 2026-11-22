@@ -45,6 +45,16 @@ import {
 import { WikimediaLogoIcon } from "@/components/icons/CodexIcons";
 import { UserAutocompleteInput } from "@/components/contests/UserAutocompleteInput";
 
+function isDisambigTitle(title: string): boolean {
+  const tLower = title.toLowerCase().trim();
+  return (
+    tLower.endsWith(" (disambiguation)") ||
+    tLower.endsWith(" (দ্ব্যর্থতা নিরসন)") ||
+    tLower.includes("(দ্ব্যর্থতা নিরসন)") ||
+    tLower.includes("(disambiguation)")
+  );
+}
+
 export default function SubmitArticlesPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const queryClient = useQueryClient();
@@ -125,7 +135,8 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
     try {
       // 1. Try server-side endpoint first using effective contest code
       const data = await fetchUserCreatedArticles(effectiveCode, targetUsername);
-      setFetchedArticles(data.articles || []);
+      const cleanArticles = (data.articles || []).filter((a) => !isDisambigTitle(a.title));
+      setFetchedArticles(cleanArticles);
       setAlreadySubmitted(data.already_submitted || []);
       setSelectedArticles([]);
     } catch (err: any) {
@@ -157,7 +168,7 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
 
           if (json.query && json.query.usercontribs) {
             for (const item of json.query.usercontribs) {
-              if (!seen.has(item.title)) {
+              if (!seen.has(item.title) && !isDisambigTitle(item.title)) {
                 seen.add(item.title);
                 list.push({ title: item.title, created_at: item.timestamp });
               }
@@ -167,7 +178,54 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
           uccontinue = json.continue?.uccontinue || null;
         } while (uccontinue && pages < 100);
 
-        setFetchedArticles(list);
+        // Filter out redirects, disambiguation pages, and deleted pages in batches of 50
+        const filteredList: UserArticleItem[] = [];
+        const chunkSize = 50;
+        for (let i = 0; i < list.length; i += chunkSize) {
+          const chunk = list.slice(i, i + chunkSize);
+          const titlesParam = chunk.map((c) => encodeURIComponent(c.title)).join("|");
+          try {
+            const checkUrl = `${wikiEndpoint}/w/api.php?action=query&prop=info|pageprops&ppprop=disambiguation&format=json&formatversion=2&origin=*&titles=${titlesParam}`;
+            const checkResp = await fetch(checkUrl);
+            const checkJson = await checkResp.json();
+            const invalidTitles = new Set<string>();
+
+            if (checkJson.query?.pages) {
+              for (const p of checkJson.query.pages) {
+                const titleLower = p.title.toLowerCase();
+                const isDisambig =
+                  p.pageprops?.disambiguation !== undefined || isDisambigTitle(p.title);
+
+                if (p.missing || p.redirect || isDisambig) {
+                  invalidTitles.add(titleLower);
+                }
+              }
+            }
+
+            if (checkJson.query?.normalized) {
+              for (const norm of checkJson.query.normalized) {
+                if (invalidTitles.has(norm.to.toLowerCase())) {
+                  invalidTitles.add(norm.from.toLowerCase());
+                }
+              }
+            }
+
+            for (const item of chunk) {
+              const itemLower = item.title.toLowerCase();
+              if (!invalidTitles.has(itemLower) && !isDisambigTitle(item.title)) {
+                filteredList.push(item);
+              }
+            }
+          } catch {
+            for (const item of chunk) {
+              if (!isDisambigTitle(item.title)) {
+                filteredList.push(item);
+              }
+            }
+          }
+        }
+
+        setFetchedArticles(filteredList);
         setSelectedArticles([]);
       } catch (fallbackErr: any) {
         setFetchError("Failed to fetch user created articles. Please check username or try manual entry.");

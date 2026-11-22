@@ -361,3 +361,28 @@ export function parseSyntheticWiki(raw: string): WikiInfo | null {
 
   return null;
 }
+
+/**
+ * Resolves an on-wiki contest page URL or title to a clean, clickable Wikimedia URL.
+ * Handles full URLs (https://...) as well as page titles (e.g. "Wikipedia:উইকিটেশব প্রতিযোগিতা ২০২৬").
+ */
+export function getOnwikiPageLink(onwikiPageUrl?: string, wikiUrl?: string): string {
+  const trimmed = (onwikiPageUrl || "").trim();
+  const baseWiki = (wikiUrl || "https://meta.wikimedia.org").trim();
+  const formattedBase = baseWiki.startsWith("http://") || baseWiki.startsWith("https://")
+    ? baseWiki.replace(/\/+$/, "")
+    : `https://${baseWiki.replace(/\/+$/, "")}`;
+
+  if (!trimmed) {
+    return formattedBase;
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  // Treat as on-wiki title
+  const cleanTitle = trimmed.replace(/^\/+/, "").replace(/^wiki\//i, "").replace(/ /g, "_");
+  const encodedPath = encodeURI(cleanTitle);
+  return `${formattedBase}/wiki/${encodedPath}`;
+}

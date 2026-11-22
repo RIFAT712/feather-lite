@@ -102,6 +102,7 @@ export default function SettingsClient({
   // Form State
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editOnwikiPageUrl, setEditOnwikiPageUrl] = useState("");
   const [editStatus, setEditStatus] = useState("active");
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
@@ -155,6 +156,7 @@ export default function SettingsClient({
     if (contest) {
       setEditName(contest.name || "");
       setEditDescription(contest.description || "");
+      setEditOnwikiPageUrl(contest.onwiki_page_url || "");
       setEditStatus(contest.status || "active");
       setEditStartDate(formatDateForInput(contest.start_date));
       setEditEndDate(formatDateForInput(contest.end_date));
@@ -206,6 +208,7 @@ export default function SettingsClient({
       start_date: new Date(editStartDate).toISOString(),
       end_date: new Date(editEndDate).toISOString(),
       wiki_tz: editTZ,
+      onwiki_page_url: editOnwikiPageUrl.trim(),
       min_words: hasEditMinWords ? (Number(editMinWords) || 0) : 0,
       min_bytes: hasEditMinBytes ? (Number(editMinBytes) || 0) : 0,
       min_refs: hasEditMinRefs ? (Number(editMinRefs) || 0) : 0,
@@ -388,6 +391,21 @@ export default function SettingsClient({
               disabled={!isOrganizer}
               rows={3}
             />
+
+            {/* On-wiki contest page */}
+            <div className="space-y-1">
+              <FloatingInput
+                id="edit-onwiki-page-url"
+                label={t("feather-create-onwiki-page-label")}
+                value={editOnwikiPageUrl}
+                onChange={(e) => setEditOnwikiPageUrl(e.target.value)}
+                disabled={!isOrganizer}
+                placeholder="Wikipedia:উইকিটেশব প্রতিযোগিতা ২০২৬ or https://..."
+              />
+              <p className="text-[11px] text-muted-foreground px-1">
+                {t("feather-create-onwiki-page-hint")}
+              </p>
+            </div>
 
             {/* Status Selector */}
             <div className="pt-2 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

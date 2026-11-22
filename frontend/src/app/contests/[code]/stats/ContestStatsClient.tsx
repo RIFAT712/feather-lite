@@ -16,7 +16,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import UserBadge from "@/components/users/UserBadge";
-import { getProjectMeta } from "@/lib/wikis";
+import { getProjectMeta, getOnwikiPageLink } from "@/lib/wikis";
 import {
   ArrowLeft,
   Calendar,
@@ -868,9 +868,9 @@ export default function ContestStatsClient({
                     <span>Jury Hub</span>
                   </Link>
 
-                  {contest?.wiki_url && (
+                  {(contest?.onwiki_page_url || contest?.wiki_url) && (
                     <a
-                      href={`https://${contest.wiki_url}`}
+                      href={getOnwikiPageLink(contest?.onwiki_page_url, contest?.wiki_url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={buttonVariants({
@@ -879,7 +879,7 @@ export default function ContestStatsClient({
                         className: "text-xs cursor-pointer gap-1.5 text-muted-foreground hover:text-foreground",
                       })}
                     >
-                      <span>Visit Wiki</span>
+                      <span>{contest?.onwiki_page_url ? t("feather-contest-onwiki-link") : "Visit wiki"}</span>
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}

@@ -39,6 +39,7 @@ type Contest struct {
 	ResultsPublishedAt    *time.Time `json:"results_published_at,omitempty"`
 	AddTalkTemplate       bool       `json:"add_talk_template"`
 	TalkTemplateName      string     `json:"talk_template_name"`
+	OnwikiPageURL         string     `json:"onwiki_page_url,omitempty"`
 	DistributeJuryQueue   bool       `json:"distribute_jury_queue"`
 	IsUmbrella            bool       `json:"is_umbrella"`
 	ParentContestID       *int64     `json:"parent_contest_id,omitempty"`
@@ -206,6 +207,7 @@ type UpdateContestRequest struct {
 	RankByWords           bool     `json:"rank_by_words"`
 	AddTalkTemplate       bool     `json:"add_talk_template"`
 	TalkTemplateName      string   `json:"talk_template_name"`
+	OnwikiPageURL         string   `json:"onwiki_page_url,omitempty"`
 	DistributeJuryQueue   bool     `json:"distribute_jury_queue"`
 	Juries                []string `json:"juries"`
 }
@@ -229,6 +231,7 @@ type CreateContestRequest struct {
 	WikiURL               string                `json:"wiki_url"`
 	WikiLang              string                `json:"wiki_lang"`
 	WikiTZ                string                `json:"wiki_tz"`
+	OnwikiPageURL         string                `json:"onwiki_page_url,omitempty"`
 	StartDate             string                `json:"start_date"`
 	EndDate               string                `json:"end_date"`
 	IsUmbrella            bool                  `json:"is_umbrella"`

@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { CodexLanguageIcon } from "@/components/icons/CodexIcons";
+import { CodexLanguageIcon, MetaWikiLogoIcon } from "@/components/icons/CodexIcons";
 import PlatformPulse from "@/components/home/PlatformPulse";
 import {
   Trophy,
@@ -676,7 +676,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                           className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5 rounded-md text-[11px] font-medium text-foreground/90 bg-muted/30 border border-border/70 shrink-0 whitespace-nowrap"
                           title={t("feather-campaign-badge")}
                         >
-                          <Layers className="h-3 w-3 text-primary shrink-0" />
+                          <MetaWikiLogoIcon className="h-3.5 w-3.5 shrink-0" />
                           <span className="font-medium">{t("feather-campaign-badge")}</span>
                           {c.sub_contest_count ? (
                             <span className="text-[10px] font-mono text-primary bg-primary/10 px-1 py-0.2 rounded font-medium">
@@ -794,10 +794,12 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                     </span>
 
                     {c.is_umbrella ? (
-                      <span className="flex items-center gap-1 text-primary" title={t("feather-campaign-stat-communities")}>
-                        <Globe className="h-3.5 w-3.5 text-primary" />
+                      <span className="flex items-center gap-1 text-primary" title={t("feather-campaign-communities-count", c.sub_contest_count || 0)}>
+                        <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
                         <strong className="text-foreground font-semibold font-mono">{n(c.sub_contest_count || 0)}</strong>
-                        <span className="text-[11px] font-medium">{t("feather-campaign-stat-communities")}</span>
+                        <span className="text-[11px] font-medium">
+                          {t(c.sub_contest_count === 1 ? "feather-campaign-stat-community-singular" : "feather-campaign-stat-communities")}
+                        </span>
                       </span>
                     ) : c.total_juries ? (
                       <span className="flex items-center gap-1" title={t("feather-home-stats-juries")}>
@@ -835,8 +837,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       >
                         <Globe className="h-3 w-3 shrink-0" />
                         <span className="truncate">
-                          <span className="hidden sm:inline">Participating </span>
-                          {locale === "bn" ? "কমিউনিটি" : "Communities"}
+                          {t("feather-campaign-tab-communities")}
                         </span>
                       </Link>
                     ) : (

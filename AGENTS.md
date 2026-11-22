@@ -96,8 +96,14 @@ go run ./cmd/server
 # Run unit tests (balancer, wikitext, worker, etc.)
 go test ./...
 
-# Build binary
+# Build Windows local binary
 go build -o feather-server.exe ./cmd/server
+
+# IMPORTANT: Compile Linux amd64 binaries for Toolforge deployment
+# Whenever any backend Go code, models, or routes change, recompile both:
+$env:CGO_ENABLED="0"; $env:GOOS="linux"; $env:GOARCH="amd64"
+go build -ldflags="-s -w" -o feather-server-amd64 ./cmd/server
+cp feather-server-amd64 feather-server-linux
 ```
 
 ### Frontend Commands (`frontend/`)
@@ -202,11 +208,20 @@ All agents modifying code in this repository must uphold the following rules:
 * **Covered SSR Routes:**
   * `/` (`page.tsx` -> `HomeClient.tsx`): Pre-fetches `getServerContests()` and `getServerPlatformOverview()`, completely eliminating skeleton flash on Platform Pulse metrics and daily activity sparkline.
   * `/contests/[code]` (`page.tsx` -> `ContestDashboardClient.tsx`): Pre-renders contest metadata, description, wiki details, and generates OpenGraph tags via `getServerContest()`.
+  * `/contests/[code]/settings` (`page.tsx` -> `SettingsClient.tsx`): Pre-renders contest configuration and settings form.
   * `/contests/[code]/jury` (`page.tsx` -> `JuryHubClient.tsx`): Pre-fetches contest configuration and user auth session.
   * `/contests/[code]/review` (`page.tsx` -> `ReviewQueueClient.tsx`): Pre-fetches contest metadata and user auth session.
   * `/users/[username]` (`page.tsx` -> `UserGlobalProfileClient.tsx`): Pre-fetches user statistics via `getServerUserProfile()`.
   * `/contests/[code]/users/[username]` (`page.tsx` -> `ContestUserProfileClient.tsx`): Pre-fetches user contest contributions via `getServerContestUserProfile()`.
-* **Interactive Client Components:** Use `"use client"` ONLY in leaf/interactive components (e.g. `JuryHubClient.tsx`, `ReviewQueueClient.tsx`, `HomeClient.tsx`, `ContestDashboardClient.tsx`) that require state, browser event listeners, keyboard shortcuts, or React Query cache management.
+* **Zero-Stale-Data Invariant on Dynamic Management Routes:**
+  * Dedicated settings and management pages (`/contests/[code]/settings`) MUST declare `export const dynamic = "force-dynamic"` and `export const revalidate = 0`.
+  * Server fetchers for editable entities (`getServerContest`) MUST use `cache: "no-store"` to prevent Next.js from caching stale entity snapshots.
+  * Interactive form queries in React Query must specify `initialDataUpdatedAt: 0`, `staleTime: 0`, and `refetchOnMount: "always"`.
+  * All mutation handlers (e.g. `handleSaveSettings`) must call `router.refresh()` alongside React Query cache invalidation (`queryClient.invalidateQueries`) to bust Next.js client-side router caches.
+* **Dual Route Resiliency:**
+  * Contest update endpoints must support both `PUT /api/contests/{code}/settings` and `PUT /api/contests/{code}` in Chi router (`h.UpdateContest`), syncing both `status` and `is_draft`.
+  * Client API caller `updateContest` in `frontend/src/lib/api.ts` must maintain automatic fallback to `PUT /contests/{code}` if `/settings` returns 404.
+* **Interactive Client Components:** Use `"use client"` ONLY in leaf/interactive components (e.g. `JuryHubClient.tsx`, `ReviewQueueClient.tsx`, `HomeClient.tsx`, `SettingsClient.tsx`, `ContestDashboardClient.tsx`) that require state, browser event listeners, keyboard shortcuts, or React Query cache management.
 * **Virtualization:** Table rows for contests with many submissions must use `@tanstack/react-virtual` to avoid rendering large numbers of DOM nodes.
 * **Button Primitives:** Button primitives in this repo use `@base-ui/react/button` and do not support Radix `asChild`. Use `buttonVariants({ variant, size })` on links.
 
@@ -227,6 +242,16 @@ All agents modifying code in this repository must uphold the following rules:
 * **Anti-Bloat Invariants:** No unrequested abstractions, no speculative generic layers, no new dependencies without explicit necessity.
 * **Shortcut Accountability:** Mark any intentional shortcut with a `// ponytail:` comment detailing the boundary and upgrade path.
 
+### K. MCP Tooling & Diagnostic Protocol
+* **Puppeteer MCP (`puppeteer`):**
+  * Use `puppeteer_navigate`, `puppeteer_screenshot`, and `puppeteer_evaluate` to verify live deployments on Toolforge (`https://feather-lite.toolforge.org`), inspect rendered DOM trees, test inputs, and validate responsive layouts.
+* **Ponytail MCP (`ponytail`):**
+  * Channels senior developer discipline via `ponytail_instructions`. Enforce minimal working diffs, stdlib-first solutions, and prompt root-cause resolutions over symptomatic patches.
+* **Context-Mode MCP (`context-mode`):**
+  * Use `ctx_execute` / `ctx_stats` for processing large command outputs, log diagnostics, and audit outputs to avoid context bloat.
+* **Shadcn MCP (`shadcn`):**
+  * Leverage `get_audit_checklist`, registry searches, and accessible Base-UI component patterns.
+
 ---
 
 ## 6. Database Schema Summary
@@ -245,6 +270,7 @@ Key tables in SQLite (`feather.db`) / MariaDB:
 
 ## 7. Git & Commit Guidelines
 
-* **Do NOT commit binary files or databases:** Ensure `*.exe`, `*.db`, `*.db-wal`, and `*.db-shm` remain ignored.
+* **Do NOT commit local test binaries or databases:** Ensure `*.exe`, `*.db`, `*.db-wal`, and `*.db-shm` remain ignored.
+* **Toolforge Precompiled Linux Binaries:** `backend/feather-server-amd64` and `backend/feather-server-linux` ARE tracked in Git because Toolforge's Buildpack pipeline relies on them via `start-toolforge.sh`. Always compile and commit both whenever backend Go code changes.
 * **Keep commits clean and focused:** Write descriptive, conventional commit messages (`feat: ...`, `fix: ...`, `refactor: ...`, `docs: ...`).
 * Keep `pnpm-lock.yaml` and `go.sum` consistent when adding dependencies.

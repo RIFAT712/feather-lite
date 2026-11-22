@@ -253,6 +253,21 @@ All agents modifying code in this repository must uphold the following rules:
 * **Shadcn MCP (`shadcn`):**
   * Leverage `get_audit_checklist`, registry searches, and accessible Base-UI component patterns.
 
+### L. Contest Lifecycle & Analytics Architecture
+* **Contest Soft-Delete & Restore:**
+  * Deleting a contest MUST NEVER wipe submitted articles, jury evaluations, talk-page queue jobs, or historical records.
+  * `DELETE /api/contests/{code}` and `DELETE /api/admin/contests/{code}` perform a non-destructive soft delete (`UPDATE contests SET status = 'deleted' WHERE id = ? OR parent_contest_id = ?`).
+  * Soft-deleted contests are excluded from public discovery queries (`AND c.status != 'deleted'`), home page, and search, but are accessible to platform admins/owners in `/admin` with a "Restore" capability (`POST /api/contests/{code}/restore`).
+* **Zury-Grade Statistics & Analytics (`/contests/[code]/stats` & `/statistics`):**
+  * Provides a comprehensive Wikimedia contest analytics suite matching and exceeding Zury (`zury.toolforge.org`):
+    * 4 Summary KPI cards: Submissions with word breakdown, Participants with active reviewers & reviews conducted, Judging Progress bar, and Article Survival rate (100% intact).
+    * Submissions by Day Interactive SVG Chart with dual linear/log scale, series toggles, hover crosshair tooltips, drag-to-zoom, and 4-metric strip (Busiest day, Daily average, Active submission days, This week volume).
+    * Top 10 Participants Horizontal Stacked Bar Chart (Accepted, Pending, Rejected segments and word counts).
+    * Status & Word Distribution with Top Largest Articles list.
+    * Cumulative Growth Chart over time (Total Words & Total Articles).
+    * Reviewer / Jury Performance Table (Reviewer UserBadge, total reviews, accepted count, rejected count, acceptance rate % with visual mini-bar, active days, last review timestamp).
+    * Submitter Standings preview table with direct link to leaderboard.
+
 ---
 
 ## 6. Database Schema Summary

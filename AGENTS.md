@@ -225,6 +225,7 @@ All agents modifying code in this repository must uphold the following rules:
 * **Interactive Client Components:** Use `"use client"` ONLY in leaf/interactive components (e.g. `JuryHubClient.tsx`, `ReviewQueueClient.tsx`, `HomeClient.tsx`, `SettingsClient.tsx`, `ContestDashboardClient.tsx`) that require state, browser event listeners, keyboard shortcuts, or React Query cache management.
 * **Virtualization:** Table rows for contests with many submissions must use `@tanstack/react-virtual` to avoid rendering large numbers of DOM nodes.
 * **Button Primitives:** Button primitives in this repo use `@base-ui/react/button` and do not support Radix `asChild`. Use `buttonVariants({ variant, size })` on links.
+* **Modern Switch Toggles:** Option, threshold, and rule toggles across forms (Contest Settings, Contest Creation Wizard, Submit on Behalf) MUST use the accessible animated `<Switch />` primitive (`frontend/src/components/ui/switch.tsx`) built on `@base-ui/react/switch`. Never use raw native checkbox ticks for settings/rule toggles (multi-select batch lists such as Review Queue bulk selection retain standard item checkboxes).
 
 ### I. Modern Web Guidance (Google Chrome Platform Standards)
 * Native primitives over heavy polyfills: `<dialog>` for modals, HTML `popover` for popovers, CSS Anchor Positioning, and View Transitions API.

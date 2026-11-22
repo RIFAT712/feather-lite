@@ -92,6 +92,8 @@ func main() {
 		api.Get("/contests/{code}/user-created-articles", h.GetUserCreatedArticles)
 		api.Post("/contests/{code}/submit", h.SubmitArticles)
 		api.Get("/contests/{code}/standings", h.GetStandings)
+		api.Get("/contests/{code}/stats", h.GetContestStats)
+		api.Get("/contests/{code}/statistics", h.GetContestStats)
 		api.Get("/contests/{code}/jury-stats", h.GetJuryStats)
 		api.Post("/contests/{code}/redistribute", h.RedistributeQueues)
 		api.Get("/contests/{code}/users/{username}", h.GetContestUserProfile)

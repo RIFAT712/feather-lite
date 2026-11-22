@@ -39,7 +39,7 @@ import {
   FileCode, CheckCheck, XCircle, AlertCircle, Layers, Plus, Globe,
   Link2, Unlink, Settings, Save, Sliders, Sparkles, UserCheck, CheckCircle, Shield, X,
   BarChart3, ShieldAlert, Download, List, ChevronDown, ChevronRight,
-  FileSpreadsheet
+  FileSpreadsheet, TrendingUp
 } from "lucide-react";
 import { UserTagInput } from "@/components/contests/UserTagInput";
 import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
@@ -1475,6 +1475,20 @@ export default function ContestDashboardClient({
                     </Link>
                   )}
 
+                  <Link
+                    href={`/contests/${code}/stats`}
+                    className={buttonVariants({
+                      variant: "ghost",
+                      size: "sm",
+                      className:
+                        "gap-1.5 cursor-pointer font-medium text-xs h-8 px-2.5 text-muted-foreground hover:text-foreground border border-border/50 hover:bg-muted/60",
+                    })}
+                    title={t("feather-contest-tab-stats")}
+                  >
+                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                    <span>{t("feather-contest-tab-stats")}</span>
+                  </Link>
+
                   {isOrganizer && (
                     <Link
                       href={`/contests/${code}/settings`}
@@ -1980,6 +1994,14 @@ export default function ContestDashboardClient({
                   </span>
                 ) : null}
               </TabsTrigger>
+              <Link
+                href={`/contests/${code}/stats`}
+                className="inline-flex items-center gap-1.5 text-xs cursor-pointer font-medium shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                title={t("feather-contest-tab-stats")}
+              >
+                <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                <span>{t("feather-contest-tab-stats")}</span>
+              </Link>
               {isOrganizer && (
                 <Link
                   href={`/contests/${code}/settings`}

@@ -9,6 +9,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -2676,6 +2677,202 @@ func (h *Handler) GetJuryStats(w http.ResponseWriter, r *http.Request) {
 		resp.Juries = []JuryMemberProgress{}
 	}
 
+	jsonResponse(w, http.StatusOK, resp)
+}
+
+// GetContestStats returns grouped status counts and daily submission/judgment curves
+// for public contest dashboards and statistics charts.
+func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+	var contestID int64
+	var isUmbrella int
+	var startDate, endDate string
+	err := h.db.QueryRow("SELECT id, COALESCE(is_umbrella, 0), COALESCE(start_date, ''), COALESCE(end_date, '') FROM contests WHERE code = ?", code).Scan(&contestID, &isUmbrella, &startDate, &endDate)
+	if err != nil {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	}
+
+	statusCounts := map[string]int{
+		"total":             0,
+		"accepted":          0,
+		"rejected":          0,
+		"pending":           0,
+		"validation_failed": 0,
+	}
+
+	var statusRows *sql.Rows
+	if isUmbrella == 1 {
+		statusRows, err = h.db.Query(`
+			SELECT status, COUNT(id) FROM articles
+			WHERE contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ?)
+			GROUP BY status
+		`, contestID, contestID)
+	} else {
+		statusRows, err = h.db.Query(`
+			SELECT status, COUNT(id) FROM articles
+			WHERE contest_id = ?
+			GROUP BY status
+		`, contestID)
+	}
+	if err == nil {
+		defer statusRows.Close()
+		total := 0
+		for statusRows.Next() {
+			var st string
+			var cnt int
+			if err := statusRows.Scan(&st, &cnt); err == nil {
+				statusCounts[st] = cnt
+				total += cnt
+			}
+		}
+		statusCounts["total"] = total
+	}
+
+	submissionsByDay := make(map[string]int)
+	var subRows *sql.Rows
+	if isUmbrella == 1 {
+		subRows, err = h.db.Query(`
+			SELECT DATE(submitted_at) as sday, COUNT(id)
+			FROM articles
+			WHERE (contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ?))
+			  AND submitted_at IS NOT NULL
+			GROUP BY DATE(submitted_at)
+		`, contestID, contestID)
+	} else {
+		subRows, err = h.db.Query(`
+			SELECT DATE(submitted_at) as sday, COUNT(id)
+			FROM articles
+			WHERE contest_id = ? AND submitted_at IS NOT NULL
+			GROUP BY DATE(submitted_at)
+		`, contestID)
+	}
+	if err == nil {
+		defer subRows.Close()
+		for subRows.Next() {
+			var day sql.NullString
+			var cnt int
+			if err := subRows.Scan(&day, &cnt); err == nil && day.Valid && day.String != "" {
+				d := day.String
+				if len(d) >= 10 {
+					d = d[:10]
+				}
+				submissionsByDay[d] += cnt
+			}
+		}
+	}
+
+	judgedByDay := make(map[string]int)
+	var jRows *sql.Rows
+	if isUmbrella == 1 {
+		jRows, err = h.db.Query(`
+			SELECT DATE(r.timestamp) as rday, COUNT(r.id)
+			FROM reviews r
+			JOIN articles a ON r.article_id = a.id
+			WHERE (a.contest_id = ? OR a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ?))
+			  AND r.status != 'skipped'
+			  AND r.timestamp IS NOT NULL
+			GROUP BY DATE(r.timestamp)
+		`, contestID, contestID)
+	} else {
+		jRows, err = h.db.Query(`
+			SELECT DATE(r.timestamp) as rday, COUNT(r.id)
+			FROM reviews r
+			JOIN articles a ON r.article_id = a.id
+			WHERE a.contest_id = ?
+			  AND r.status != 'skipped'
+			  AND r.timestamp IS NOT NULL
+			GROUP BY DATE(r.timestamp)
+		`, contestID)
+	}
+	if err == nil {
+		defer jRows.Close()
+		for jRows.Next() {
+			var day sql.NullString
+			var cnt int
+			if err := jRows.Scan(&day, &cnt); err == nil && day.Valid && day.String != "" {
+				d := day.String
+				if len(d) >= 10 {
+					d = d[:10]
+				}
+				judgedByDay[d] += cnt
+			}
+		}
+	}
+
+	dateSet := make(map[string]struct{})
+	for d := range submissionsByDay {
+		dateSet[d] = struct{}{}
+	}
+	for d := range judgedByDay {
+		dateSet[d] = struct{}{}
+	}
+	var allDates []string
+	for d := range dateSet {
+		allDates = append(allDates, d)
+	}
+	sort.Strings(allDates)
+
+	daily := make([]models.ContestDailyStat, 0)
+	if len(allDates) > 0 {
+		minDateStr := allDates[0]
+		maxDateStr := allDates[len(allDates)-1]
+
+		if len(startDate) >= 10 && startDate[:10] < minDateStr {
+			minDateStr = startDate[:10]
+		}
+		todayStr := time.Now().UTC().Format("2006-01-02")
+		if len(endDate) >= 10 && endDate[:10] > maxDateStr && endDate[:10] <= todayStr {
+			maxDateStr = endDate[:10]
+		}
+
+		tMin, errMin := time.Parse("2006-01-02", minDateStr)
+		tMax, errMax := time.Parse("2006-01-02", maxDateStr)
+		if errMin == nil && errMax == nil && !tMax.Before(tMin) {
+			daysSpan := int(tMax.Sub(tMin).Hours()/24) + 1
+			if daysSpan > 366 {
+				daysSpan = 366
+			}
+			curr := tMin
+			for i := 0; i < daysSpan; i++ {
+				ds := curr.Format("2006-01-02")
+				daily = append(daily, models.ContestDailyStat{
+					Date:   ds,
+					Count:  submissionsByDay[ds],
+					Judged: judgedByDay[ds],
+				})
+				curr = curr.AddDate(0, 0, 1)
+			}
+		}
+	}
+
+	var latestArticleID, latestReviewID int64
+	if isUmbrella == 1 {
+		_ = h.db.QueryRow(`
+			SELECT COALESCE(MAX(id), 0) FROM articles 
+			WHERE contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ?)
+		`, contestID, contestID).Scan(&latestArticleID)
+		_ = h.db.QueryRow(`
+			SELECT COALESCE(MAX(r.id), 0) FROM reviews r
+			JOIN articles a ON r.article_id = a.id
+			WHERE a.contest_id = ? OR a.contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ?)
+		`, contestID, contestID).Scan(&latestReviewID)
+	} else {
+		_ = h.db.QueryRow(`SELECT COALESCE(MAX(id), 0) FROM articles WHERE contest_id = ?`, contestID).Scan(&latestArticleID)
+		_ = h.db.QueryRow(`
+			SELECT COALESCE(MAX(r.id), 0) FROM reviews r
+			JOIN articles a ON r.article_id = a.id
+			WHERE a.contest_id = ?
+		`, contestID).Scan(&latestReviewID)
+	}
+
+	signature := fmt.Sprintf("%d:%d:%d", statusCounts["total"], latestArticleID, latestReviewID)
+
+	resp := models.ContestStatsResponse{
+		StatusCounts: statusCounts,
+		Daily:        daily,
+		Signature:    signature,
+	}
 	jsonResponse(w, http.StatusOK, resp)
 }
 

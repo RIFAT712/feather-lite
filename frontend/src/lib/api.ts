@@ -139,6 +139,24 @@ export interface JuryStatsResponse {
   juries: JuryMemberProgress[];
 }
 
+export interface ContestDailyStat {
+  date: string;
+  count: number;
+  judged: number;
+}
+
+export interface ContestStatsResponse {
+  status_counts: {
+    total: number;
+    accepted: number;
+    rejected: number;
+    pending: number;
+    validation_failed?: number;
+  };
+  daily: ContestDailyStat[];
+  signature?: string;
+}
+
 export interface KeysetResponse {
   items: Article[];
   total: number;
@@ -253,6 +271,15 @@ export async function fetchJuryStats(code: string): Promise<JuryStatsResponse> {
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to fetch jury statistics");
+  return res.json();
+}
+
+export async function fetchContestStats(code: string): Promise<ContestStatsResponse> {
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(code)}/stats`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch contest statistics");
   return res.json();
 }
 

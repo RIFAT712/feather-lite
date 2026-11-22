@@ -3,6 +3,7 @@ import {
   UserSession,
   Contest,
   JuryStatsResponse,
+  ContestStatsResponse,
   PlatformOverview,
   GlobalUserProfile,
   ContestUserProfile,
@@ -73,6 +74,20 @@ export async function getServerContest(code: string): Promise<Contest | null> {
     return await res.json();
   } catch (err) {
     console.error(`[SSR] Failed to fetch contest ${code}:`, err);
+    return null;
+  }
+}
+
+export async function getServerContestStats(code: string): Promise<ContestStatsResponse | null> {
+  try {
+    const res = await fetch(`${INTERNAL_API_URL}/api/contests/${encodeURIComponent(code)}/stats`, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error(`[SSR] Failed to fetch contest stats ${code}:`, err);
     return null;
   }
 }

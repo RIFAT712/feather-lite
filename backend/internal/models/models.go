@@ -382,3 +382,16 @@ type PlatformOverview struct {
 	Month  PlatformOverviewMonth       `json:"month"`
 	Trend  []PlatformOverviewTrendItem `json:"trend"`
 }
+
+type ContestDailyStat struct {
+	Date   string `json:"date"`
+	Count  int    `json:"count"`
+	Judged int    `json:"judged"`
+}
+
+type ContestStatsResponse struct {
+	StatusCounts map[string]int     `json:"status_counts"`
+	Daily        []ContestDailyStat `json:"daily"`
+	Signature    string             `json:"signature"`
+}
+

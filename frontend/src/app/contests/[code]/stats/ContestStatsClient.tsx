@@ -590,10 +590,10 @@ export default function ContestStatsClient({
                 <div className="flex items-center justify-between py-0.5">
                   <span className="flex items-center gap-1.5">
                     <ShieldCheck className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
-                    <span>Organizers:</span>
+                    <span>Contest creator:</span>
                   </span>
-                  <span className="font-bold text-foreground font-mono tabular-nums">
-                    {n(summary.organizers_count)}
+                  <span className="font-semibold text-foreground truncate max-w-[120px]">
+                    {contest?.created_by_username || "—"}
                   </span>
                 </div>
               </div>
@@ -1159,11 +1159,6 @@ export default function ContestStatsClient({
                           <span className="font-semibold text-foreground truncate">
                             {jury}
                           </span>
-                          {contest.created_by_username === jury && (
-                            <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
-                              Lead organizer
-                            </Badge>
-                          )}
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
@@ -1189,17 +1184,6 @@ export default function ContestStatsClient({
                 ) : (
                   <div className="py-8 text-center text-xs text-muted-foreground">
                     No jury members configured yet.
-                  </div>
-                )}
-
-                {contest?.created_by_username && !contest.juries?.includes(contest.created_by_username) && (
-                  <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <UserCheck className="h-3.5 w-3.5 text-indigo-500" />
-                      <span>Lead Organizer:</span>
-                      <span className="font-semibold text-foreground">{contest.created_by_username}</span>
-                    </div>
-                    <UserBadge username={contest.created_by_username} />
                   </div>
                 )}
               </CardContent>
@@ -1374,6 +1358,15 @@ export default function ContestStatsClient({
                       {contest?.rule_created_in_window ? "Created within contest dates" : "Any creation date"}
                     </span>
                   </div>
+                  {contest?.created_by_username && (
+                    <div className="flex items-center justify-between py-0.5">
+                      <span>Contest creator:</span>
+                      <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                        <span>{contest.created_by_username}</span>
+                        <UserBadge username={contest.created_by_username} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

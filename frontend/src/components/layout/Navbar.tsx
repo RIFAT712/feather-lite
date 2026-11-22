@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Feather, Trophy, UserCheck, LogOut, Loader2, PlusCircle, Menu, X, ShieldAlert, TrendingUp } from "lucide-react";
+import { Feather, Trophy, UserCheck, LogOut, Loader2, PlusCircle, Menu, X, ShieldAlert } from "lucide-react";
 import { WikimediaLogoIcon } from "@/components/icons/CodexIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -85,17 +85,7 @@ export default function Navbar() {
               <span>{t("feather-nav-contests")}</span>
             </Link>
 
-            <Link
-              href="/statistics"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
-                pathname?.startsWith("/statistics") || pathname?.startsWith("/stats") || pathname?.includes("/stats")
-                  ? "bg-muted text-foreground font-semibold shadow-2xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-              }`}
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span>{t("feather-contest-tab-stats", "Statistics")}</span>
-            </Link>
+
 
             {(isOwner || isAdmin) && (
               <Link
@@ -215,14 +205,7 @@ export default function Navbar() {
               <span>{t("feather-nav-contests")}</span>
             </Link>
 
-            <Link
-              href="/statistics"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted/70 transition-colors"
-            >
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <span>{t("feather-contest-tab-stats", "Statistics")}</span>
-            </Link>
+
 
             {(isOwner || isAdmin) && (
               <Link

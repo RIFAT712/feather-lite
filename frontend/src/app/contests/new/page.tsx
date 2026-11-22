@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import WikiSelector from "@/components/contests/WikiSelector";
 import TimezoneSelector from "@/components/contests/TimezoneSelector";
@@ -1051,12 +1052,10 @@ export default function NewContestPage() {
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <Switch
                       checked={hasMinWords}
-                      onChange={(e) => setHasMinWords(e.target.checked)}
-                      className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                      onCheckedChange={setHasMinWords}
                     />
                     <span className="text-xs font-semibold text-foreground">
                       {t("feather-create-min-words-label")}
@@ -1118,12 +1117,10 @@ export default function NewContestPage() {
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <Switch
                       checked={hasMinBytes}
-                      onChange={(e) => setHasMinBytes(e.target.checked)}
-                      className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                      onCheckedChange={setHasMinBytes}
                     />
                     <span className="text-xs font-semibold text-foreground">
                       {t("feather-create-min-bytes-label")}
@@ -1185,12 +1182,10 @@ export default function NewContestPage() {
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <Switch
                       checked={hasMinRefs}
-                      onChange={(e) => setHasMinRefs(e.target.checked)}
-                      className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                      onCheckedChange={setHasMinRefs}
                     />
                     <span className="text-xs font-semibold text-foreground">
                       {t("feather-create-min-refs-label")}
@@ -1246,53 +1241,44 @@ export default function NewContestPage() {
 
             {/* Page Eligibility Checks Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/60">
-              <label className="flex items-start gap-3 p-2.5 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={mustBeCreator}
-                  onChange={(e) => setMustBeCreator(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <label className="flex items-start justify-between gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
                 <div className="space-y-0.5">
                   <div className="text-xs font-semibold text-foreground">{t("feather-create-rule-creator")}</div>
                   <div className="text-[11px] text-muted-foreground">{t("feather-create-rule-creator-hint")}</div>
                 </div>
+                <Switch
+                  checked={mustBeCreator}
+                  onCheckedChange={setMustBeCreator}
+                  className="shrink-0 mt-0.5"
+                />
               </label>
 
-              <label className="flex items-start gap-3 p-2.5 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={noRedirect}
-                  onChange={(e) => setNoRedirect(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <label className="flex items-start justify-between gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
                 <div className="space-y-0.5">
                   <div className="text-xs font-semibold text-foreground">{t("feather-create-rule-redirect")}</div>
                   <div className="text-[11px] text-muted-foreground">{t("feather-create-rule-redirect-hint")}</div>
                 </div>
+                <Switch
+                  checked={noRedirect}
+                  onCheckedChange={setNoRedirect}
+                  className="shrink-0 mt-0.5"
+                />
               </label>
 
-              <label className="flex items-start gap-3 p-2.5 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={noDisambig}
-                  onChange={(e) => setNoDisambig(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <label className="flex items-start justify-between gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
                 <div className="space-y-0.5">
                   <div className="text-xs font-semibold text-foreground">{t("feather-create-rule-disambig")}</div>
                   <div className="text-[11px] text-muted-foreground">{t("feather-create-rule-disambig-hint")}</div>
                 </div>
+                <Switch
+                  checked={noDisambig}
+                  onCheckedChange={setNoDisambig}
+                  className="shrink-0 mt-0.5"
+                />
               </label>
 
-              <label className="flex items-start gap-3 p-2.5 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={createdInWindow}
-                  onChange={(e) => setCreatedInWindow(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
-                <div className="space-y-0.5 flex-1">
+              <label className="flex items-start justify-between gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
+                <div className="space-y-0.5 flex-1 pr-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-foreground">
                       {t("feather-create-rule-window")}
@@ -1309,6 +1295,11 @@ export default function NewContestPage() {
                       : t("feather-create-rule-window-relaxed-hint")}
                   </div>
                 </div>
+                <Switch
+                  checked={createdInWindow}
+                  onCheckedChange={setCreatedInWindow}
+                  className="shrink-0 mt-0.5"
+                />
               </label>
             </div>
 
@@ -1528,13 +1519,7 @@ export default function NewContestPage() {
 
             {/* Part C: Talk-Page Automation */}
             <div className="pt-3 border-t border-border/60 space-y-3">
-              <label className="flex items-start gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={addTalkTemplate}
-                  onChange={(e) => setAddTalkTemplate(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <label className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
                 <div className="space-y-0.5">
                   <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                     <Layers className="h-3.5 w-3.5 text-primary" />
@@ -1544,6 +1529,10 @@ export default function NewContestPage() {
                     {t("feather-create-add-template-hint")}
                   </div>
                 </div>
+                <Switch
+                  checked={addTalkTemplate}
+                  onCheckedChange={setAddTalkTemplate}
+                />
               </label>
 
               {addTalkTemplate && (

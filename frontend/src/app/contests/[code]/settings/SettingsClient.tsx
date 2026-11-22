@@ -43,6 +43,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
+import { Switch } from "@/components/ui/switch";
 import { UserTagInput } from "@/components/contests/UserTagInput";
 import TimezoneSelector from "@/components/contests/TimezoneSelector";
 import DateTimePicker from "@/components/ui/date-time-picker";
@@ -539,18 +540,16 @@ export default function SettingsClient({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Min Words */}
               <div className="p-3.5 rounded-lg border border-border/70 bg-card space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={hasEditMinWords}
-                    onChange={(e) => isOrganizer && setHasEditMinWords(e.target.checked)}
-                    disabled={!isOrganizer}
-                    className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                  />
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-foreground">
                     {t("feather-contest-settings-min-words")}
                   </span>
-                </label>
+                  <Switch
+                    checked={hasEditMinWords}
+                    onCheckedChange={(checked) => isOrganizer && setHasEditMinWords(checked)}
+                    disabled={!isOrganizer}
+                  />
+                </div>
                 {hasEditMinWords && (
                   <FloatingInput
                     type="number"
@@ -565,18 +564,16 @@ export default function SettingsClient({
 
               {/* Min Bytes */}
               <div className="p-3.5 rounded-lg border border-border/70 bg-card space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={hasEditMinBytes}
-                    onChange={(e) => isOrganizer && setHasEditMinBytes(e.target.checked)}
-                    disabled={!isOrganizer}
-                    className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                  />
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-foreground">
                     {t("feather-contest-settings-min-bytes")}
                   </span>
-                </label>
+                  <Switch
+                    checked={hasEditMinBytes}
+                    onCheckedChange={(checked) => isOrganizer && setHasEditMinBytes(checked)}
+                    disabled={!isOrganizer}
+                  />
+                </div>
                 {hasEditMinBytes && (
                   <FloatingInput
                     type="number"
@@ -591,18 +588,16 @@ export default function SettingsClient({
 
               {/* Min References */}
               <div className="p-3.5 rounded-lg border border-border/70 bg-card space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={hasEditMinRefs}
-                    onChange={(e) => isOrganizer && setHasEditMinRefs(e.target.checked)}
-                    disabled={!isOrganizer}
-                    className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                  />
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-foreground">
                     {t("feather-contest-settings-min-refs")}
                   </span>
-                </label>
+                  <Switch
+                    checked={hasEditMinRefs}
+                    onCheckedChange={(checked) => isOrganizer && setHasEditMinRefs(checked)}
+                    disabled={!isOrganizer}
+                  />
+                </div>
                 {hasEditMinRefs && (
                   <FloatingInput
                     type="number"
@@ -618,20 +613,18 @@ export default function SettingsClient({
 
             {/* Max Submissions Per User Constraint */}
             <div className="p-3.5 rounded-lg border border-border/70 bg-card space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={hasEditMaxSub}
-                  onChange={(e) => isOrganizer && setHasEditMaxSub(e.target.checked)}
-                  disabled={!isOrganizer}
-                  className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-foreground">
                   {t("feather-contest-settings-max-sub")}
                 </span>
-              </label>
+                <Switch
+                  checked={hasEditMaxSub}
+                  onCheckedChange={(checked) => isOrganizer && setHasEditMaxSub(checked)}
+                  disabled={!isOrganizer}
+                />
+              </div>
               {hasEditMaxSub && (
-                <div className="max-w-xs">
+                <div className="max-w-xs pt-1">
                   <FloatingInput
                     type="number"
                     label={t("feather-contest-settings-max-sub")}
@@ -646,66 +639,51 @@ export default function SettingsClient({
 
             {/* Structural Wiki Criteria Matrix */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-border/60">
-              <label className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={editRuleCreator}
-                  onChange={(e) => isOrganizer && setEditRuleCreator(e.target.checked)}
-                  disabled={!isOrganizer}
-                  className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <label className="flex items-center justify-between gap-2.5 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
                 <span className="text-xs text-foreground font-medium">
                   {t("feather-create-rule-creator")}
                 </span>
+                <Switch
+                  checked={editRuleCreator}
+                  onCheckedChange={(checked) => isOrganizer && setEditRuleCreator(checked)}
+                  disabled={!isOrganizer}
+                />
               </label>
 
-              <label className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={editRuleWindow}
-                  onChange={(e) => isOrganizer && setEditRuleWindow(e.target.checked)}
-                  disabled={!isOrganizer}
-                  className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <label className="flex items-center justify-between gap-2.5 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
                 <span className="text-xs text-foreground font-medium">
                   {t("feather-create-rule-window")}
                 </span>
+                <Switch
+                  checked={editRuleWindow}
+                  onCheckedChange={(checked) => isOrganizer && setEditRuleWindow(checked)}
+                  disabled={!isOrganizer}
+                />
               </label>
 
-              <label className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={editRuleNoRedirect}
-                  onChange={(e) => isOrganizer && setEditRuleNoRedirect(e.target.checked)}
-                  disabled={!isOrganizer}
-                  className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <label className="flex items-center justify-between gap-2.5 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
                 <span className="text-xs text-foreground font-medium">
                   {t("feather-create-rule-redirect")}
                 </span>
+                <Switch
+                  checked={editRuleNoRedirect}
+                  onCheckedChange={(checked) => isOrganizer && setEditRuleNoRedirect(checked)}
+                  disabled={!isOrganizer}
+                />
               </label>
 
-              <label className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={editRuleNoDisambig}
-                  onChange={(e) => isOrganizer && setEditRuleNoDisambig(e.target.checked)}
-                  disabled={!isOrganizer}
-                  className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <label className="flex items-center justify-between gap-2.5 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
                 <span className="text-xs text-foreground font-medium">
                   {t("feather-create-rule-disambig")}
                 </span>
+                <Switch
+                  checked={editRuleNoDisambig}
+                  onCheckedChange={(checked) => isOrganizer && setEditRuleNoDisambig(checked)}
+                  disabled={!isOrganizer}
+                />
               </label>
 
-              <label className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={editRuleMainspace}
-                  onChange={(e) => isOrganizer && setEditRuleMainspace(e.target.checked)}
-                  disabled={!isOrganizer}
-                  className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <label className="flex items-center justify-between gap-2.5 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none sm:col-span-2">
                 <div>
                   <div className="text-xs font-semibold text-foreground">
                     {t("feather-contest-settings-rule-mainspace")}
@@ -714,6 +692,11 @@ export default function SettingsClient({
                     {t("feather-contest-settings-rule-mainspace-hint")}
                   </div>
                 </div>
+                <Switch
+                  checked={editRuleMainspace}
+                  onCheckedChange={(checked) => isOrganizer && setEditRuleMainspace(checked)}
+                  disabled={!isOrganizer}
+                />
               </label>
             </div>
 
@@ -831,14 +814,7 @@ export default function SettingsClient({
 
             {/* Part C: Talk-Page Automation */}
             <div className="pt-3 border-t border-border/60 space-y-4">
-              <label className="flex items-start gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={editAddTalkTemplate}
-                  onChange={(e) => isOrganizer && setEditAddTalkTemplate(e.target.checked)}
-                  disabled={!isOrganizer}
-                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                />
+              <label className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/70 hover:bg-muted/30 transition-colors cursor-pointer select-none">
                 <div className="space-y-0.5">
                   <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                     <Layers className="h-3.5 w-3.5 text-primary" />
@@ -848,6 +824,11 @@ export default function SettingsClient({
                     {t("feather-create-add-template-hint")}
                   </div>
                 </div>
+                <Switch
+                  checked={editAddTalkTemplate}
+                  onCheckedChange={(checked) => isOrganizer && setEditAddTalkTemplate(checked)}
+                  disabled={!isOrganizer}
+                />
               </label>
 
               {editAddTalkTemplate && (

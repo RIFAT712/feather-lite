@@ -20,6 +20,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -499,16 +500,14 @@ export default function SubmitArticlesPage({ params }: { params: Promise<{ code:
       {/* Jury: Submit on Behalf of Another User Banner */}
       <Card className="border-border shadow-2xs">
         <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <label className="flex items-center gap-2.5 cursor-pointer select-none">
-            <input
-              type="checkbox"
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <Switch
               checked={isOnBehalf}
-              onChange={(e) => {
-                setIsOnBehalf(e.target.checked);
+              onCheckedChange={(checked) => {
+                setIsOnBehalf(checked);
                 setFetchedArticles([]);
                 setSelectedArticles([]);
               }}
-              className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
             />
             <span className="text-xs sm:text-sm font-semibold text-foreground">
               {t("feather-submit-behalf-toggle")}

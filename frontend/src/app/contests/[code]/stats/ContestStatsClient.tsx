@@ -37,6 +37,8 @@ import {
   Layers,
   ChevronRight,
   TrendingDown,
+  Check,
+  UserCheck,
 } from "lucide-react";
 
 interface ContestStatsClientProps {
@@ -420,57 +422,63 @@ export default function ContestStatsClient({
           </div>
         )}
 
-        {/* 2. Top Summary KPI Cards (Zury 4-Card Format) */}
+        {/* 2. Top Summary KPI Cards (Redesigned with shadcn blocks & icons) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* CARD 1: Submissions & Word Breakdown */}
           <Card className="shadow-xs border-border/80 bg-card hover:border-border transition-colors">
             <CardHeader className="p-4 sm:p-5 pb-2">
-              <div className="flex items-center justify-between text-muted-foreground">
+              <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {t("feather-stats-submissions")}
                 </span>
-                <FileText className="h-4 w-4 text-foreground/70 dark:text-foreground/80" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <FileText className="h-4 w-4" />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-4 sm:p-5 pt-0 space-y-3">
               <div className="flex items-baseline justify-between gap-2">
-                <div className="text-4xl font-extrabold text-foreground tabular-nums tracking-tight">
+                <div className="text-3xl sm:text-4xl font-extrabold text-foreground tabular-nums tracking-tight font-mono">
                   {n(summary.total_submissions)}
                 </div>
                 {summary.this_week_submissions > 0 && (
-                  <Badge variant="secondary" className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20 rounded-md px-2.5 py-0.5">
+                  <Badge variant="secondary" className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-md px-2 py-0.5 gap-1">
+                    <TrendingUp className="h-3 w-3" />
                     +{n(summary.this_week_submissions)} {t("feather-stats-this-week")}
                   </Badge>
                 )}
               </div>
 
-              {/* Word breakdown mini-list */}
+              {/* Word breakdown mini-list with proper Lucide icons */}
               <div className="pt-3 border-t border-border/50 space-y-1.5 text-xs">
-                <div className="flex items-center justify-between font-bold text-foreground">
-                  <span>Total Words:</span>
+                <div className="flex items-center justify-between font-bold text-foreground py-0.5">
+                  <span className="flex items-center gap-1.5">
+                    <FileText className="h-3.5 w-3.5 text-primary/80" />
+                    <span>Total Words:</span>
+                  </span>
                   <span className="font-mono tabular-nums">{n(words.total_words)}</span>
                 </div>
-                <div className="flex items-center justify-between text-muted-foreground text-xs">
+                <div className="flex items-center justify-between text-muted-foreground text-xs py-0.5">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 inline-block" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                     <span>words accepted</span>
                   </span>
                   <span className="font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
                     {n(words.accepted_words)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-muted-foreground text-xs">
+                <div className="flex items-center justify-between text-muted-foreground text-xs py-0.5">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 inline-block" />
+                    <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                     <span>words pending</span>
                   </span>
                   <span className="font-mono tabular-nums font-semibold text-amber-600 dark:text-amber-400">
                     {n(words.pending_words)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-muted-foreground text-xs">
+                <div className="flex items-center justify-between text-muted-foreground text-xs py-0.5">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 inline-block" />
+                    <XCircle className="h-3.5 w-3.5 text-rose-500 shrink-0" />
                     <span>words rejected</span>
                   </span>
                   <span className="font-mono tabular-nums font-semibold text-rose-600 dark:text-rose-400">
@@ -484,38 +492,50 @@ export default function ContestStatsClient({
           {/* CARD 2: Participants & Reviewers */}
           <Card className="shadow-xs border-border/80 bg-card hover:border-border transition-colors">
             <CardHeader className="p-4 sm:p-5 pb-2">
-              <div className="flex items-center justify-between text-muted-foreground">
+              <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {t("feather-stats-participants")}
                 </span>
-                <Users className="h-4 w-4 text-indigo-500" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-500/10 text-indigo-500">
+                  <Users className="h-4 w-4" />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-4 sm:p-5 pt-0 space-y-3">
               <div className="flex items-baseline justify-between gap-2">
-                <div className="text-4xl font-extrabold text-foreground tabular-nums tracking-tight">
+                <div className="text-3xl sm:text-4xl font-extrabold text-foreground tabular-nums tracking-tight font-mono">
                   {n(summary.total_participants)}
                 </div>
-                <span className="text-xs text-muted-foreground font-medium">
-                  <strong>{n(summary.accepted_participants)}</strong> {t("feather-stats-accepted-participants")}
-                </span>
+                <Badge variant="outline" className="text-xs text-muted-foreground font-medium gap-1 border-border/70">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                  <strong className="text-foreground">{n(summary.accepted_participants)}</strong> {t("feather-stats-accepted-participants")}
+                </Badge>
               </div>
 
               <div className="pt-3 border-t border-border/50 space-y-1.5 text-xs text-muted-foreground">
-                <div className="flex items-center justify-between">
-                  <span>Reviewers:</span>
+                <div className="flex items-center justify-between py-0.5">
+                  <span className="flex items-center gap-1.5">
+                    <UserCheck className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                    <span>Reviewers:</span>
+                  </span>
                   <span className="text-foreground">
                     <strong className="font-bold">{n(summary.active_juries)} / {n(summary.total_juries)}</strong> active
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>reviews conducted:</span>
+                <div className="flex items-center justify-between py-0.5">
+                  <span className="flex items-center gap-1.5">
+                    <Award className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                    <span>reviews conducted:</span>
+                  </span>
                   <span className="font-bold text-foreground font-mono tabular-nums">
                     {n(summary.total_reviews)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>Organizers:</span>
+                <div className="flex items-center justify-between py-0.5">
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                    <span>Organizers:</span>
+                  </span>
                   <span className="font-bold text-foreground font-mono tabular-nums">
                     {n(summary.organizers_count)}
                   </span>
@@ -527,21 +547,23 @@ export default function ContestStatsClient({
           {/* CARD 3: Review Progress */}
           <Card className="shadow-xs border-border/80 bg-card hover:border-border transition-colors">
             <CardHeader className="p-4 sm:p-5 pb-2">
-              <div className="flex items-center justify-between text-muted-foreground">
+              <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {t("feather-stats-judging-progress")}
                 </span>
-                <Ribbon className="h-4 w-4 text-emerald-500" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-500">
+                  <Ribbon className="h-4 w-4" />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-4 sm:p-5 pt-0 space-y-3">
               <div className="flex items-baseline justify-between gap-2">
-                <div className="text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight">
+                <div className="text-3xl sm:text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight font-mono">
                   {progressPercent}%
                 </div>
-                <span className="text-xs text-muted-foreground font-medium">
-                  {t("feather-stats-decided")}: <strong className="font-semibold text-foreground font-mono">{n(summary.decided_count)} / {n(counts.total)}</strong>
-                </span>
+                <Badge variant="outline" className="text-xs text-muted-foreground font-mono border-border/70">
+                  {t("feather-stats-decided")}: <strong className="font-semibold text-foreground ml-1">{n(summary.decided_count)} / {n(counts.total)}</strong>
+                </Badge>
               </div>
 
               {/* Segmented Progress Bar */}
@@ -568,16 +590,20 @@ export default function ContestStatsClient({
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                    ✓ {n(counts.accepted)} ({acceptedPct}%)
-                  </span>
-                  <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
-                    ✕ {n(counts.rejected)} ({rejectedPct}%)
-                  </span>
-                  <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
-                    ⏳ {n(counts.pending)} ({pendingPct}%)
-                  </span>
+                {/* 3-Column Lucide Icon Badges (NO plain text glyphs or emojis) */}
+                <div className="grid grid-cols-3 gap-1.5 pt-1 text-xs">
+                  <div className="flex items-center justify-center gap-1 px-1.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] truncate">
+                    <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500" />
+                    <span>{n(counts.accepted)} ({acceptedPct}%)</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-1 px-1.5 py-1 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-[11px] truncate">
+                    <XCircle className="h-3 w-3 shrink-0 text-rose-500" />
+                    <span>{n(counts.rejected)} ({rejectedPct}%)</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-1 px-1.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[11px] truncate">
+                    <Clock className="h-3 w-3 shrink-0 text-amber-500" />
+                    <span>{n(counts.pending)} ({pendingPct}%)</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -586,29 +612,34 @@ export default function ContestStatsClient({
           {/* CARD 4: Article Retention / Survival */}
           <Card className="shadow-xs border-border/80 bg-card hover:border-border transition-colors">
             <CardHeader className="p-4 sm:p-5 pb-2">
-              <div className="flex items-center justify-between text-muted-foreground">
+              <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {t("feather-stats-retention")}
                 </span>
-                <ShieldCheck className="h-4 w-4 text-teal-500" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-500/10 text-teal-500">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-4 sm:p-5 pt-0 space-y-3">
               <div className="flex items-baseline justify-between gap-2">
-                <div className="text-4xl font-extrabold text-teal-600 dark:text-teal-400 tabular-nums tracking-tight">
+                <div className="text-3xl sm:text-4xl font-extrabold text-teal-600 dark:text-teal-400 tabular-nums tracking-tight font-mono">
                   100%
                 </div>
-                <Badge variant="outline" className="text-xs font-semibold text-teal-600 dark:text-teal-400 border-teal-500/40 bg-teal-500/10 rounded-md px-2.5 py-0.5">
-                  {counts.accepted > 0 ? "All Intact" : "All Intact"}
+                <Badge variant="outline" className="text-xs font-semibold text-teal-600 dark:text-teal-400 border-teal-500/30 bg-teal-500/10 rounded-md px-2 py-0.5 gap-1">
+                  <Check className="h-3 w-3" />
+                  All Intact
                 </Badge>
               </div>
 
-              <div className="pt-3 border-t border-border/50 space-y-1 text-xs">
-                <p className="font-medium text-foreground">
-                  <strong className="font-bold">{n(counts.accepted)}</strong> {t("feather-stats-retention-desc")}.
-                </p>
-                <p className="text-[11px] text-muted-foreground leading-normal">
-                  Live wiki validation monitors all accepted submissions against deletion or redirecting.
+              <div className="pt-3 border-t border-border/50 space-y-1.5 text-xs">
+                <div className="flex items-center gap-1.5 font-medium text-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-teal-500 shrink-0" />
+                  <span><strong className="font-bold">{n(counts.accepted)}</strong> {t("feather-stats-retention-desc")}.</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-normal flex items-start gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-teal-500/80 shrink-0 mt-0.5" />
+                  <span>Live wiki validation monitors all accepted submissions against deletion or redirecting.</span>
                 </p>
               </div>
             </CardContent>
@@ -965,16 +996,16 @@ export default function ContestStatsClient({
                   </CardTitle>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="h-3 w-3" />
                     <span>Accepted</span>
                   </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span className="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
+                    <Clock className="h-3 w-3" />
                     <span>Pending</span>
                   </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                  <span className="flex items-center gap-1 font-medium text-rose-600 dark:text-rose-400">
+                    <XCircle className="h-3 w-3" />
                     <span>Rejected</span>
                   </span>
                 </div>

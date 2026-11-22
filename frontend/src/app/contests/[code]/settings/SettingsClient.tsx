@@ -17,6 +17,7 @@ import { getProjectMeta, getWikiInfo } from "@/lib/wikis";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,8 @@ import {
   FileCheck,
   AlignLeft,
   Check,
+  Globe,
+  ExternalLink,
 } from "lucide-react";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
 import { Switch } from "@/components/ui/switch";
@@ -397,16 +400,33 @@ export default function SettingsClient({
             />
 
             {/* On-wiki contest page */}
-            <div className="space-y-1">
-              <FloatingInput
-                id="edit-onwiki-page-url"
-                label={t("feather-create-onwiki-page-label")}
-                value={editOnwikiPageUrl}
-                onChange={(e) => setEditOnwikiPageUrl(e.target.value)}
-                disabled={!isOrganizer}
-                placeholder="Wikipedia:উইকিটেশব প্রতিযোগিতা ২০২৬ or https://..."
-              />
-              <p className="text-[11px] text-muted-foreground px-1">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="edit-onwiki-page-url"
+                  className="text-xs font-semibold text-foreground flex items-center gap-1.5"
+                >
+                  <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>{t("feather-create-onwiki-page-label")}</span>
+                </label>
+                <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground border-border/70">
+                  {t("feather-create-opt-no-limit")}
+                </Badge>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </div>
+                <Input
+                  id="edit-onwiki-page-url"
+                  value={editOnwikiPageUrl}
+                  onChange={(e) => setEditOnwikiPageUrl(e.target.value)}
+                  disabled={!isOrganizer}
+                  placeholder="Wikipedia:উইকিটেশব প্রতিযোগিতা ২০২৬ or https://..."
+                  className="pl-9 h-10 text-xs sm:text-sm bg-background border-border/70"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-normal">
                 {t("feather-create-onwiki-page-hint")}
               </p>
             </div>

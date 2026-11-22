@@ -51,7 +51,6 @@ export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputPro
           value={value}
           defaultValue={defaultValue}
           disabled={disabled}
-          placeholder=" "
           onFocus={(e) => {
             setIsFocused(true);
             onFocus?.(e);
@@ -68,6 +67,7 @@ export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputPro
             className
           )}
           {...props}
+          placeholder={isFloating ? (props.placeholder || " ") : " "}
         />
         <label
           htmlFor={inputId}
@@ -140,7 +140,6 @@ export const FloatingTextarea = React.forwardRef<HTMLTextAreaElement, FloatingTe
           value={value}
           defaultValue={defaultValue}
           disabled={disabled}
-          placeholder=" "
           onFocus={(e) => {
             setIsFocused(true);
             onFocus?.(e);
@@ -157,6 +156,7 @@ export const FloatingTextarea = React.forwardRef<HTMLTextAreaElement, FloatingTe
             className
           )}
           {...props}
+          placeholder={isFloating ? (props.placeholder || " ") : " "}
         />
         <label
           htmlFor={inputId}

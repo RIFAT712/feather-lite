@@ -209,14 +209,15 @@ All agents modifying code in this repository must uphold the following rules:
   * `/` (`page.tsx` -> `HomeClient.tsx`): Pre-fetches `getServerContests()` and `getServerPlatformOverview()`, completely eliminating skeleton flash on Platform Pulse metrics and daily activity sparkline.
   * `/contests/[code]` (`page.tsx` -> `ContestDashboardClient.tsx`): Pre-renders contest metadata, description, wiki details, and generates OpenGraph tags via `getServerContest()`.
   * `/contests/[code]/settings` (`page.tsx` -> `SettingsClient.tsx`): Pre-renders contest configuration and settings form.
+  * `/contests/[code]/stats` (`page.tsx` -> `ContestStatsClient.tsx`): Pre-renders contest metadata, status counts, daily submission and judgment curves, and submitter standings.
   * `/contests/[code]/jury` (`page.tsx` -> `JuryHubClient.tsx`): Pre-fetches contest configuration and user auth session.
   * `/contests/[code]/review` (`page.tsx` -> `ReviewQueueClient.tsx`): Pre-fetches contest metadata and user auth session.
   * `/users/[username]` (`page.tsx` -> `UserGlobalProfileClient.tsx`): Pre-fetches user statistics via `getServerUserProfile()`.
   * `/contests/[code]/users/[username]` (`page.tsx` -> `ContestUserProfileClient.tsx`): Pre-fetches user contest contributions via `getServerContestUserProfile()`.
-* **Zero-Stale-Data Invariant on Dynamic Management Routes:**
-  * Dedicated settings and management pages (`/contests/[code]/settings`) MUST declare `export const dynamic = "force-dynamic"` and `export const revalidate = 0`.
-  * Server fetchers for editable entities (`getServerContest`) MUST use `cache: "no-store"` to prevent Next.js from caching stale entity snapshots.
-  * Interactive form queries in React Query must specify `initialDataUpdatedAt: 0`, `staleTime: 0`, and `refetchOnMount: "always"`.
+* **Zero-Stale-Data Invariant on Dynamic Management & Portal Routes:**
+  * Dedicated settings and management pages (`/contests/[code]/settings`, `/`, `/contests/[code]/stats`) MUST declare `export const dynamic = "force-dynamic"` and `export const revalidate = 0`.
+  * Server fetchers for editable entities (`getServerContest`, `getServerContests`) MUST use `cache: "no-store"` to prevent Next.js from caching stale entity snapshots.
+  * Interactive queries in React Query (`useQuery`) that track contest states or listings MUST specify `initialDataUpdatedAt: 0`, `staleTime: 0`, and `refetchOnMount: "always"` to guarantee zero-latency live updates upon navigation.
   * All mutation handlers (e.g. `handleSaveSettings`) must call `router.refresh()` alongside React Query cache invalidation (`queryClient.invalidateQueries`) to bust Next.js client-side router caches.
 * **Dual Route Resiliency:**
   * Contest update endpoints must support both `PUT /api/contests/{code}/settings` and `PUT /api/contests/{code}` in Chi router (`h.UpdateContest`), syncing both `status` and `is_draft`.

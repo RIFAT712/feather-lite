@@ -186,13 +186,23 @@ All agents modifying code in this repository must uphold the following rules:
 * **Keyboard Navigation:** Review screen supports rapid customizable keyboard shortcuts (`A` accept, `R` reject, `S` skip, `C` comment, `Q` queue toggle, `U` undo, `W` wikitext toggle, `↑/↓` arrow queue list navigation, `PgUp/PgDn`, `Space` toggle selection, `Ctrl+A` select all, `Enter` open focused article, `Esc` cancel/close, `/` or `?` shortcut modal).
 * **Bulk Review & Bulk Delete API:** Go backend endpoints `POST /api/articles/bulk-review` and `POST /api/articles/bulk-delete` handle batched operations returning `succeeded` and `failed` lists.
 
-### E. Translatewiki-Compliant i18n
+### E. Translatewiki-Compliant i18n & `l10n` Branch Synchronization
 * **No hardcoded text** in UI components.
 * All user-facing strings must be localized using keys in `frontend/src/i18n/`:
   * `bn.json` — Bengali (idiomatic, natural, formal/polite).
-  * `en.json` — English (clean, modern interface English).
+  * `en.json` — English (canonical base messages).
   * `qqq.json` — Parameter descriptions and translator notes for Translatewiki.
-* When adding a new key, update all three files synchronously.
+* When adding a new key, update all three files synchronously with proper numeric placeholders (`$1`, `$2`) documented in `qqq.json`.
+* **Mandatory `l10n` Branch Sync Invariant:**
+  * The repository uses a pull-request localization workflow with Translatewiki.net (`Source branch: main`, `Push branch: l10n`).
+  * Whenever any commit is pushed to `main` that touches i18n files, UI text, or source code, the `l10n` branch MUST be immediately synchronized with `main`:
+    ```bash
+    git checkout l10n
+    git merge main
+    git push origin l10n
+    git checkout main
+    ```
+  * In addition, an automated GitHub Actions workflow (`.github/workflows/sync-l10n.yml`) automatically fast-forwards `l10n` on every push to `main` as a fail-safe.
 
 ### F. Global Rights & Auth Architecture
 * **OAuth 2.0 Handshake:** Secure token exchange with Wikimedia Meta-Wiki.

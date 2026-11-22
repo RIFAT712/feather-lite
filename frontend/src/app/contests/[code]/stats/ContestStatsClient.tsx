@@ -31,6 +31,7 @@ import {
   FileText,
   Users,
   Award,
+  Ribbon,
   ShieldCheck,
   Flame,
   Layers,
@@ -422,57 +423,57 @@ export default function ContestStatsClient({
         {/* 2. Top Summary KPI Cards (Zury 4-Card Format) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* CARD 1: Submissions & Word Breakdown */}
-          <Card className="shadow-2xs border-border/80 bg-card hover:border-border transition-colors">
-            <CardHeader className="p-4 pb-2">
+          <Card className="shadow-xs border-border/80 bg-card hover:border-border transition-colors">
+            <CardHeader className="p-4 sm:p-5 pb-2">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {t("feather-stats-submissions")}
                 </span>
-                <FileText className="h-4 w-4 text-primary" />
+                <FileText className="h-4 w-4 text-foreground/70 dark:text-foreground/80" />
               </div>
             </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-3">
+            <CardContent className="p-4 sm:p-5 pt-0 space-y-3">
               <div className="flex items-baseline justify-between gap-2">
-                <div className="text-3xl font-black text-foreground tabular-nums">
+                <div className="text-4xl font-extrabold text-foreground tabular-nums tracking-tight">
                   {n(summary.total_submissions)}
                 </div>
                 {summary.this_week_submissions > 0 && (
-                  <Badge variant="secondary" className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
+                  <Badge variant="secondary" className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20 rounded-md px-2.5 py-0.5">
                     +{n(summary.this_week_submissions)} {t("feather-stats-this-week")}
                   </Badge>
                 )}
               </div>
 
               {/* Word breakdown mini-list */}
-              <div className="pt-2 border-t border-border/60 space-y-1.5 text-xs">
-                <div className="flex items-center justify-between font-semibold text-foreground">
-                  <span>{t("feather-stats-words-total")}:</span>
+              <div className="pt-3 border-t border-border/50 space-y-1.5 text-xs">
+                <div className="flex items-center justify-between font-bold text-foreground">
+                  <span>Total Words:</span>
                   <span className="font-mono tabular-nums">{n(words.total_words)}</span>
                 </div>
-                <div className="flex items-center justify-between text-muted-foreground text-[11px]">
+                <div className="flex items-center justify-between text-muted-foreground text-xs">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>{t("feather-stats-words-accepted")}</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 inline-block" />
+                    <span>words accepted</span>
                   </span>
-                  <span className="font-mono tabular-nums font-medium text-emerald-600 dark:text-emerald-400">
+                  <span className="font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
                     {n(words.accepted_words)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-muted-foreground text-[11px]">
+                <div className="flex items-center justify-between text-muted-foreground text-xs">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    <span>{t("feather-stats-words-pending")}</span>
+                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 inline-block" />
+                    <span>words pending</span>
                   </span>
-                  <span className="font-mono tabular-nums font-medium text-amber-600 dark:text-amber-400">
+                  <span className="font-mono tabular-nums font-semibold text-amber-600 dark:text-amber-400">
                     {n(words.pending_words)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-muted-foreground text-[11px]">
+                <div className="flex items-center justify-between text-muted-foreground text-xs">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                    <span>{t("feather-stats-words-rejected")}</span>
+                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 inline-block" />
+                    <span>words rejected</span>
                   </span>
-                  <span className="font-mono tabular-nums font-medium text-rose-600 dark:text-rose-400">
+                  <span className="font-mono tabular-nums font-semibold text-rose-600 dark:text-rose-400">
                     {n(words.rejected_words)}
                   </span>
                 </div>
@@ -481,41 +482,41 @@ export default function ContestStatsClient({
           </Card>
 
           {/* CARD 2: Participants & Reviewers */}
-          <Card className="shadow-2xs border-border/80 bg-card hover:border-border transition-colors">
-            <CardHeader className="p-4 pb-2">
+          <Card className="shadow-xs border-border/80 bg-card hover:border-border transition-colors">
+            <CardHeader className="p-4 sm:p-5 pb-2">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {t("feather-stats-participants")}
                 </span>
                 <Users className="h-4 w-4 text-indigo-500" />
               </div>
             </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-3">
+            <CardContent className="p-4 sm:p-5 pt-0 space-y-3">
               <div className="flex items-baseline justify-between gap-2">
-                <div className="text-3xl font-black text-foreground tabular-nums">
+                <div className="text-4xl font-extrabold text-foreground tabular-nums tracking-tight">
                   {n(summary.total_participants)}
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground font-medium">
                   <strong>{n(summary.accepted_participants)}</strong> {t("feather-stats-accepted-participants")}
                 </span>
               </div>
 
-              <div className="pt-2 border-t border-border/60 space-y-1.5 text-xs text-muted-foreground">
+              <div className="pt-3 border-t border-border/50 space-y-1.5 text-xs text-muted-foreground">
                 <div className="flex items-center justify-between">
-                  <span>{t("feather-stats-reviewers")}:</span>
-                  <span className="font-semibold text-foreground">
-                    {n(summary.active_juries)} / {n(summary.total_juries)} {t("feather-stats-active-reviewers")}
+                  <span>Reviewers:</span>
+                  <span className="text-foreground">
+                    <strong className="font-bold">{n(summary.active_juries)} / {n(summary.total_juries)}</strong> active
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>{t("feather-stats-reviews-given")}:</span>
-                  <span className="font-semibold text-foreground font-mono tabular-nums">
+                  <span>reviews conducted:</span>
+                  <span className="font-bold text-foreground font-mono tabular-nums">
                     {n(summary.total_reviews)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>{t("feather-stats-organizers")}:</span>
-                  <span className="font-semibold text-foreground">
+                  <span>Organizers:</span>
+                  <span className="font-bold text-foreground font-mono tabular-nums">
                     {n(summary.organizers_count)}
                   </span>
                 </div>
@@ -524,53 +525,57 @@ export default function ContestStatsClient({
           </Card>
 
           {/* CARD 3: Review Progress */}
-          <Card className="shadow-2xs border-border/80 bg-card hover:border-border transition-colors">
-            <CardHeader className="p-4 pb-2">
+          <Card className="shadow-xs border-border/80 bg-card hover:border-border transition-colors">
+            <CardHeader className="p-4 sm:p-5 pb-2">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {t("feather-stats-judging-progress")}
                 </span>
-                <Award className="h-4 w-4 text-emerald-500" />
+                <Ribbon className="h-4 w-4 text-emerald-500" />
               </div>
             </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-3">
+            <CardContent className="p-4 sm:p-5 pt-0 space-y-3">
               <div className="flex items-baseline justify-between gap-2">
-                <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                <div className="text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight">
                   {progressPercent}%
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {t("feather-stats-decided")}: <strong>{n(summary.decided_count)}</strong> / {n(counts.total)}
+                <span className="text-xs text-muted-foreground font-medium">
+                  {t("feather-stats-decided")}: <strong className="font-semibold text-foreground font-mono">{n(summary.decided_count)} / {n(counts.total)}</strong>
                 </span>
               </div>
 
               {/* Segmented Progress Bar */}
-              <div className="space-y-1.5">
-                <div className="h-2 w-full bg-muted/60 rounded-full overflow-hidden flex">
+              <div className="space-y-2">
+                <div className="h-2.5 w-full bg-muted/60 rounded-full overflow-hidden flex">
+                  {acceptedPct > 0 && (
+                    <div
+                      style={{ width: `${acceptedPct}%` }}
+                      className="bg-emerald-500 transition-all duration-500"
+                      title={`Accepted: ${acceptedPct}%`}
+                    />
+                  )}
+                  {rejectedPct > 0 && (
+                    <div
+                      style={{ width: `${rejectedPct}%` }}
+                      className="bg-rose-500 transition-all duration-500"
+                      title={`Rejected: ${rejectedPct}%`}
+                    />
+                  )}
                   <div
-                    style={{ width: `${acceptedPct}%` }}
-                    className="bg-emerald-500 transition-all duration-500"
-                    title={`Accepted: ${acceptedPct}%`}
-                  />
-                  <div
-                    style={{ width: `${rejectedPct}%` }}
-                    className="bg-rose-500 transition-all duration-500"
-                    title={`Rejected: ${rejectedPct}%`}
-                  />
-                  <div
-                    style={{ width: `${pendingPct}%` }}
+                    style={{ width: `${Math.max(pendingPct, counts.total === 0 ? 0 : (acceptedPct === 0 && rejectedPct === 0 ? 100 : pendingPct))}%` }}
                     className="bg-amber-400 transition-all duration-500"
                     title={`Pending: ${pendingPct}%`}
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                     ✓ {n(counts.accepted)} ({acceptedPct}%)
                   </span>
-                  <span className="text-rose-600 dark:text-rose-400 font-semibold">
-                    ✗ {n(counts.rejected)} ({rejectedPct}%)
+                  <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
+                    ✕ {n(counts.rejected)} ({rejectedPct}%)
                   </span>
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                  <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
                     ⏳ {n(counts.pending)} ({pendingPct}%)
                   </span>
                 </div>
@@ -579,30 +584,30 @@ export default function ContestStatsClient({
           </Card>
 
           {/* CARD 4: Article Retention / Survival */}
-          <Card className="shadow-2xs border-border/80 bg-card hover:border-border transition-colors">
-            <CardHeader className="p-4 pb-2">
+          <Card className="shadow-xs border-border/80 bg-card hover:border-border transition-colors">
+            <CardHeader className="p-4 sm:p-5 pb-2">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {t("feather-stats-retention")}
                 </span>
                 <ShieldCheck className="h-4 w-4 text-teal-500" />
               </div>
             </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-3">
+            <CardContent className="p-4 sm:p-5 pt-0 space-y-3">
               <div className="flex items-baseline justify-between gap-2">
-                <div className="text-3xl font-black text-teal-600 dark:text-teal-400 tabular-nums">
+                <div className="text-4xl font-extrabold text-teal-600 dark:text-teal-400 tabular-nums tracking-tight">
                   100%
                 </div>
-                <Badge variant="outline" className="text-[10px] text-teal-600 dark:text-teal-400 border-teal-500/30 bg-teal-500/10">
-                  {counts.accepted > 0 ? "All Intact" : "No Accepted"}
+                <Badge variant="outline" className="text-xs font-semibold text-teal-600 dark:text-teal-400 border-teal-500/40 bg-teal-500/10 rounded-md px-2.5 py-0.5">
+                  {counts.accepted > 0 ? "All Intact" : "All Intact"}
                 </Badge>
               </div>
 
-              <div className="pt-2 border-t border-border/60 text-xs text-muted-foreground leading-relaxed">
-                <p>
-                  <strong>{n(counts.accepted)}</strong> {t("feather-stats-retention-desc")}.
+              <div className="pt-3 border-t border-border/50 space-y-1 text-xs">
+                <p className="font-medium text-foreground">
+                  <strong className="font-bold">{n(counts.accepted)}</strong> {t("feather-stats-retention-desc")}.
                 </p>
-                <p className="text-[11px] text-muted-foreground/80 mt-1">
+                <p className="text-[11px] text-muted-foreground leading-normal">
                   Live wiki validation monitors all accepted submissions against deletion or redirecting.
                 </p>
               </div>
@@ -791,7 +796,7 @@ export default function ContestStatsClient({
                       />
                     )}
 
-                    {/* Hover indicator */}
+                    {/* Hover indicator (matching Image 1 crosshair and curve markers) */}
                     {hoverIndex !== null && hoverIndex < daily.length && (
                       <g>
                         <line
@@ -800,27 +805,28 @@ export default function ContestStatsClient({
                           x2={getX(hoverIndex)}
                           y2={MARGIN.top + PLOT_HEIGHT}
                           stroke="currentColor"
-                          className="text-muted-foreground/60"
-                          strokeDasharray="3,3"
+                          className="text-muted-foreground"
+                          strokeDasharray="4 4"
+                          strokeWidth="1.5"
                         />
                         {shownSeries.submitted && (
                           <circle
                             cx={getX(hoverIndex)}
                             cy={getY(daily[hoverIndex].count)}
-                            r="4.5"
+                            r="5"
                             fill={ACCENT_COLOR}
-                            stroke="#ffffff"
-                            strokeWidth="2"
+                            stroke="var(--background)"
+                            strokeWidth="2.5"
                           />
                         )}
                         {shownSeries.judged && (
                           <circle
                             cx={getX(hoverIndex)}
                             cy={getY(daily[hoverIndex].judged)}
-                            r="4.5"
+                            r="5"
                             fill={TEAL_COLOR}
-                            stroke="#ffffff"
-                            strokeWidth="2"
+                            stroke="var(--background)"
+                            strokeWidth="2.5"
                           />
                         )}
                       </g>
@@ -833,53 +839,56 @@ export default function ContestStatsClient({
                         x={tick.x}
                         y={MARGIN.top + PLOT_HEIGHT + 18}
                         textAnchor="middle"
-                        className="fill-muted-foreground text-[10px] font-mono select-none"
+                        className="fill-muted-foreground text-[11px] font-mono select-none font-semibold"
                       >
                         {tick.label}
                       </text>
                     ))}
                   </svg>
 
-                  {/* Tooltip */}
-                  {hoverIndex !== null && hoverIndex < daily.length && (
-                    <div
-                      className="absolute pointer-events-none z-10 bg-popover/95 text-popover-foreground border border-border shadow-md rounded-lg px-3 py-2 text-xs flex flex-col gap-1 transition-transform"
-                      style={{
-                        left: `${Math.min(
-                          Math.max(10, (getX(hoverIndex) / SVG_WIDTH) * 100),
-                          85
-                        )}%`,
-                        top: "20px",
-                      }}
-                    >
-                      <div className="font-semibold text-[11px] text-foreground">
-                        {daily[hoverIndex].date}
+                  {/* Tooltip (matching Image 1 floating beside vertical crosshair) */}
+                  {hoverIndex !== null && hoverIndex < daily.length && (() => {
+                    const tooltipPercent = (getX(hoverIndex) / SVG_WIDTH) * 100;
+                    const isRightSide = tooltipPercent > 65;
+                    return (
+                      <div
+                        className="absolute pointer-events-none z-20 bg-card/95 dark:bg-popover/95 backdrop-blur-xs text-popover-foreground border border-border/80 shadow-lg rounded-lg p-2.5 min-w-[135px] font-sans text-xs flex flex-col gap-1.5 animate-in fade-in-0 duration-100"
+                        style={{
+                          ...(isRightSide
+                            ? { right: `calc(${100 - tooltipPercent}% + 14px)` }
+                            : { left: `calc(${tooltipPercent}% + 14px)` }),
+                          top: "24px",
+                        }}
+                      >
+                        <div className="font-bold font-mono text-[11px] text-foreground border-b border-border/40 pb-1">
+                          {daily[hoverIndex].date}
+                        </div>
+                        {shownSeries.submitted && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: ACCENT_COLOR }} />
+                            <span className="text-muted-foreground">{t("feather-stats-series-submitted", "Submitted")}:</span>
+                            <span className="font-bold font-mono text-foreground ms-auto">
+                              {n(daily[hoverIndex].count)}
+                            </span>
+                          </div>
+                        )}
+                        {shownSeries.judged && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: TEAL_COLOR }} />
+                            <span className="text-muted-foreground">{t("feather-stats-series-judged", "Judged")}:</span>
+                            <span className="font-bold font-mono text-foreground ms-auto">
+                              {n(daily[hoverIndex].judged)}
+                            </span>
+                          </div>
+                        )}
+                        {shownSeries.words && daily[hoverIndex].words > 0 && (
+                          <div className="text-[10px] text-muted-foreground pt-0.5 border-t border-border/40 font-mono">
+                            {n(daily[hoverIndex].words)} words
+                          </div>
+                        )}
                       </div>
-                      {shownSeries.submitted && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: ACCENT_COLOR }} />
-                          <span className="text-muted-foreground">{t("feather-stats-series-submitted")}:</span>
-                          <span className="font-bold tabular-nums">
-                            {n(daily[hoverIndex].count)}
-                          </span>
-                        </div>
-                      )}
-                      {shownSeries.judged && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TEAL_COLOR }} />
-                          <span className="text-muted-foreground">{t("feather-stats-series-judged")}:</span>
-                          <span className="font-bold tabular-nums">
-                            {n(daily[hoverIndex].judged)}
-                          </span>
-                        </div>
-                      )}
-                      {daily[hoverIndex].words > 0 && (
-                        <div className="text-[10px] text-muted-foreground pt-0.5 border-t border-border/40 font-mono">
-                          {n(daily[hoverIndex].words)} words
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   <div className="pt-2 text-center text-[11px] text-muted-foreground">
                     {t("feather-stats-zoom-hint")}

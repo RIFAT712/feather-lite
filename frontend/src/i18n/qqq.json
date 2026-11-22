@@ -581,6 +581,8 @@
     "feather-review-view-owner": "Option label to view queue across the entire contest as owner.",
     "feather-review-select-judge": "Aria label and placeholder for selecting a specific jury member.",
     "feather-review-locked-by": "Badge text indicating an article is currently locked by a reviewer.\n* $1 - Username of the reviewer holding the lock.",
+    "feather-review-lock-banner": "Banner message displayed prominently at the top of the review interface when another jury member is actively judging the article.\n* $1 - Username of the jury member currently reviewing the article.",
+    "feather-review-coi-banner": "Warning banner displayed in the review interface when a jury attempts to view an article they authored or submitted themselves.",
     "feather-review-block-accepted": "Section heading for the collapsible block of accepted articles in re-review.",
     "feather-review-block-rejected": "Section heading for the collapsible block of rejected articles in re-review.",
     "feather-review-block-skipped": "Section heading for the collapsible block of skipped articles in re-review.",

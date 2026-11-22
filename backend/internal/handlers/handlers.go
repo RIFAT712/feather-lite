@@ -2170,7 +2170,7 @@ func (h *Handler) balanceArticles(contestID int64, items []balancer.ArticleItem)
 		if _, exists := eligibleBySubmitter[it.SubmitterID]; !exists {
 			var eligible []int64
 			for _, jid := range juryIDs {
-				if jid != it.SubmitterID || len(juryIDs) == 1 {
+				if jid != it.SubmitterID {
 					eligible = append(eligible, jid)
 				}
 			}
@@ -2269,10 +2269,19 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Fetch article's contest ID and submitter ID
+	// 2. Fetch article's contest ID, submitter ID, wiki_creator, and active lock details
 	var contestID int64
 	var submitterID int64
-	err = h.db.QueryRow("SELECT contest_id, submitter_id FROM articles WHERE id = ?", articleID).Scan(&contestID, &submitterID)
+	var wikiCreator sql.NullString
+	var lockedByID sql.NullInt64
+	var lockedUntil sql.NullTime
+	var lockedByUsername sql.NullString
+	err = h.db.QueryRow(`
+		SELECT a.contest_id, a.submitter_id, a.wiki_creator, a.locked_by_id, a.locked_until, u.wiki_username
+		FROM articles a
+		LEFT JOIN users u ON a.locked_by_id = u.id
+		WHERE a.id = ?
+	`, articleID).Scan(&contestID, &submitterID, &wikiCreator, &lockedByID, &lockedUntil, &lockedByUsername)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Article not found")
 		return
@@ -2281,9 +2290,17 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Conflict of Interest (COI) check: Jury cannot review their own article
-	if currentUser.UserID == submitterID && currentUser.Role != "owner" {
-		jsonError(w, http.StatusForbidden, "Conflict of interest: You cannot review your own submitted article")
+	// 3. Conflict of Interest (COI) check: Jury cannot review their own article (submitted or created on-wiki)
+	isSelfSubmitter := currentUser.UserID == submitterID
+	isSelfCreator := wikiCreator.Valid && strings.EqualFold(strings.TrimSpace(wikiCreator.String), strings.TrimSpace(currentUser.WikiUsername))
+	if isSelfSubmitter || isSelfCreator {
+		jsonError(w, http.StatusForbidden, "Conflict of interest: You cannot review your own article")
+		return
+	}
+
+	// Lock check: prevent concurrent review if actively locked by another judge
+	if lockedByID.Valid && lockedUntil.Valid && lockedUntil.Time.After(time.Now()) && lockedByID.Int64 != currentUser.UserID {
+		jsonError(w, http.StatusConflict, fmt.Sprintf("Article is currently being judged by %s", lockedByUsername.String))
 		return
 	}
 
@@ -2329,7 +2346,9 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Status == "accepted" || req.Status == "rejected" {
-		_, _ = h.db.Exec("UPDATE articles SET status = ? WHERE id = ?", req.Status, articleID)
+		_, _ = h.db.Exec("UPDATE articles SET status = ?, locked_until = NULL, locked_by_id = NULL WHERE id = ?", req.Status, articleID)
+	} else {
+		_, _ = h.db.Exec("UPDATE articles SET locked_until = NULL, locked_by_id = NULL WHERE id = ?", articleID)
 	}
 
 	// If article is accepted, ensure talk page template is queued if contest automation is enabled
@@ -2374,15 +2393,17 @@ func (h *Handler) AcquireArticleLock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var contestID int64
+	var submitterID int64
+	var wikiCreator sql.NullString
 	var lockedByID sql.NullInt64
 	var lockedUntil sql.NullTime
 	var lockedByUsername sql.NullString
 	err = h.db.QueryRow(`
-		SELECT a.contest_id, a.locked_by_id, a.locked_until, u.wiki_username
+		SELECT a.contest_id, a.submitter_id, a.wiki_creator, a.locked_by_id, a.locked_until, u.wiki_username
 		FROM articles a
 		LEFT JOIN users u ON a.locked_by_id = u.id
 		WHERE a.id = ?
-	`, articleID).Scan(&contestID, &lockedByID, &lockedUntil, &lockedByUsername)
+	`, articleID).Scan(&contestID, &submitterID, &wikiCreator, &lockedByID, &lockedUntil, &lockedByUsername)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Article not found")
 		return
@@ -2396,17 +2417,22 @@ func (h *Handler) AcquireArticleLock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Conflict of Interest (COI) check: Jury cannot review or lock their own article
+	isSelfSubmitter := currentUser.UserID == submitterID
+	isSelfCreator := wikiCreator.Valid && strings.EqualFold(strings.TrimSpace(wikiCreator.String), strings.TrimSpace(currentUser.WikiUsername))
+	if isSelfSubmitter || isSelfCreator {
+		jsonError(w, http.StatusForbidden, "Conflict of interest: You cannot review or lock your own article")
+		return
+	}
+
 	// Check if already actively locked by someone else
 	if lockedByID.Valid && lockedUntil.Valid && lockedUntil.Time.After(time.Now()) && lockedByID.Int64 != currentUser.UserID {
-		// Owner can override; others get 409
-		if !h.isUserOrganizer(contestID, currentUser.UserID, currentUser.Role) {
-			jsonResponse(w, http.StatusConflict, map[string]any{
-				"error":        fmt.Sprintf("Article is currently being reviewed by %s", lockedByUsername.String),
-				"locked_by":    lockedByUsername.String,
-				"locked_until": lockedUntil.Time,
-			})
-			return
-		}
+		jsonResponse(w, http.StatusConflict, map[string]any{
+			"error":        fmt.Sprintf("Article is currently being judged by %s", lockedByUsername.String),
+			"locked_by":    lockedByUsername.String,
+			"locked_until": lockedUntil.Time,
+		})
+		return
 	}
 
 	// Acquire or refresh 5-minute lock
@@ -2585,7 +2611,16 @@ func (h *Handler) BulkReview(w http.ResponseWriter, r *http.Request) {
 	for _, articleID := range req.ArticleIDs {
 		var contestID int64
 		var submitterID int64
-		err := tx.QueryRow("SELECT contest_id, submitter_id FROM articles WHERE id = ?", articleID).Scan(&contestID, &submitterID)
+		var wikiCreator sql.NullString
+		var lockedByID sql.NullInt64
+		var lockedUntil sql.NullTime
+		var lockedByUsername sql.NullString
+		err := tx.QueryRow(`
+			SELECT a.contest_id, a.submitter_id, a.wiki_creator, a.locked_by_id, a.locked_until, u.wiki_username
+			FROM articles a
+			LEFT JOIN users u ON a.locked_by_id = u.id
+			WHERE a.id = ?
+		`, articleID).Scan(&contestID, &submitterID, &wikiCreator, &lockedByID, &lockedUntil, &lockedByUsername)
 		if err != nil {
 			failed = append(failed, map[string]any{"article_id": articleID, "detail": "Article not found"})
 			continue
@@ -2597,9 +2632,17 @@ func (h *Handler) BulkReview(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// COI Check: Jury cannot review their own article unless owner
-		if submitterID == currentUser.UserID && currentUser.Role != "owner" {
-			failed = append(failed, map[string]any{"article_id": articleID, "detail": "Conflict of interest"})
+		// COI Check: Jury cannot review their own article
+		isSelfSubmitter := currentUser.UserID == submitterID
+		isSelfCreator := wikiCreator.Valid && strings.EqualFold(strings.TrimSpace(wikiCreator.String), strings.TrimSpace(currentUser.WikiUsername))
+		if isSelfSubmitter || isSelfCreator {
+			failed = append(failed, map[string]any{"article_id": articleID, "detail": "Conflict of interest: cannot review own article"})
+			continue
+		}
+
+		// Active lock check: don't bulk-review if another judge is actively judging
+		if lockedByID.Valid && lockedUntil.Valid && lockedUntil.Time.After(time.Now()) && lockedByID.Int64 != currentUser.UserID {
+			failed = append(failed, map[string]any{"article_id": articleID, "detail": fmt.Sprintf("Article is currently being judged by %s", lockedByUsername.String)})
 			continue
 		}
 
@@ -2616,7 +2659,7 @@ func (h *Handler) BulkReview(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		_, err = tx.Exec("UPDATE articles SET status = ? WHERE id = ?", req.Status, articleID)
+		_, err = tx.Exec("UPDATE articles SET status = ?, locked_until = NULL, locked_by_id = NULL WHERE id = ?", req.Status, articleID)
 		if err != nil {
 			failed = append(failed, map[string]any{"article_id": articleID, "detail": err.Error()})
 			continue

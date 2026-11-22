@@ -581,6 +581,8 @@
     "feather-review-view-owner": "আয়োজক",
     "feather-review-select-judge": "বিচারক নির্বাচন করুন",
     "feather-review-locked-by": "$1 বর্তমানে পর্যালোচনা করছেন",
+    "feather-review-lock-banner": "$1 বর্তমানে এই নিবন্ধটি পর্যালোচনা করছেন",
+    "feather-review-coi-banner": "স্বার্থের সংঘাত: আপনি নিজের তৈরি বা জমাকৃত নিবন্ধ পর্যালোচনা করতে পারবেন না।",
     "feather-review-block-accepted": "অনুমোদিত",
     "feather-review-block-rejected": "প্রত্যাখ্যাত",
     "feather-review-block-skipped": "এড়িয়ে যাওয়া",

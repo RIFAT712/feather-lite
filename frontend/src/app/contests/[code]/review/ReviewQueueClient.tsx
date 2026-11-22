@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useI18n } from "@/i18n/I18nContext";
 import "@wikimedia/codex/dist/codex.style.css";
 import "./ReviewQueue.css";
 import {
@@ -347,6 +348,39 @@ const PANEL_MIN = 260,
   PANEL_MAX = 640,
   PANEL_DEFAULT = 340;
 
+// 32-bit FNV-1a hash function for strings / numbers
+function fnv1a(str: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+// Mulberry32 PRNG - high quality 32-bit deterministic generator
+function mulberry32(seed: number) {
+  return function () {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Deterministic Fisher-Yates shuffle using seeded PRNG
+function seededShuffle<T>(array: T[], seed: number): T[] {
+  const copy = [...array];
+  const rng = mulberry32(seed);
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const temp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = temp;
+  }
+  return copy;
+}
+
 interface ReviewQueueClientProps {
   code: string;
   initialContest?: Contest | null;
@@ -362,6 +396,7 @@ export default function ReviewQueueClient({
 }: ReviewQueueClientProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const { t } = useI18n();
 
   const [contest, setContest] = useState<Contest | null>(initialContest || null);
 
@@ -451,6 +486,7 @@ export default function ReviewQueueClient({
   const undoExpiryTimerRef = useRef<any>(null);
   const wikitextCopyTimerRef = useRef<any>(null);
   const focusOpenTimerRef = useRef<any>(null);
+  const lockHeartbeatTimerRef = useRef<any>(null);
   const heldKeysRef = useRef<Set<string>>(new Set());
   const awaitingFirstSelectionRef = useRef(true);
 
@@ -491,6 +527,24 @@ export default function ReviewQueueClient({
       ))
   );
   const isAuthorized = isJury || isOwner;
+
+  // Conflict of Interest (COI) check
+  const isOwnArticle = useCallback(
+    (a: any) => {
+      if (!a || !myUsernameLower) return false;
+      const submitter = (a.submitted_by || a.submitter_username || "").trim().toLowerCase();
+      const creator = (a.wiki_creator || "").trim().toLowerCase();
+      return submitter === myUsernameLower || creator === myUsernameLower;
+    },
+    [myUsernameLower]
+  );
+
+  const isLockedByOther = Boolean(
+    currentArticle?.locked_by &&
+    myUsernameLower &&
+    currentArticle.locked_by.trim().toLowerCase() !== myUsernameLower
+  );
+  const isSelfArticle = Boolean(currentArticle && isOwnArticle(currentArticle));
 
   // Shortcuts storage
   const shortcutStorageKey = useCallback(
@@ -681,6 +735,7 @@ ${body}
   const selectArticle = useCallback(
     (article: any) => {
       clearTimeout(focusOpenTimerRef.current);
+      clearInterval(lockHeartbeatTimerRef.current);
       if (!article) return;
       const canReReview = article?.reviews?.some((r: any) => r.reviewer === myUsername);
       if (article.status !== "pending" && !canReReview) return;
@@ -695,10 +750,43 @@ ${body}
       setCurrentArticle(article);
       setComment(getMyLatestComment(article));
       fetchPreview(article.title);
-      acquireArticleLock(article.article_id).catch(() => {});
+
+      if (!isOwnArticle(article) && article.status === "pending") {
+        acquireArticleLock(article.article_id)
+          .then((res) => {
+            if (res?.success) {
+              setCurrentArticle((prev: any) =>
+                prev?.article_id === article.article_id
+                  ? { ...prev, locked_by: myUsername }
+                  : prev
+              );
+            }
+          })
+          .catch((err: any) => {
+            const msg = err?.message || "";
+            const match =
+              msg.match(/reviewed by (.+)/i) ||
+              msg.match(/judged by (.+)/i) ||
+              msg.match(/judging by (.+)/i) ||
+              msg.match(/locked by (.+)/i);
+            const lockedUser = match ? match[1].trim() : article.locked_by;
+            if (lockedUser) {
+              setCurrentArticle((prev: any) =>
+                prev?.article_id === article.article_id
+                  ? { ...prev, locked_by: lockedUser }
+                  : prev
+              );
+            }
+          });
+
+        lockHeartbeatTimerRef.current = setInterval(() => {
+          acquireArticleLock(article.article_id).catch(() => {});
+        }, 120000);
+      }
+
       setMobileTab("review");
     },
-    [currentArticle?.article_id, fetchPreview, getMyLatestComment, myUsername]
+    [currentArticle?.article_id, fetchPreview, getMyLatestComment, isOwnArticle, myUsername]
   );
 
   // Load contest & user data
@@ -759,19 +847,23 @@ ${body}
     };
   }, [code, initialContest, initialUser]);
 
-  // Available new articles
+  // Available new articles: strictly excluding own articles & deterministically shuffled using jury ID as seed
   const newArticles = useMemo(() => {
-    return articles.filter(
+    const list = articles.filter(
       (a) =>
         a.status === "pending" &&
-        !(isJury && !isOwner && myUsername && a.submitted_by === myUsername) &&
+        !isOwnArticle(a) &&
         (!myUsername || !a.reviews.some((r: any) => r.reviewer === myUsername))
     );
-  }, [articles, isJury, isOwner, myUsername]);
+    const jurySeed = fnv1a(`${contest?.id || code}_${user?.user_id || myUsername || "jury"}`);
+    return seededShuffle(list, jurySeed);
+  }, [articles, code, contest?.id, isOwnArticle, myUsername, user?.user_id]);
 
   const availableNewArticles = useMemo(() => {
-    return newArticles.filter((a) => !a.locked_by || (myUsername && a.locked_by === myUsername));
-  }, [newArticles, myUsername]);
+    return newArticles.filter(
+      (a) => !a.locked_by || (myUsername && a.locked_by.trim().toLowerCase() === myUsernameLower)
+    );
+  }, [newArticles, myUsername, myUsernameLower]);
 
   const judgedArticles = useMemo(() => {
     if (!myUsername) return [];
@@ -1080,6 +1172,20 @@ ${body}
 
   const handleDecision = async (decision: "accepted" | "rejected") => {
     if (!currentArticle || isSubmitting) return;
+    if (isLockedByOther) {
+      toast.error(`${currentArticle.locked_by} is currently judging this article`);
+      return;
+    }
+    if (isSelfArticle) {
+      toast.error(
+        t(
+          "feather-review-coi-banner",
+          "Conflict of Interest: You cannot review your own article (authored or submitted by you)."
+        )
+      );
+      return;
+    }
+    clearInterval(lockHeartbeatTimerRef.current);
     setIsSubmitting(true);
     setSubmittingAction(decision);
     setReviewError("");
@@ -1399,9 +1505,35 @@ ${body}
 
       switch (action) {
         case "accept":
+          if (isLockedByOther) {
+            toast.error(`${currentArticle.locked_by} is currently judging this article`);
+            return;
+          }
+          if (isSelfArticle) {
+            toast.error(
+              t(
+                "feather-review-coi-banner",
+                "Conflict of Interest: You cannot review your own article (authored or submitted by you)."
+              )
+            );
+            return;
+          }
           handleDecision("accepted");
           break;
         case "reject":
+          if (isLockedByOther) {
+            toast.error(`${currentArticle.locked_by} is currently judging this article`);
+            return;
+          }
+          if (isSelfArticle) {
+            toast.error(
+              t(
+                "feather-review-coi-banner",
+                "Conflict of Interest: You cannot review your own article (authored or submitted by you)."
+              )
+            );
+            return;
+          }
           handleDecision("rejected");
           break;
         case "skip":
@@ -1423,12 +1555,15 @@ ${body}
       activeTab.id,
       capturingAction,
       currentArticle,
+      isLockedByOther,
+      isSelfArticle,
       isSubmitting,
       rowArticles,
       selectedForBulk,
       shortcuts,
       showShortcutHelp,
       sidebarCollapsed,
+      t,
     ]
   );
 
@@ -1447,8 +1582,18 @@ ${body}
       clearTimeout(undoExpiryTimerRef.current);
       clearTimeout(wikitextCopyTimerRef.current);
       clearTimeout(focusOpenTimerRef.current);
+      clearInterval(lockHeartbeatTimerRef.current);
     };
   }, [handleShortcut]);
+
+  useEffect(() => {
+    return () => {
+      clearInterval(lockHeartbeatTimerRef.current);
+      if (currentArticle?.article_id) {
+        apiReleaseLock(currentArticle.article_id).catch(() => {});
+      }
+    };
+  }, [currentArticle?.article_id]);
 
   const juryList = contest?.juries || [];
 
@@ -2104,6 +2249,26 @@ ${body}
                     </div>
                   </header>
 
+                  {/* Active Review Lock Notice Banner */}
+                  {isLockedByOther && (
+                    <div className="rq-lock-banner" role="alert">
+                      <CdxIcon icon={cdxIconLock} className="h-4 w-4 shrink-0 text-amber-500 animate-pulse" />
+                      <span>
+                        {t("feather-review-lock-banner", currentArticle.locked_by)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Conflict of Interest (COI) Notice Banner */}
+                  {isSelfArticle && (
+                    <div className="rq-coi-banner" role="alert">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
+                      <span>
+                        {t("feather-review-coi-banner")}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Mobile pane tabs */}
                   {showWikitext && (
                     <div className="rq-pane-tabs rq-mobile-only">
@@ -2226,7 +2391,14 @@ ${body}
                           className="rq-input pl-9"
                           value={comment}
                           onChange={(e) => setComment(e.target.value)}
-                          placeholder="Leave a note for the submitter (optional)... (C)"
+                          disabled={isSubmitting || isLockedByOther || isSelfArticle}
+                          placeholder={
+                            isLockedByOther
+                              ? `${currentArticle.locked_by} is currently judging this article...`
+                              : isSelfArticle
+                              ? "You cannot review your own article (Conflict of Interest)"
+                              : "Leave a note for the submitter (optional)... (C)"
+                          }
                         />
                       </div>
 
@@ -2235,9 +2407,15 @@ ${body}
                           <button
                             type="button"
                             className="rq-btn rq-btn-accept"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isLockedByOther || isSelfArticle}
                             onClick={() => handleDecision("accepted")}
-                            title="Accept (A)"
+                            title={
+                              isLockedByOther
+                                ? `${currentArticle.locked_by} is currently judging this article`
+                                : isSelfArticle
+                                ? "You cannot review your own article (Conflict of Interest)"
+                                : "Accept (A)"
+                            }
                           >
                             {isSubmitting && submittingAction === "accepted" ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -2252,9 +2430,15 @@ ${body}
                           <button
                             type="button"
                             className="rq-btn rq-btn-reject"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isLockedByOther || isSelfArticle}
                             onClick={() => handleDecision("rejected")}
-                            title="Reject (R)"
+                            title={
+                              isLockedByOther
+                                ? `${currentArticle.locked_by} is currently judging this article`
+                                : isSelfArticle
+                                ? "You cannot review your own article (Conflict of Interest)"
+                                : "Reject (R)"
+                            }
                           >
                             {isSubmitting && submittingAction === "rejected" ? (
                               <Loader2 className="h-4 w-4 animate-spin" />

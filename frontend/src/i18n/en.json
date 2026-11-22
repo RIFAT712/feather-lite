@@ -581,6 +581,8 @@
     "feather-review-view-owner": "Owner",
     "feather-review-select-judge": "Choose jury member",
     "feather-review-locked-by": "Being reviewed by $1",
+    "feather-review-lock-banner": "$1 is currently judging this article",
+    "feather-review-coi-banner": "Conflict of Interest: You cannot review your own article (authored or submitted by you).",
     "feather-review-block-accepted": "Accepted",
     "feather-review-block-rejected": "Rejected",
     "feather-review-block-skipped": "Skipped",

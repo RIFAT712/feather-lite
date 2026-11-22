@@ -90,6 +90,38 @@ func Connect(cfg *config.Config) (*DB, error) {
 	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN distribute_jury_queue INTEGER NOT NULL DEFAULT 0;")
 	_, _ = db.Exec("ALTER TABLE contests ADD COLUMN onwiki_page_url TEXT;")
 	_, _ = db.Exec("ALTER TABLE talk_page_jobs ADD COLUMN retry_after DATETIME;")
+	_, _ = db.Exec("ALTER TABLE articles ADD COLUMN re_review_requested INTEGER NOT NULL DEFAULT 0;")
+	_, _ = db.Exec("ALTER TABLE articles ADD COLUMN re_review_note TEXT DEFAULT '';")
+	_, _ = db.Exec("ALTER TABLE articles ADD COLUMN re_reviewed_at DATETIME;")
+	_, _ = db.Exec(`
+		CREATE TABLE IF NOT EXISTS notifications (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			contest_id INTEGER NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+			article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
+			type TEXT NOT NULL,
+			title TEXT NOT NULL,
+			message TEXT NOT NULL,
+			link_url TEXT NOT NULL,
+			is_read INTEGER NOT NULL DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+	`)
+	_, _ = db.Exec(`
+		CREATE TABLE IF NOT EXISTS article_messages (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			message TEXT NOT NULL,
+			is_system INTEGER NOT NULL DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+	`)
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_articles_rereview ON articles(contest_id, re_review_requested, id DESC);")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read, id DESC);")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_notifications_user_all ON notifications(user_id, id DESC);")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_article_messages_article ON article_messages(article_id, id ASC);")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_article_messages_user ON article_messages(user_id);")
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_contests_parent ON contests(parent_contest_id);")
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_contests_is_umbrella ON contests(is_umbrella);")
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_talk_jobs_queue ON talk_page_jobs(status, attempts, id);")
@@ -134,7 +166,7 @@ func Connect(cfg *config.Config) (*DB, error) {
 	return &DB{DB: db, DBType: cfg.DBType}, nil
 }
 
-func parseFlexTime(s string) *time.Time {
+func ParseFlexTime(s string) *time.Time {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return nil
@@ -160,6 +192,10 @@ func parseFlexTime(s string) *time.Time {
 	return nil
 }
 
+func parseFlexTime(s string) *time.Time {
+	return ParseFlexTime(s)
+}
+
 // Keyset Paginated Article Fetch - O(1) time on 50,000+ entries (supports standalone & umbrella campaigns)
 func (d *DB) GetArticlesKeyset(contestID int64, beforeID int64, status string, assignedToID int64, limit int) (*models.KeysetPaginationResult, error) {
 	return d.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, "", limit)
@@ -176,7 +212,8 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 		       a.assigned_to_id, COALESCE(ju.wiki_username, ''), a.submitted_at,
 		       CASE WHEN a.locked_until IS NOT NULL AND a.locked_until > CURRENT_TIMESTAMP THEN a.locked_until ELSE NULL END,
 		       CASE WHEN a.locked_until IS NOT NULL AND a.locked_until > CURRENT_TIMESTAMP THEN a.locked_by_id ELSE NULL END,
-		       CASE WHEN a.locked_until IS NOT NULL AND a.locked_until > CURRENT_TIMESTAMP THEN COALESCE(lu.wiki_username, '') ELSE '' END
+		       CASE WHEN a.locked_until IS NOT NULL AND a.locked_until > CURRENT_TIMESTAMP THEN COALESCE(lu.wiki_username, '') ELSE '' END,
+		       COALESCE(a.re_review_requested, 0), COALESCE(a.re_review_note, ''), a.re_reviewed_at
 		FROM articles a
 		JOIN contests c ON a.contest_id = c.id
 		JOIN users u ON a.submitter_id = u.id
@@ -220,11 +257,14 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 		var lockedUsername string
 		var valErr, creator, creationDateStr, submittedAtStr, lockedUntilStr sql.NullString
 		var wordCountVerifiedInt int64
+		var reReviewReqInt int64
+		var reReviewNoteStr, reReviewedAtStr sql.NullString
 		err := rows.Scan(
 			&a.ID, &a.ContestID, &a.ContestCode, &a.WikiDbName, &a.WikiURL, &a.WikiLang, &a.Title, &a.SubmitterID, &a.SubmitterUsername,
 			&a.Status, &valErr, &creator, &creationDateStr, &a.ByteCount,
 			&a.WordCount, &wordCountVerifiedInt, &a.AssignedToID, &assignedUsername, &submittedAtStr,
 			&lockedUntilStr, &a.LockedByID, &lockedUsername,
+			&reReviewReqInt, &reReviewNoteStr, &reReviewedAtStr,
 		)
 		if err != nil {
 			return nil, err
@@ -232,6 +272,11 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 		a.ValidationError = valErr.String
 		a.WikiCreator = creator.String
 		a.WordCountVerified = wordCountVerifiedInt == 1
+		a.ReReviewRequested = reReviewReqInt == 1
+		a.ReReviewNote = reReviewNoteStr.String
+		if reReviewedAtStr.Valid {
+			a.ReReviewedAt = parseFlexTime(reReviewedAtStr.String)
+		}
 		if creationDateStr.Valid {
 			a.WikiCreationDate = parseFlexTime(creationDateStr.String)
 		}

@@ -118,6 +118,18 @@ func main() {
 		api.Delete("/articles/{id}", h.DeleteArticle)
 		api.Post("/articles/bulk-review", h.BulkReview)
 		api.Post("/articles/bulk-delete", h.BulkDeleteArticles)
+
+		// Notifications routes
+		api.Get("/notifications", h.GetNotifications)
+		api.Get("/notifications/unread-count", h.GetUnreadNotificationCount)
+		api.Post("/notifications/{id}/read", h.MarkNotificationRead)
+		api.Post("/notifications/mark-all-read", h.MarkAllNotificationsRead)
+
+		// Article Discussion & Re-Review routes
+		api.Get("/articles/{id}/messages", h.GetArticleMessages)
+		api.Post("/articles/{id}/messages", h.PostArticleMessage)
+		api.Post("/articles/{id}/request-re-review", h.RequestArticleReReview)
+
 		api.Get("/users/suggest", h.SuggestUsers)
 		api.Get("/users/elevated", h.GetElevatedUsers)
 		api.Get("/users/{username}/role", h.GetUserRole)

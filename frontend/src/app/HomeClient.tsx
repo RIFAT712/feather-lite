@@ -838,12 +838,12 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                         className={buttonVariants({
                           variant: "outline",
                           size: "sm",
-                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 max-w-full overflow-hidden flex-initial",
+                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 max-w-full overflow-hidden flex-initial whitespace-nowrap shrink-0",
                         })}
                         title={t("feather-campaign-tab-communities")}
                       >
                         <Globe className="h-3.5 w-3.5 shrink-0 text-primary" />
-                        <span className="truncate min-w-0">
+                        <span className="truncate min-w-0 capitalize">
                           {t("feather-campaign-stat-communities")}
                         </span>
                       </Link>
@@ -853,7 +853,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                         className={buttonVariants({
                           variant: "outline",
                           size: "sm",
-                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 max-w-full overflow-hidden flex-initial",
+                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 max-w-full overflow-hidden flex-initial whitespace-nowrap shrink-0",
                         })}
                         title={t("feather-contest-action-submit")}
                       >

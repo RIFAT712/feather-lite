@@ -80,7 +80,10 @@ CREATE TABLE IF NOT EXISTS articles (
     assigned_to_id INTEGER REFERENCES users(id),
     submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     locked_until DATETIME,
-    locked_by_id INTEGER REFERENCES users(id)
+    locked_by_id INTEGER REFERENCES users(id),
+    re_review_requested INTEGER NOT NULL DEFAULT 0,
+    re_review_note TEXT DEFAULT '',
+    re_reviewed_at DATETIME
 );
 
 CREATE TABLE IF NOT EXISTS reviews (
@@ -106,11 +109,38 @@ CREATE TABLE IF NOT EXISTS talk_page_jobs (
     processed_at DATETIME
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    contest_id INTEGER NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+    article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
+    type TEXT NOT NULL, -- 'article_rejected', 'article_accepted', 're_review_requested', 'article_message'
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    link_url TEXT NOT NULL,
+    is_read INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS article_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    is_system INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Crucial composite indexes for 50k+ scale keyset pagination (O(1) lookups)
 CREATE INDEX IF NOT EXISTS idx_articles_contest_keyset ON articles(contest_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_articles_contest_status ON articles(contest_id, status, id DESC);
 CREATE INDEX IF NOT EXISTS idx_articles_jury_queue ON articles(contest_id, assigned_to_id, status, id DESC);
 CREATE INDEX IF NOT EXISTS idx_articles_submitter ON articles(contest_id, submitter_id);
+CREATE INDEX IF NOT EXISTS idx_articles_rereview ON articles(contest_id, re_review_requested, id DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read, id DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_all ON notifications(user_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_article_messages_article ON article_messages(article_id, id ASC);
+CREATE INDEX IF NOT EXISTS idx_article_messages_user ON article_messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_article ON reviews(article_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_id);
 CREATE INDEX IF NOT EXISTS idx_talk_jobs_status ON talk_page_jobs(status, id);

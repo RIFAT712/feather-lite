@@ -2346,7 +2346,61 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Status == "accepted" || req.Status == "rejected" {
-		_, _ = h.db.Exec("UPDATE articles SET status = ?, locked_until = NULL, locked_by_id = NULL WHERE id = ?", req.Status, articleID)
+		_, _ = h.db.Exec("UPDATE articles SET status = ?, locked_until = NULL, locked_by_id = NULL, re_review_requested = 0 WHERE id = ?", req.Status, articleID)
+
+		var articleTitle, contestCode, contestName string
+		_ = h.db.QueryRow(`
+			SELECT a.title, c.code, c.name
+			FROM articles a
+			JOIN contests c ON a.contest_id = c.id
+			WHERE a.id = ?
+		`, articleID).Scan(&articleTitle, &contestCode, &contestName)
+
+		if req.Status == "rejected" {
+			var notifMsg string
+			if strings.TrimSpace(req.Comment) != "" {
+				notifMsg = fmt.Sprintf("Your article '%s' was rejected in %s: %s", articleTitle, contestName, req.Comment)
+			} else {
+				notifMsg = fmt.Sprintf("Your article '%s' was reviewed and rejected in %s.", articleTitle, contestName)
+			}
+			h.createNotification(
+				submitterID,
+				contestID,
+				&articleID,
+				"article_rejected",
+				fmt.Sprintf("Article rejected: %s", articleTitle),
+				notifMsg,
+				fmt.Sprintf("/contests/%s?article=%d", contestCode, articleID),
+			)
+			var sysComment string
+			if strings.TrimSpace(req.Comment) != "" {
+				sysComment = fmt.Sprintf("%s reviewed and marked this article as Rejected: %q", reviewer, req.Comment)
+			} else {
+				sysComment = fmt.Sprintf("%s reviewed and marked this article as Rejected.", reviewer)
+			}
+			_, _ = h.db.Exec(`
+				INSERT INTO article_messages (article_id, user_id, message, is_system, created_at)
+				VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+			`, articleID, reviewerID, sysComment)
+		} else if req.Status == "accepted" {
+			h.createNotification(
+				submitterID,
+				contestID,
+				&articleID,
+				"article_accepted",
+				fmt.Sprintf("Article accepted: %s", articleTitle),
+				fmt.Sprintf("Congratulations! Your article '%s' was approved by %s in %s.", articleTitle, reviewer, contestName),
+				fmt.Sprintf("/contests/%s?article=%d", contestCode, articleID),
+			)
+			sysComment := fmt.Sprintf("%s reviewed and marked this article as Accepted.", reviewer)
+			if strings.TrimSpace(req.Comment) != "" {
+				sysComment = fmt.Sprintf("%s reviewed and marked this article as Accepted: %q", reviewer, req.Comment)
+			}
+			_, _ = h.db.Exec(`
+				INSERT INTO article_messages (article_id, user_id, message, is_system, created_at)
+				VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+			`, articleID, reviewerID, sysComment)
+		}
 	} else {
 		_, _ = h.db.Exec("UPDATE articles SET locked_until = NULL, locked_by_id = NULL WHERE id = ?", articleID)
 	}
@@ -2659,10 +2713,35 @@ func (h *Handler) BulkReview(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		_, err = tx.Exec("UPDATE articles SET status = ?, locked_until = NULL, locked_by_id = NULL WHERE id = ?", req.Status, articleID)
+		_, err = tx.Exec("UPDATE articles SET status = ?, locked_until = NULL, locked_by_id = NULL, re_review_requested = 0 WHERE id = ?", req.Status, articleID)
 		if err != nil {
 			failed = append(failed, map[string]any{"article_id": articleID, "detail": err.Error()})
 			continue
+		}
+
+		// Automated notification on bulk evaluation
+		var artTitle, cCode, cName string
+		_ = tx.QueryRow("SELECT a.title, c.code, c.name FROM articles a JOIN contests c ON a.contest_id = c.id WHERE a.id = ?", articleID).Scan(&artTitle, &cCode, &cName)
+		if req.Status == "rejected" {
+			h.createNotification(
+				submitterID,
+				contestID,
+				&articleID,
+				"article_rejected",
+				fmt.Sprintf("Article rejected: %s", artTitle),
+				fmt.Sprintf("Your article '%s' was rejected in %s.", artTitle, cName),
+				fmt.Sprintf("/contests/%s?article=%d", cCode, articleID),
+			)
+		} else if req.Status == "accepted" {
+			h.createNotification(
+				submitterID,
+				contestID,
+				&articleID,
+				"article_accepted",
+				fmt.Sprintf("Article accepted: %s", artTitle),
+				fmt.Sprintf("Congratulations! Your article '%s' was approved in %s.", artTitle, cName),
+				fmt.Sprintf("/contests/%s?article=%d", cCode, articleID),
+			)
 		}
 
 		reviewedCount++

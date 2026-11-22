@@ -83,6 +83,10 @@ type Article struct {
 	LockedByID         *int64     `json:"locked_by_id,omitempty"`
 	LockedByUsername   string     `json:"locked_by_username,omitempty"`
 	
+	ReReviewRequested  bool       `json:"re_review_requested"`
+	ReReviewNote       string     `json:"re_review_note,omitempty"`
+	ReReviewedAt       *time.Time `json:"re_reviewed_at,omitempty"`
+	
 	ReviewCount int      `json:"review_count,omitempty"`
 	Reviews     []Review `json:"reviews,omitempty"`
 }
@@ -115,6 +119,37 @@ type KeysetPaginationResult struct {
 	Total      int       `json:"total"`
 	NextCursor int64     `json:"next_cursor,omitempty"`
 	HasMore    bool      `json:"has_more"`
+}
+
+type Notification struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	ContestID int64     `json:"contest_id"`
+	ArticleID *int64    `json:"article_id,omitempty"`
+	Type      string    `json:"type"` // "article_rejected", "article_accepted", "re_review_requested", "article_message"
+	Title     string    `json:"title"`
+	Message   string    `json:"message"`
+	LinkURL   string    `json:"link_url"`
+	IsRead    bool      `json:"is_read"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type NotificationKeysetResult struct {
+	Items       []Notification `json:"items"`
+	UnreadCount int            `json:"unread_count"`
+	NextCursor  int64          `json:"next_cursor,omitempty"`
+	HasMore     bool           `json:"has_more"`
+}
+
+type ArticleMessage struct {
+	ID        int64     `json:"id"`
+	ArticleID int64     `json:"article_id"`
+	UserID    int64     `json:"user_id"`
+	Username  string    `json:"username"`
+	Role      string    `json:"role"`
+	Message   string    `json:"message"`
+	IsSystem  bool      `json:"is_system"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type SubContestSummary struct {

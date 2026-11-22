@@ -104,6 +104,9 @@ export interface Article {
   locked_until?: string | null;
   locked_by_id?: number | null;
   locked_by_username?: string;
+  re_review_requested?: boolean;
+  re_review_note?: string;
+  re_reviewed_at?: string | null;
   review_count?: number;
   reviews?: ArticleReview[];
 }
@@ -1024,5 +1027,129 @@ export async function fetchUserRole(username: string): Promise<string | null> {
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// In-Tool Notifications & Wikipedia Echo-style Integration
+// ---------------------------------------------------------------------------
+
+export interface NotificationItem {
+  id: number;
+  user_id: number;
+  contest_id: number;
+  article_id?: number | null;
+  type: "article_rejected" | "article_accepted" | "re_review_requested" | "article_message" | string;
+  title: string;
+  message: string;
+  link_url: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationKeysetResponse {
+  items: NotificationItem[];
+  unread_count: number;
+  next_cursor?: number;
+  has_more: boolean;
+}
+
+export async function fetchNotifications(
+  beforeId?: number,
+  unreadOnly?: boolean,
+  limit: number = 20
+): Promise<NotificationKeysetResponse> {
+  const params = new URLSearchParams();
+  if (beforeId) params.set("before_id", beforeId.toString());
+  if (unreadOnly) params.set("unread_only", "true");
+  params.set("limit", limit.toString());
+
+  const res = await fetch(`${API_BASE}/notifications?${params.toString()}`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch notifications");
+  return res.json();
+}
+
+export async function fetchUnreadNotificationCount(): Promise<number> {
+  try {
+    const res = await fetch(`${API_BASE}/notifications/unread-count`, {
+      cache: "no-store",
+      credentials: "include",
+    });
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.unread_count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+export async function markNotificationRead(id: number): Promise<void> {
+  await fetch(`${API_BASE}/notifications/${id}/read`, {
+    method: "POST",
+    credentials: "include",
+  }).catch(() => {});
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await fetch(`${API_BASE}/notifications/mark-all-read`, {
+    method: "POST",
+    credentials: "include",
+  }).catch(() => {});
+}
+
+// ---------------------------------------------------------------------------
+// In-Tool Article Discussion Thread & Re-Review Requests
+// ---------------------------------------------------------------------------
+
+export interface ArticleMessageItem {
+  id: number;
+  article_id: number;
+  user_id: number;
+  username: string;
+  role: string;
+  message: string;
+  is_system: boolean;
+  created_at: string;
+}
+
+export async function fetchArticleMessages(articleId: number): Promise<ArticleMessageItem[]> {
+  const res = await fetch(`${API_BASE}/articles/${articleId}/messages`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch article messages");
+  const data = await res.json();
+  return data.messages || [];
+}
+
+export async function postArticleMessage(articleId: number, message: string): Promise<{ success: boolean; message_id: number }> {
+  const res = await fetch(`${API_BASE}/articles/${articleId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ message }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.error || "Failed to post message");
+  }
+  return res.json();
+}
+
+export async function requestArticleReReview(articleId: number, note: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/articles/${articleId}/request-re-review`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ note }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.error || "Failed to request re-review");
+  }
+  return res.json();
+}
+
 
 

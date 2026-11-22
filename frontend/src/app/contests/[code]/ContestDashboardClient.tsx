@@ -2,7 +2,7 @@
 
 import { use, useState, useMemo, useEffect, useCallback, Fragment } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   fetchContest, fetchStandings, fetchArticles, createSubContest,
@@ -40,11 +40,12 @@ import {
   FileCode, CheckCheck, XCircle, AlertCircle, Layers, Plus, Globe,
   Link2, Unlink, Settings, Save, Sliders, Sparkles, UserCheck, CheckCircle, Shield, X,
   BarChart3, ShieldAlert, Download, List, ChevronDown, ChevronRight,
-  FileSpreadsheet, TrendingUp
+  FileSpreadsheet, TrendingUp, MessageSquare, RefreshCw
 } from "lucide-react";
 import { UserTagInput } from "@/components/contests/UserTagInput";
 import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
 import UserBadge from "@/components/users/UserBadge";
+import ArticleDiscussionModal from "@/components/contests/ArticleDiscussionModal";
 
 function ParticipantArticlesDrawer({
   code,
@@ -213,6 +214,7 @@ export default function ContestDashboardClient({
 }: ContestDashboardClientProps) {
   const { t, n, formatDate, locale, isRtl } = useI18n();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const queryClient = useQueryClient();
 
@@ -223,6 +225,7 @@ export default function ContestDashboardClient({
   const [communityFilter, setCommunityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isCopied, setIsCopied] = useState(false);
+  const [discussionArticle, setDiscussionArticle] = useState<Article | null>(null);
 
   // Live ticking countdown timer state (1-second tick)
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
@@ -336,6 +339,17 @@ export default function ContestDashboardClient({
   }, [articlesData?.items, extraArticles]);
 
   const articles = allArticles;
+
+  const articleParam = searchParams.get("article");
+  useEffect(() => {
+    if (articleParam && articles && articles.length > 0) {
+      const artId = Number(articleParam);
+      const found = articles.find((a) => a.id === artId);
+      if (found) {
+        setDiscussionArticle(found);
+      }
+    }
+  }, [articleParam, articles]);
 
   const { data: juryStats } = useQuery<JuryStatsResponse | null>({
     queryKey: ["jury-stats", code],
@@ -3202,23 +3216,32 @@ export default function ContestDashboardClient({
                           {showWords && <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>}
                           {showBytes && <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>}
                           <TableHead className="text-right text-xs">{t("feather-contest-col-date")}</TableHead>
+                          <TableHead className="text-center text-xs">Discussion</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredArticles.map((art) => (
                           <TableRow key={art.id} className="transition-colors hover:bg-muted/40">
                             <TableCell className="font-medium text-foreground text-xs sm:text-sm">
-                              <a
-                                href={`${contest.wiki_url || "https://bn.wiktionary.org"}/wiki/${encodeURIComponent(
-                                  art.title
-                                )}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 hover:text-primary hover:underline cursor-pointer transition-colors"
-                              >
-                                {art.title}
-                                <ExternalLink className="h-2.5 w-2.5 opacity-40" />
-                              </a>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <a
+                                  href={`${contest.wiki_url || "https://bn.wiktionary.org"}/wiki/${encodeURIComponent(
+                                    art.title
+                                  )}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 hover:text-primary hover:underline cursor-pointer transition-colors"
+                                >
+                                  {art.title}
+                                  <ExternalLink className="h-2.5 w-2.5 opacity-40" />
+                                </a>
+                                {art.re_review_requested && (
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded-full shrink-0">
+                                    <RefreshCw className="h-2.5 w-2.5" />
+                                    <span>{t("feather-rereview-badge", "Re-review requested")}</span>
+                                  </span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               <span className="inline-flex items-center gap-1.5 flex-wrap">
@@ -3264,6 +3287,24 @@ export default function ContestDashboardClient({
                             )}
                             <TableCell className="text-right text-xs text-muted-foreground">
                               {formatDate(art.submitted_at)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDiscussionArticle(art)}
+                                className={`h-7 px-2 text-xs cursor-pointer gap-1 rounded-md ${
+                                  art.re_review_requested
+                                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-semibold"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                                title="Open article discussion & jury criteria"
+                              >
+                                <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                                <span className="text-[11px] hidden md:inline">
+                                  {art.re_review_requested ? "Re-review" : "Discussion"}
+                                </span>
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -3336,6 +3377,24 @@ export default function ContestDashboardClient({
                           <span className="text-[10px]">
                             {formatDate(art.submitted_at)}
                           </span>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          {art.re_review_requested ? (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
+                              <RefreshCw className="h-2.5 w-2.5" />
+                              <span>{t("feather-rereview-badge", "Re-review requested")}</span>
+                            </span>
+                          ) : <span />}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDiscussionArticle(art)}
+                            className="h-6 text-[11px] gap-1 px-2 cursor-pointer"
+                          >
+                            <MessageSquare className="h-3 w-3 text-primary" />
+                            <span>Discussion</span>
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -3725,6 +3784,18 @@ export default function ContestDashboardClient({
 
       </Tabs>
 
+      {/* Article Discussion & Re-Review Modal */}
+      <ArticleDiscussionModal
+        isOpen={!!discussionArticle}
+        onClose={() => setDiscussionArticle(null)}
+        article={discussionArticle}
+        contestCode={code}
+        currentUsername={me?.wiki_username}
+        isJuryOrOrganizer={isJuryOrOrganizer}
+        onReReviewRequested={() => {
+          queryClient.invalidateQueries({ queryKey: ["articles", code] });
+        }}
+      />
     </div>
   );
 }

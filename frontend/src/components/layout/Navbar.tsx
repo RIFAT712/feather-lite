@@ -13,6 +13,7 @@ import { useI18n } from "@/i18n/I18nContext";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 import UserBadge from "@/components/users/UserBadge";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { toast } from "sonner";
 
 export default function Navbar() {
@@ -139,6 +140,7 @@ export default function Navbar() {
             </div>
           ) : me?.is_authenticated ? (
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <Link
                 href={`/users/${encodeURIComponent(me.wiki_username || "")}`}
                 className="flex items-center gap-2 rounded-md border border-border/80 bg-muted/40 hover:bg-muted/70 hover:border-primary/40 px-2.5 py-1 text-xs transition-colors cursor-pointer group shadow-2xs"
@@ -177,6 +179,7 @@ export default function Navbar() {
 
         {/* Mobile Navigation Header Controls */}
         <div className="flex md:hidden items-center gap-1.5">
+          {me?.is_authenticated && <NotificationBell />}
           <LanguageSwitcher />
           <ThemeToggle />
 

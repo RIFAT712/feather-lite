@@ -23,7 +23,9 @@ import {
   Trash2,
   MessageSquare,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
+import ArticleDiscussionModal from "@/components/contests/ArticleDiscussionModal";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n/I18nContext";
@@ -445,6 +447,7 @@ export default function ReviewQueueClient({
   const [wikitextCopied, setWikitextCopied] = useState(false);
 
   const [listTab, setListTab] = useState<"queue" | "rereview" | "others">("queue");
+  const [isDiscussionOpen, setIsDiscussionOpen] = useState(false);
   const [showQueueOptions, setShowQueueOptions] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [panelWidth, setPanelWidthState] = useState(PANEL_DEFAULT);
@@ -940,6 +943,8 @@ ${body}
   const filteredJudgedArticles = useMemo(() => {
     const list = [...forSidebar(judgedArticles, true)];
     return list.sort((a, b) => {
+      if (a.re_review_requested && !b.re_review_requested) return -1;
+      if (!a.re_review_requested && b.re_review_requested) return 1;
       const ra = DECISION_RANK[getMyLatestDecision(a)] ?? 9;
       const rb = DECISION_RANK[getMyLatestDecision(b)] ?? 9;
       return ra - rb;
@@ -1977,7 +1982,14 @@ ${body}
                         </label>
                       )}
                       <div className="rq-item-content">
-                        <span className="rq-item-title">{article.title}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="rq-item-title">{article.title}</span>
+                          {article.re_review_requested && (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 rounded shrink-0">
+                              ⚡ Re-review
+                            </span>
+                          )}
+                        </div>
                         {(activeTab.id === "others" || !isSingleSubmitter) && (
                           <span className="rq-item-meta">
                             {activeTab.id === "others"
@@ -2228,6 +2240,19 @@ ${body}
 
                       <button
                         type="button"
+                        className="rq-btn-secondary inline-flex items-center gap-1.5 cursor-pointer relative"
+                        title="Open article discussion and re-review request thread"
+                        onClick={() => setIsDiscussionOpen(true)}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        <span className="rq-desktop-only">Discussion</span>
+                        {currentArticle?.re_review_requested && (
+                          <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
                         className="rq-btn-secondary rq-help-btn rq-desktop-only"
                         title="Keyboard shortcuts (/)"
                         aria-label="Keyboard shortcuts"
@@ -2266,6 +2291,26 @@ ${body}
                       <span>
                         {t("feather-review-coi-banner")}
                       </span>
+                    </div>
+                  )}
+
+                  {/* Author Re-review Request Notice Banner */}
+                  {currentArticle?.re_review_requested && (
+                    <div className="rq-rereview-banner flex items-center justify-between gap-3 p-2.5 px-4 bg-amber-500/15 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <RefreshCw className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="font-bold">Re-review requested by author:</span>{" "}
+                          <span className="italic truncate">{currentArticle.re_review_note || "Please re-evaluate my submission."}</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsDiscussionOpen(true)}
+                        className="px-2.5 py-1 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded cursor-pointer shrink-0 transition-colors"
+                      >
+                        View discussion
+                      </button>
                     </div>
                   )}
 
@@ -2661,6 +2706,34 @@ ${body}
             </div>
           </div>
         </div>
+      )}
+      {/* Article Discussion & Re-Review Modal */}
+      {isDiscussionOpen && (
+        <ArticleDiscussionModal
+          isOpen={isDiscussionOpen}
+          onClose={() => setIsDiscussionOpen(false)}
+          article={
+            currentArticle
+              ? ({
+                  id: currentArticle.article_id,
+                  title: currentArticle.title,
+                  contest_id: contest?.id || 0,
+                  submitter_id: 0,
+                  submitter_username: currentArticle.submitted_by || currentArticle.submitter_username || "",
+                  status: currentArticle.status,
+                  word_count: currentArticle.word_count || 0,
+                  byte_count: currentArticle.byte_count || 0,
+                  submitted_at: currentArticle.submitted_at || "",
+                  re_review_requested: currentArticle.re_review_requested,
+                  re_review_note: currentArticle.re_review_note,
+                  re_reviewed_at: currentArticle.re_reviewed_at,
+                } as any)
+              : null
+          }
+          contestCode={code}
+          currentUsername={myUsername}
+          isJuryOrOrganizer={true}
+        />
       )}
     </div>
   );

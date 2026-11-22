@@ -354,7 +354,7 @@ export default function ContestStatsClient({
               })}
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>{t("feather-contest-back-to-dashboard")}</span>
+              <span>{t("feather-contest-back-to-contest")}</span>
             </Link>
 
             <div className="h-4 w-px bg-border/80 hidden sm:block" />
@@ -403,7 +403,7 @@ export default function ContestStatsClient({
                 className: "text-xs h-8 cursor-pointer gap-1",
               })}
             >
-              <span>{t("feather-contest-tab-articles")}</span>
+              <span>{t("feather-contest-tab-submissions")}</span>
               <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </div>

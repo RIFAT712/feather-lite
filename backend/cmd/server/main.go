@@ -130,6 +130,14 @@ func main() {
 		api.Post("/articles/{id}/messages", h.PostArticleMessage)
 		api.Post("/articles/{id}/request-re-review", h.RequestArticleReReview)
 
+		// Community Chat & Moderation routes
+		api.Get("/contests/{code}/chat", h.GetChatMessages)
+		api.Post("/contests/{code}/chat", h.PostChatMessage)
+		api.Delete("/contests/{code}/chat/{messageId}", h.DeleteChatMessage)
+		api.Post("/contests/{code}/chat/moderate", h.ModerateChatUser)
+		api.Get("/contests/{code}/chat/moderation", h.GetChatModerationLog)
+		api.Get("/contests/{code}/chat/my-status", h.GetMyChatStatus)
+
 		api.Get("/users/suggest", h.SuggestUsers)
 		api.Get("/users/elevated", h.GetElevatedUsers)
 		api.Get("/users/{username}/role", h.GetUserRole)

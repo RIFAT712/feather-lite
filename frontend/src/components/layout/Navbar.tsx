@@ -38,7 +38,12 @@ export default function Navbar() {
     staleTime: 30 * 1000,
   });
 
-  if (pathname && /\/contests\/[^/]+\/review(?:\/|$)/.test(pathname)) {
+  if (
+    pathname &&
+    (/\/contests\/[^/]+\/review(?:\/|$)/.test(pathname) ||
+      pathname === "/login" ||
+      pathname.startsWith("/login/"))
+  ) {
     return null;
   }
 

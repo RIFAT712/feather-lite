@@ -46,6 +46,7 @@ import { UserTagInput } from "@/components/contests/UserTagInput";
 import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
 import UserBadge from "@/components/users/UserBadge";
 import ArticleDiscussionModal from "@/components/contests/ArticleDiscussionModal";
+import CommunityChatPanel from "@/components/chat/CommunityChatPanel";
 
 function ParticipantArticlesDrawer({
   code,
@@ -1476,6 +1477,17 @@ export default function ContestDashboardClient({
                   <Share2 className="h-4 w-4 text-primary" />
                   <span>{t("feather-contest-share-btn")}</span>
                 </Button>
+
+                <Button
+                  variant="outline"
+                  size="default"
+                  onClick={() => setActiveTab("chat")}
+                  className="gap-2 cursor-pointer font-medium text-xs sm:text-sm px-3.5 shadow-2xs hover:bg-muted/80"
+                  title={t("feather-chat-title")}
+                >
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                  <span>{t("feather-chat-title")}</span>
+                </Button>
               </div>
 
               {/* Organizer & Jury Quick Tools */}
@@ -2043,6 +2055,10 @@ export default function ContestDashboardClient({
                     {contest.juries.length}
                   </span>
                 ) : null}
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="gap-1.5 text-xs cursor-pointer font-medium shrink-0 whitespace-nowrap px-3 py-1.5">
+                <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                <span>{t("feather-chat-title")}</span>
               </TabsTrigger>
               <Link
                 href={`/contests/${code}/stats`}
@@ -3781,6 +3797,17 @@ export default function ContestDashboardClient({
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="chat" className="space-y-4 outline-hidden">
+          <CommunityChatPanel
+            contestCode={code}
+            contestName={contest.name}
+            isUmbrella={Boolean(contest.is_umbrella)}
+            parentContestId={contest.parent_contest_id}
+            isJuryOrAdmin={isJuryOrOrganizer}
+            currentUsername={me?.wiki_username}
+          />
         </TabsContent>
 
       </Tabs>

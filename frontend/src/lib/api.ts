@@ -1151,5 +1151,152 @@ export async function requestArticleReReview(articleId: number, note: string): P
   return res.json();
 }
 
+// ---------------------------------------------------------------------------
+// Community Chat & Moderation
+// ---------------------------------------------------------------------------
+
+export interface CommunityChatMessage {
+  id: number;
+  contest_id: number;
+  is_campaign_chat: boolean;
+  user_id: number;
+  username: string;
+  user_role: string;
+  message: string;
+  is_deleted: boolean;
+  deleted_by?: string;
+  deleted_reason?: string;
+  created_at: string;
+}
+
+export interface ChatMessageKeysetResult {
+  items: CommunityChatMessage[];
+  next_cursor?: number;
+  has_more: boolean;
+}
+
+export interface UserChatModeration {
+  id: number;
+  user_id: number;
+  username: string;
+  contest_id?: number;
+  action: "warn" | "timeout" | "ban" | "unban" | string;
+  timeout_until?: string | null;
+  reason: string;
+  moderated_by: string;
+  created_at: string;
+}
+
+export interface UserChatStatus {
+  can_chat: boolean;
+  status: "active" | "timed_out" | "banned" | "unauthenticated" | string;
+  timeout_until?: string | null;
+  warning_count: number;
+  ban_reason?: string;
+}
+
+export async function fetchChatMessages(
+  contestCode: string,
+  beforeId?: number,
+  isCampaign?: boolean,
+  limit: number = 40
+): Promise<ChatMessageKeysetResult> {
+  const params = new URLSearchParams();
+  if (beforeId) params.set("before_id", beforeId.toString());
+  if (isCampaign) params.set("is_campaign", "true");
+  params.set("limit", limit.toString());
+
+  const res = await fetch(`${API_BASE}/contests/${contestCode}/chat?${params.toString()}`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch chat messages");
+  return res.json();
+}
+
+export async function postChatMessage(
+  contestCode: string,
+  message: string,
+  isCampaignChat?: boolean
+): Promise<CommunityChatMessage> {
+  const res = await fetch(`${API_BASE}/contests/${contestCode}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ message, is_campaign_chat: isCampaignChat }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || err.message || "Failed to post message");
+  }
+  return res.json();
+}
+
+export async function deleteChatMessage(
+  contestCode: string,
+  messageId: number,
+  reason?: string
+): Promise<{ status: string; message_id: number; deleted_by: string; reason: string }> {
+  const res = await fetch(`${API_BASE}/contests/${contestCode}/chat/${messageId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || err.message || "Failed to delete message");
+  }
+  return res.json();
+}
+
+export async function moderateChatUser(
+  contestCode: string,
+  username: string,
+  action: "warn" | "timeout" | "ban" | "unban",
+  durationMinutes?: number,
+  reason?: string
+): Promise<{ status: string; action: string; target_username: string }> {
+  const res = await fetch(`${API_BASE}/contests/${contestCode}/chat/moderate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      username,
+      action,
+      duration_minutes: durationMinutes,
+      reason,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || err.message || "Failed to apply moderation action");
+  }
+  return res.json();
+}
+
+export async function fetchChatModerationLog(contestCode: string): Promise<UserChatModeration[]> {
+  const res = await fetch(`${API_BASE}/contests/${contestCode}/chat/moderation`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch moderation log");
+  const data = await res.json();
+  return data.moderation_log || [];
+}
+
+export async function fetchMyChatStatus(contestCode: string): Promise<UserChatStatus> {
+  try {
+    const res = await fetch(`${API_BASE}/contests/${contestCode}/chat/my-status`, {
+      cache: "no-store",
+      credentials: "include",
+    });
+    if (!res.ok) return { can_chat: false, status: "unauthenticated", warning_count: 0 };
+    return res.json();
+  } catch {
+    return { can_chat: false, status: "error", warning_count: 0 };
+  }
+}
+
 
 

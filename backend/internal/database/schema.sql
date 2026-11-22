@@ -131,6 +131,32 @@ CREATE TABLE IF NOT EXISTS article_messages (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS community_chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contest_id INTEGER NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+    is_campaign_chat INTEGER NOT NULL DEFAULT 0,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    username TEXT NOT NULL,
+    user_role TEXT NOT NULL DEFAULT 'participant',
+    message TEXT NOT NULL,
+    is_deleted INTEGER NOT NULL DEFAULT 0,
+    deleted_by TEXT,
+    deleted_reason TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_chat_moderation (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    username TEXT NOT NULL,
+    contest_id INTEGER REFERENCES contests(id) ON DELETE CASCADE,
+    action TEXT NOT NULL, -- 'warn', 'timeout', 'ban', 'unban'
+    timeout_until DATETIME,
+    reason TEXT NOT NULL,
+    moderated_by TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Crucial composite indexes for 50k+ scale keyset pagination (O(1) lookups)
 CREATE INDEX IF NOT EXISTS idx_articles_contest_keyset ON articles(contest_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_articles_contest_status ON articles(contest_id, status, id DESC);
@@ -141,6 +167,10 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_i
 CREATE INDEX IF NOT EXISTS idx_notifications_user_all ON notifications(user_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_article_messages_article ON article_messages(article_id, id ASC);
 CREATE INDEX IF NOT EXISTS idx_article_messages_user ON article_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_contest_keyset ON community_chat_messages(contest_id, is_campaign_chat, id DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_user ON community_chat_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_mod_user_contest ON user_chat_moderation(user_id, contest_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_mod_username ON user_chat_moderation(username, contest_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_article ON reviews(article_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_id);
 CREATE INDEX IF NOT EXISTS idx_talk_jobs_status ON talk_page_jobs(status, id);

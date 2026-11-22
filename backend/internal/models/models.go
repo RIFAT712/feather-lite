@@ -496,3 +496,63 @@ type ContestStatsResponse struct {
 	Signature       string                   `json:"signature"`
 }
 
+// ---------------------------------------------------------------------------
+// Community Chat & Moderation Models
+// ---------------------------------------------------------------------------
+
+type CommunityChatMessage struct {
+	ID             int    `json:"id"`
+	ContestID      int    `json:"contest_id"`
+	IsCampaignChat bool   `json:"is_campaign_chat"`
+	UserID         int    `json:"user_id"`
+	Username       string `json:"username"`
+	UserRole       string `json:"user_role"`
+	Message        string `json:"message"`
+	IsDeleted      bool   `json:"is_deleted"`
+	DeletedBy      string `json:"deleted_by,omitempty"`
+	DeletedReason  string `json:"deleted_reason,omitempty"`
+	CreatedAt      string `json:"created_at"`
+}
+
+type ChatMessageKeysetResult struct {
+	Items      []CommunityChatMessage `json:"items"`
+	NextCursor *int                   `json:"next_cursor,omitempty"`
+	HasMore    bool                   `json:"has_more"`
+}
+
+type UserChatModeration struct {
+	ID           int     `json:"id"`
+	UserID       int     `json:"user_id"`
+	Username     string  `json:"username"`
+	ContestID    *int    `json:"contest_id,omitempty"`
+	Action       string  `json:"action"` // 'warn', 'timeout', 'ban', 'unban'
+	TimeoutUntil *string `json:"timeout_until,omitempty"`
+	Reason       string  `json:"reason"`
+	ModeratedBy  string  `json:"moderated_by"`
+	CreatedAt    string  `json:"created_at"`
+}
+
+type UserChatStatus struct {
+	CanChat      bool    `json:"can_chat"`
+	Status       string  `json:"status"` // 'active', 'timed_out', 'banned'
+	TimeoutUntil *string `json:"timeout_until,omitempty"`
+	WarningCount int     `json:"warning_count"`
+	BanReason    string  `json:"ban_reason,omitempty"`
+}
+
+type PostChatMessageRequest struct {
+	Message        string `json:"message"`
+	IsCampaignChat bool   `json:"is_campaign_chat"`
+}
+
+type ModerateUserRequest struct {
+	Username        string `json:"username"`
+	Action          string `json:"action"` // 'warn', 'timeout', 'ban', 'unban'
+	DurationMinutes int    `json:"duration_minutes,omitempty"`
+	Reason          string `json:"reason"`
+}
+
+type DeleteChatMessageRequest struct {
+	Reason string `json:"reason"`
+}
+

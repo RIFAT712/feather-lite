@@ -92,7 +92,7 @@ export default function Footer() {
           </div>
 
           {/* Badges: WikiConnect + Wikimedia Cloud Services (MediaWiki 88x31 Style) */}
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 w-full md:w-auto shrink-0">
             {/* WikiConnect Initiative Badge */}
             <a
               href="https://meta.wikimedia.org/wiki/Bangla_WikiConnect"
@@ -100,7 +100,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               title="Bangla WikiConnect"
               aria-label="Bangla WikiConnect Initiative"
-              className="inline-flex items-center gap-2 h-9 px-2.5 rounded border border-border/80 bg-card hover:bg-muted/60 hover:border-foreground/30 transition-all group cursor-pointer shadow-2xs shrink-0"
+              className="flex-1 md:flex-initial inline-flex items-center gap-1.5 sm:gap-2 h-9 px-2 sm:px-2.5 rounded border border-border/80 bg-card hover:bg-muted/60 hover:border-foreground/30 transition-all group cursor-pointer shadow-2xs min-w-0"
             >
               <img
                 src="/icons/wikiconnect.svg"
@@ -109,13 +109,13 @@ export default function Footer() {
                 height={22}
                 loading="lazy"
                 decoding="async"
-                className="h-5.5 w-auto object-contain shrink-0"
+                className="h-5 sm:h-5.5 w-auto object-contain shrink-0"
               />
-              <div className="flex flex-col text-left justify-center">
-                <span className="text-[9px] text-muted-foreground font-normal leading-none">
+              <div className="flex flex-col text-left justify-center min-w-0">
+                <span className="text-[8px] sm:text-[9px] text-muted-foreground font-normal leading-none truncate">
                   {t("feather-footer-wikiconnect-sub", "Initiative of")}
                 </span>
-                <span className="text-[11px] font-bold text-foreground tracking-tight leading-none mt-0.5 whitespace-nowrap">
+                <span className="text-[10px] sm:text-[11px] font-bold text-foreground tracking-tight leading-none mt-0.5 whitespace-nowrap truncate">
                   {t("feather-footer-wikiconnect", "Bangla WikiConnect")}
                 </span>
               </div>
@@ -128,7 +128,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               title="Wikimedia Cloud Services"
               aria-label="Wikimedia Cloud Services"
-              className="inline-flex items-center gap-2 h-9 px-2.5 rounded border border-border/80 bg-card hover:bg-muted/60 hover:border-foreground/30 transition-all group cursor-pointer shadow-2xs shrink-0"
+              className="flex-1 md:flex-initial inline-flex items-center gap-1.5 sm:gap-2 h-9 px-2 sm:px-2.5 rounded border border-border/80 bg-card hover:bg-muted/60 hover:border-foreground/30 transition-all group cursor-pointer shadow-2xs min-w-0"
             >
               <img
                 src="/icons/projects/wikimedia.svg"
@@ -137,13 +137,13 @@ export default function Footer() {
                 height={22}
                 loading="lazy"
                 decoding="async"
-                className="h-5.5 w-5.5 object-contain shrink-0"
+                className="h-5 sm:h-5.5 w-5 sm:w-5.5 object-contain shrink-0"
               />
-              <div className="flex flex-col text-left justify-center">
-                <span className="text-[9px] text-muted-foreground font-normal leading-none">
+              <div className="flex flex-col text-left justify-center min-w-0">
+                <span className="text-[8px] sm:text-[9px] text-muted-foreground font-normal leading-none truncate">
                   {t("feather-footer-wmcs-sub", "Powered by")}
                 </span>
-                <span className="text-[11px] font-bold text-foreground tracking-tight leading-none mt-0.5">
+                <span className="text-[10px] sm:text-[11px] font-bold text-foreground tracking-tight leading-none mt-0.5 whitespace-nowrap truncate">
                   Wikimedia Cloud Services
                 </span>
               </div>

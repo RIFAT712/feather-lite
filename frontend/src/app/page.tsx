@@ -2,6 +2,9 @@ import { Metadata } from "next";
 import { getServerContests, getServerPlatformOverview } from "@/lib/server-api";
 import HomeClient from "./HomeClient";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "Feather — Wikimedia Contest Platform",
   description: "High-throughput Wiki Article Contest Management and Judging Platform for Wikimedia projects.",

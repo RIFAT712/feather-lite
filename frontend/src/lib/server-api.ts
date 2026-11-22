@@ -53,7 +53,7 @@ export async function getServerContests(): Promise<Contest[]> {
   try {
     const res = await fetch(`${INTERNAL_API_URL}/api/contests`, {
       headers: { Accept: "application/json" },
-      next: { revalidate: 15 },
+      cache: "no-store",
     });
     if (!res.ok) return [];
     return await res.json();

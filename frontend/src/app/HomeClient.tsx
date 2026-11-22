@@ -56,9 +56,9 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
     queryKey: ["contests"],
     queryFn: fetchContests,
     initialData: initialContests,
-    initialDataUpdatedAt: initialContests?.length ? Date.now() : undefined,
-    staleTime: 60 * 1000,
-    refetchOnMount: false,
+    initialDataUpdatedAt: 0,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   // Extract unique projects (normalized Wikimedia projects: wikipedia, wiktionary, wikisource, wikibooks, etc.)
@@ -599,7 +599,11 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mt-4">
           {processedContests.map((c) => {
             const time = getTimeRemaining(c.start_date, c.end_date);
-            const isActive = c.status === "active";
+            const isEnded = c.status === "ended" || time.isEnded;
+            const isPending = c.status === "pending_approval";
+            const isDraft = c.status === "draft";
+            const isUpcoming = !isEnded && c.status === "active" && time.notStarted;
+            const isActive = !isEnded && c.status === "active" && !time.notStarted;
             const total = c.total_articles || 0;
             const accepted = c.accepted_articles || 0;
 
@@ -614,22 +618,20 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                     <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                       {/* Status Indicator Badge */}
                       {(() => {
-                        const isPending = c.status === "pending_approval";
-                        const isDraft = c.status === "draft";
-                        const isEnded = c.status === "ended" || time.isEnded;
-                        const isUpcoming = isActive && time.notStarted;
-
                         let label = c.status;
-                        if (isUpcoming) label = t("feather-contest-status-upcoming");
+                        if (isEnded) label = t("feather-contest-status-ended");
+                        else if (isUpcoming) label = t("feather-contest-status-upcoming");
                         else if (isActive) label = t("feather-contest-status-active");
                         else if (isPending) label = t("feather-contest-status-pending-approval");
                         else if (isDraft) label = t("feather-contest-status-draft");
-                        else if (isEnded) label = t("feather-contest-status-ended");
 
                         let badgeClass = "bg-muted/40 text-muted-foreground border-border/60";
                         let dotEl = <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 shrink-0" />;
 
-                        if (isUpcoming) {
+                        if (isEnded) {
+                          badgeClass = "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25";
+                          dotEl = <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />;
+                        } else if (isUpcoming) {
                           badgeClass = "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25";
                           dotEl = (
                             <span className="relative flex h-2 w-2 shrink-0">
@@ -716,7 +718,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
 
                     <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 shrink-0">
                       <Clock className="h-3 w-3 text-muted-foreground" />
-                      {time.isEnded
+                      {isEnded
                         ? t("feather-contest-ended")
                         : time.notStarted
                         ? (time.diffDays <= 1
@@ -749,16 +751,16 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                       <span className="flex items-center gap-1 text-[10.5px]">
                         <Clock className="h-3 w-3 text-muted-foreground/70" />
-                        {time.notStarted ? t("feather-time-starts-in") : t("feather-time-remaining")}
+                        {isEnded ? t("feather-contest-ended") : time.notStarted ? t("feather-time-starts-in") : t("feather-time-remaining")}
                       </span>
                       <span className="font-mono text-[10px]">
-                        {t("feather-time-elapsed", time.percent)}
+                        {t("feather-time-elapsed", isEnded ? 100 : time.percent)}
                       </span>
                     </div>
                     <div className="h-1.5 w-full bg-muted/80 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
-                          time.isEnded
+                          isEnded
                             ? "bg-muted-foreground/50"
                             : time.notStarted
                             ? "bg-blue-500"
@@ -766,7 +768,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                             ? "bg-amber-500"
                             : "bg-primary"
                         }`}
-                        style={{ width: `${time.percent}%` }}
+                        style={{ width: `${isEnded ? 100 : time.percent}%` }}
                       />
                     </div>
                   </div>

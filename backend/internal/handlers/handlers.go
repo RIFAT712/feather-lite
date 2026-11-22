@@ -1180,6 +1180,16 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CreateSubContest(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required to add community sub-contests")
+		return
+	}
+	if !h.isPlatformAdminOrOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Only platform administrators or owners can add community sub-contests")
+		return
+	}
+
 	parentCode := chi.URLParam(r, "code")
 	var parentID int64
 	var parentName, parentTZ string
@@ -1244,7 +1254,6 @@ func (h *Handler) CreateSubContest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var createdByID *int64
-	currentUser := auth.GetUser(r.Context())
 	if currentUser != nil && currentUser.UserID > 0 {
 		createdByID = &currentUser.UserID
 	}
@@ -1316,6 +1325,16 @@ func (h *Handler) CreateSubContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetAvailableContests(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required to search campaigns")
+		return
+	}
+	if !h.isPlatformAdminOrOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Only platform administrators or owners can view campaigns for linking")
+		return
+	}
+
 	parentCode := chi.URLParam(r, "code")
 	var parentID int64
 	var isUmbrella int
@@ -1457,6 +1476,16 @@ func (h *Handler) ListGlobalAvailableContests(w http.ResponseWriter, r *http.Req
 }
 
 func (h *Handler) AttachContest(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required to attach community editions")
+		return
+	}
+	if !h.isPlatformAdminOrOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Only platform administrators or owners can link community editions")
+		return
+	}
+
 	parentCode := chi.URLParam(r, "code")
 	var parentID int64
 	var parentName string
@@ -1540,6 +1569,16 @@ func (h *Handler) AttachContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DetachContest(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required to unlink community editions")
+		return
+	}
+	if !h.isPlatformAdminOrOwner(currentUser) {
+		jsonError(w, http.StatusForbidden, "Access denied: Only platform administrators or owners can unlink community editions")
+		return
+	}
+
 	parentCode := chi.URLParam(r, "code")
 	var parentID int64
 	var isUmbrella int

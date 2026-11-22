@@ -41,6 +41,10 @@ import {
   Users,
   AlertCircle,
   AlertTriangle,
+  Trophy,
+  FileCheck,
+  AlignLeft,
+  Check,
 } from "lucide-react";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
 import { Switch } from "@/components/ui/switch";
@@ -554,6 +558,101 @@ export default function SettingsClient({
             </div>
           </CardHeader>
           <CardContent className="space-y-4 pt-4 px-4 sm:px-6 pb-5">
+            {/* Primary Ranking Metric (Big Prominent Selector at the Top) */}
+            <div className="space-y-2 pb-4 border-b border-border/70">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div>
+                  <label className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <Trophy className="h-4 w-4 text-amber-500" />
+                    <span>{t("feather-create-ranking-mode")}</span>
+                    <span className="text-destructive">*</span>
+                  </label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {t("feather-create-ranking-mode-desc")}
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-[10px] sm:text-[11px] self-start sm:self-auto font-mono text-muted-foreground border-border/80">
+                  {editRankByWords ? t("feather-create-rank-by-words") : t("feather-create-rank-by-articles")}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Option 1: Accepted Articles */}
+                <button
+                  type="button"
+                  onClick={() => isOrganizer && setEditRankByWords(false)}
+                  disabled={!isOrganizer}
+                  className={`relative flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all duration-150 select-none ${
+                    !isOrganizer ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                  } ${
+                    !editRankByWords
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
+                      : "border-border/70 bg-card hover:border-border hover:bg-muted/30"
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+                    !editRankByWords ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  }`}>
+                    <FileCheck className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-semibold text-foreground">
+                        {t("feather-create-rank-by-articles")}
+                      </span>
+                      {!editRankByWords ? (
+                        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-primary text-primary-foreground">
+                          <Check className="h-2.5 w-2.5" />
+                        </span>
+                      ) : (
+                        <span className="h-4 w-4 rounded-full border border-border/80" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      {t("feather-create-rank-by-articles-desc")}
+                    </p>
+                  </div>
+                </button>
+
+                {/* Option 2: Total Word Count */}
+                <button
+                  type="button"
+                  onClick={() => isOrganizer && setEditRankByWords(true)}
+                  disabled={!isOrganizer}
+                  className={`relative flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all duration-150 select-none ${
+                    !isOrganizer ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                  } ${
+                    editRankByWords
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
+                      : "border-border/70 bg-card hover:border-border hover:bg-muted/30"
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+                    editRankByWords ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  }`}>
+                    <AlignLeft className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-semibold text-foreground">
+                        {t("feather-create-rank-by-words")}
+                      </span>
+                      {editRankByWords ? (
+                        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-primary text-primary-foreground">
+                          <Check className="h-2.5 w-2.5" />
+                        </span>
+                      ) : (
+                        <span className="h-4 w-4 rounded-full border border-border/80" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      {t("feather-create-rank-by-words-desc")}
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             {/* Quantitative Thresholds: Words, Bytes, References */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Min Words */}
@@ -716,45 +815,6 @@ export default function SettingsClient({
                   disabled={!isOrganizer}
                 />
               </label>
-            </div>
-
-            {/* Ranking Metric Mode */}
-            <div className="pt-3 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-0.5">
-                <label className="text-xs font-semibold text-foreground">
-                  {t("feather-create-ranking-mode")}
-                </label>
-                <p className="text-[11px] text-muted-foreground">
-                  Determines whether standings rank participants by accepted articles or total word counts.
-                </p>
-              </div>
-
-              <div className="inline-flex items-center rounded-lg border border-border/70 bg-muted/30 p-1 text-xs font-medium shrink-0">
-                <button
-                  type="button"
-                  onClick={() => isOrganizer && setEditRankByWords(false)}
-                  disabled={!isOrganizer}
-                  className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer ${
-                    !editRankByWords
-                      ? "bg-background text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t("feather-create-rank-by-articles")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => isOrganizer && setEditRankByWords(true)}
-                  disabled={!isOrganizer}
-                  className={`px-2.5 py-1 rounded-sm text-xs transition-colors cursor-pointer ${
-                    editRankByWords
-                      ? "bg-background text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t("feather-create-rank-by-words")}
-                </button>
-              </div>
             </div>
           </CardContent>
         </Card>

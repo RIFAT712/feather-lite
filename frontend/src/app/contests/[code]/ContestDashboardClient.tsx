@@ -346,14 +346,23 @@ export default function ContestDashboardClient({
     refetchOnMount: false,
   });
 
+  // Campaign management permissions (Restricted strictly to Platform Admins and Owners)
+  const isOwner = Boolean(me?.is_authenticated && (me.role === "owner" || (me as any)?.is_owner));
+  const isAdmin = Boolean(isOwner || (me?.is_authenticated && (me.role === "admin" || (me as any)?.is_admin)));
+  const canManageCampaign = isOwner || isAdmin;
+
   // Available standalone contests for linking
   const { data: availableContests, isLoading: isLoadingAvailable } = useQuery<AvailableContestSummary[]>({
     queryKey: ["available-contests", code, existingSearchQuery],
     queryFn: () => fetchAvailableContests(code, existingSearchQuery),
-    enabled: !!contest?.is_umbrella && isAddCommunityOpen && addCommunityMode === "link",
+    enabled: !!contest?.is_umbrella && isAddCommunityOpen && addCommunityMode === "link" && canManageCampaign,
   });
 
   const handleAttachContest = async (contestId: number) => {
+    if (!canManageCampaign) {
+      toast.error(t("feather-campaign-admin-only-notice"));
+      return;
+    }
     setAttachingContestId(contestId);
     setIsAttaching(true);
     try {
@@ -373,6 +382,10 @@ export default function ContestDashboardClient({
   };
 
   const handleDetachContest = async (contestId: number) => {
+    if (!canManageCampaign) {
+      toast.error(t("feather-campaign-admin-only-notice"));
+      return;
+    }
     if (!confirm(t("feather-campaign-detach-confirm"))) return;
     setIsDetaching(contestId);
     try {
@@ -391,6 +404,10 @@ export default function ContestDashboardClient({
 
   const handleCreateSubContest = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManageCampaign) {
+      toast.error(t("feather-campaign-admin-only-notice"));
+      return;
+    }
     if (!newSubDbName) return;
     setIsAddingSubContest(true);
     try {
@@ -542,7 +559,6 @@ export default function ContestDashboardClient({
     return false;
   }, [me, contest]);
 
-  const isOwner = me?.role === "owner" || Boolean((me as any)?.is_owner);
   const isCreator = Boolean(contest?.created_by_id && me?.user_id && contest.created_by_id === me.user_id);
   const [isApproving, setIsApproving] = useState(false);
 
@@ -1437,7 +1453,7 @@ export default function ContestDashboardClient({
               {/* Organizer & Jury Quick Tools */}
               {(isJuryOrOrganizer || isOrganizer) && (
                 <div className="flex items-center gap-1.5 pt-1 lg:pt-0 w-full sm:w-auto justify-start lg:justify-end border-t lg:border-t-0 border-border/50">
-                  {contest.is_umbrella && isOrganizer && (
+                  {contest.is_umbrella && canManageCampaign && (
                     <Button
                       onClick={() => setIsAddCommunityOpen(true)}
                       size="sm"
@@ -2161,8 +2177,9 @@ export default function ContestDashboardClient({
                     />
                   </div>
 
-                  <Dialog open={isAddCommunityOpen} onOpenChange={setIsAddCommunityOpen}>
-                    <DialogTrigger
+                  {canManageCampaign && (
+                    <Dialog open={isAddCommunityOpen} onOpenChange={setIsAddCommunityOpen}>
+                      <DialogTrigger
                       className={buttonVariants({
                         variant: "default",
                         size: "sm",
@@ -2391,6 +2408,7 @@ export default function ContestDashboardClient({
                       )}
                     </DialogContent>
                   </Dialog>
+                  )}
                 </div>
               </CardHeader>
 
@@ -2453,21 +2471,23 @@ export default function ContestDashboardClient({
                                   />
                                   <span>{isSubActive ? t("feather-contest-status-active") : sub.status}</span>
                                 </div>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDetachContest(sub.id)}
-                                  disabled={isDetaching === sub.id}
-                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
-                                  title={t("feather-campaign-detach-btn")}
-                                >
-                                  {isDetaching === sub.id ? (
-                                    <Clock className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <Unlink className="h-3 w-3" />
-                                  )}
-                                </Button>
+                                {canManageCampaign && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDetachContest(sub.id)}
+                                    disabled={isDetaching === sub.id}
+                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
+                                    title={t("feather-campaign-detach-btn")}
+                                  >
+                                    {isDetaching === sub.id ? (
+                                      <Clock className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Unlink className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                )}
                               </div>
                             </div>
 

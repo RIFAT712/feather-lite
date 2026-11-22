@@ -1322,21 +1322,35 @@ export default function ContestDashboardClient({
                 })()}
 
                 {contest.is_umbrella ? (
-                  <a
-                    href={contest.onwiki_page_url ? getOnwikiPageLink(contest.onwiki_page_url, "https://meta.wikimedia.org") : "#communities"}
-                    {...(contest.onwiki_page_url ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                    className="text-xs text-foreground/90 flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border border-border/70 bg-muted/30 hover:bg-muted/60 transition-colors shrink-0 whitespace-nowrap font-medium cursor-pointer"
-                    title={contest.onwiki_page_url ? `Meta-Wiki — ${contest.onwiki_page_url}` : t("feather-campaign-badge")}
-                  >
-                    <MetaWikiLogoIcon className="h-3.5 w-3.5 shrink-0" />
-                    <span>{t("feather-campaign-badge")}</span>
+                  <>
+                    <a
+                      href={contest.onwiki_page_url ? getOnwikiPageLink(contest.onwiki_page_url, "https://meta.wikimedia.org") : "#communities"}
+                      {...(contest.onwiki_page_url ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                      className="text-xs text-foreground/90 flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border border-border/70 bg-muted/30 hover:bg-muted/60 transition-colors shrink-0 whitespace-nowrap font-medium cursor-pointer"
+                      title={contest.onwiki_page_url ? `Meta-Wiki — ${contest.onwiki_page_url}` : t("feather-campaign-badge")}
+                    >
+                      <MetaWikiLogoIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{t("feather-campaign-badge")}</span>
+                      {contest.onwiki_page_url && <ExternalLink className="h-2.5 w-2.5 opacity-60 ml-0.5" />}
+                    </a>
+
                     {(contest.sub_contest_count || contest.sub_contests?.length) ? (
-                      <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.2 rounded font-mono">
-                        {t("feather-campaign-communities-count", contest.sub_contest_count || contest.sub_contests?.length || 0)}
-                      </span>
+                      <a
+                        href="#communities"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setActiveTab("communities");
+                          const el = document.getElementById("campaign-tabs");
+                          el?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium border shrink-0 whitespace-nowrap bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25 hover:bg-blue-500/20 transition-colors cursor-pointer"
+                        title={t("feather-campaign-tab-communities")}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
+                        <span>{t("feather-campaign-communities-count", contest.sub_contest_count || contest.sub_contests?.length || 0)}</span>
+                      </a>
                     ) : null}
-                    {contest.onwiki_page_url && <ExternalLink className="h-2.5 w-2.5 opacity-60 ml-0.5" />}
-                  </a>
+                  </>
                 ) : (
                   (() => {
                     const pMeta = getProjectMeta(contest.wiki_dbname);

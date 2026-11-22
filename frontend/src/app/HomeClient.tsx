@@ -672,18 +672,24 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       })()}
 
                       {c.is_umbrella ? (
-                        <div
-                          className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5 rounded-md text-[11px] font-medium text-foreground/90 bg-muted/30 border border-border/70 shrink-0 whitespace-nowrap"
-                          title={t("feather-campaign-badge")}
-                        >
-                          <MetaWikiLogoIcon className="h-3.5 w-3.5 shrink-0" />
-                          <span className="font-medium">{t("feather-campaign-badge")}</span>
-                          {c.sub_contest_count ? (
-                            <span className="text-[10px] font-mono text-primary bg-primary/10 px-1 py-0.2 rounded font-medium">
-                              {t("feather-campaign-communities-count", c.sub_contest_count)}
-                            </span>
-                          ) : null}
-                        </div>
+                        <>
+                          <div
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5 rounded-md text-[11px] font-medium text-foreground/90 bg-muted/30 border border-border/70 shrink-0 whitespace-nowrap"
+                            title={t("feather-campaign-badge")}
+                          >
+                            <MetaWikiLogoIcon className="h-3.5 w-3.5 shrink-0" />
+                            <span className="font-medium">{t("feather-campaign-badge")}</span>
+                          </div>
+                          {Boolean(c.sub_contest_count) && (
+                            <div
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5 rounded-md text-[11px] font-medium shrink-0 whitespace-nowrap bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/25"
+                              title={t("feather-campaign-tab-communities")}
+                            >
+                              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
+                              <span>{t("feather-campaign-communities-count", c.sub_contest_count || 0)}</span>
+                            </div>
+                          )}
+                        </>
                       ) : (() => {
                         const pMeta = getProjectMeta(c.wiki_dbname);
                         const pName = t(`feather-project-${pMeta.id}`) || (locale === "bn" ? pMeta.nativeName : pMeta.name);

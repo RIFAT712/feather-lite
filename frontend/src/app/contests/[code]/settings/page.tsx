@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { getServerContest, getServerMe } from "@/lib/server-api";
 import SettingsClient from "./SettingsClient";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface PageProps {
   params: Promise<{ code: string }>;
 }

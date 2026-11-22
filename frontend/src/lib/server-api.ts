@@ -67,7 +67,7 @@ export async function getServerContest(code: string): Promise<Contest | null> {
     const headers = await getAuthHeader();
     const res = await fetch(`${INTERNAL_API_URL}/api/contests/${encodeURIComponent(code)}`, {
       headers,
-      next: { revalidate: 15 },
+      cache: "no-store",
     });
     if (!res.ok) return null;
     return await res.json();

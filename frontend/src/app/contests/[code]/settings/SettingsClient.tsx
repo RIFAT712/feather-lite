@@ -70,7 +70,9 @@ export default function SettingsClient({
     queryKey: ["contest", code],
     queryFn: () => fetchContest(code),
     initialData: initialContest,
-    staleTime: 1000 * 30,
+    initialDataUpdatedAt: 0,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: me } = useQuery<UserSession | null>({
@@ -196,34 +198,48 @@ export default function SettingsClient({
       return;
     }
     setIsSavingSettings(true);
+    const payload = {
+      name: editName.trim(),
+      description: editDescription.trim(),
+      status: editStatus,
+      start_date: new Date(editStartDate).toISOString(),
+      end_date: new Date(editEndDate).toISOString(),
+      wiki_tz: editTZ,
+      min_words: hasEditMinWords ? (Number(editMinWords) || 0) : 0,
+      min_bytes: hasEditMinBytes ? (Number(editMinBytes) || 0) : 0,
+      min_refs: hasEditMinRefs ? (Number(editMinRefs) || 0) : 0,
+      max_submissions_per_user: hasEditMaxSub ? (Number(editMaxSub) || 0) : 0,
+      rule_must_be_creator: editRuleCreator,
+      rule_created_in_window: editRuleWindow,
+      rule_no_redirect: editRuleNoRedirect,
+      rule_no_disambig: editRuleNoDisambig,
+      rule_mainspace_only: editRuleMainspace,
+      rank_by_words: editRankByWords,
+      add_talk_template: editAddTalkTemplate,
+      talk_template_name: editTalkTemplateName.trim(),
+      distribute_jury_queue: editDistributeJuryQueue,
+      juries: editJuries,
+    };
     try {
-      await updateContest(code, {
-        name: editName.trim(),
-        description: editDescription.trim(),
-        status: editStatus,
-        start_date: new Date(editStartDate).toISOString(),
-        end_date: new Date(editEndDate).toISOString(),
-        wiki_tz: editTZ,
-        min_words: hasEditMinWords ? (Number(editMinWords) || 0) : 0,
-        min_bytes: hasEditMinBytes ? (Number(editMinBytes) || 0) : 0,
-        min_refs: hasEditMinRefs ? (Number(editMinRefs) || 0) : 0,
-        max_submissions_per_user: hasEditMaxSub ? (Number(editMaxSub) || 0) : 0,
-        rule_must_be_creator: editRuleCreator,
-        rule_created_in_window: editRuleWindow,
-        rule_no_redirect: editRuleNoRedirect,
-        rule_no_disambig: editRuleNoDisambig,
-        rule_mainspace_only: editRuleMainspace,
-        rank_by_words: editRankByWords,
-        add_talk_template: editAddTalkTemplate,
-        talk_template_name: editTalkTemplateName.trim(),
-        distribute_jury_queue: editDistributeJuryQueue,
-        juries: editJuries,
-      });
+      await updateContest(code, payload);
 
       toast.success(t("feather-contest-settings-success"));
-      queryClient.invalidateQueries({ queryKey: ["contest", code] });
-      queryClient.invalidateQueries({ queryKey: ["contests"] });
-      queryClient.invalidateQueries({ queryKey: ["standings", code] });
+      queryClient.setQueryData(["contest", code], (prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          ...payload,
+          min_words: payload.min_words,
+          min_bytes: payload.min_bytes,
+          min_refs: payload.min_refs,
+          max_submissions_per_user: payload.max_submissions_per_user,
+          juries: payload.juries,
+        };
+      });
+      await queryClient.invalidateQueries({ queryKey: ["contest", code] });
+      await queryClient.invalidateQueries({ queryKey: ["contests"] });
+      await queryClient.invalidateQueries({ queryKey: ["standings", code] });
+      router.refresh();
     } catch (err: any) {
       toast.error(err.message || "Failed to save configuration");
     } finally {

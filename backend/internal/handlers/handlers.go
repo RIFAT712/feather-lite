@@ -1082,6 +1082,11 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 		distributeJuryQueue = 1
 	}
 
+	isDraft := 0
+	if status == "draft" {
+		isDraft = 1
+	}
+
 	_, err = tx.Exec(`
 		UPDATE contests SET
 			name = ?,
@@ -1089,6 +1094,7 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 			start_date = ?,
 			end_date = ?,
 			status = ?,
+			is_draft = ?,
 			wiki_tz = ?,
 			rule_must_be_creator = ?,
 			rule_no_redirect = ?,
@@ -1105,7 +1111,7 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 			distribute_jury_queue = ?
 		WHERE id = ?
 	`,
-		req.Name, strings.TrimSpace(req.Description), startDate, endDate, status, tz,
+		req.Name, strings.TrimSpace(req.Description), startDate, endDate, status, isDraft, tz,
 		mustBeCreator, noRedirect, noDisambig, mainspaceOnly, createdInWindow,
 		req.MinBytes, req.MinWords, req.MinRefs, req.MaxSubmissionsPerUser, rankByWords,
 		addTalkTemplate, strings.TrimSpace(req.TalkTemplateName), distributeJuryQueue,

@@ -1985,8 +1985,9 @@ ${body}
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="rq-item-title">{article.title}</span>
                           {article.re_review_requested && (
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 rounded shrink-0">
-                              ⚡ Re-review
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
+                              <RefreshCw className="h-2.5 w-2.5" />
+                              <span>Re-review</span>
                             </span>
                           )}
                         </div>
@@ -2156,13 +2157,14 @@ ${body}
                           currentArticle.wiki_creator.toLowerCase() ===
                             currentArticle.submitted_by.toLowerCase() && (
                             <span
-                              className="rq-tag"
+                              className="rq-tag inline-flex items-center gap-1"
                               style={{
                                 color: "var(--rq-success)",
                                 borderColor: "var(--rq-success)",
                               }}
                             >
-                              ✓ Creator
+                              <Check className="h-3 w-3 inline" />
+                              <span>Creator</span>
                             </span>
                           )}
                         {showWords && currentArticle.word_count > 0 && (
@@ -2189,13 +2191,24 @@ ${body}
                           <span
                             className={`rq-tag rq-tag-verdict rq-tag-${getMyLatestDecision(
                               currentArticle
-                            )}`}
+                            )} inline-flex items-center gap-1`}
                           >
-                            {getMyLatestDecision(currentArticle) === "accepted"
-                              ? "✓ Accepted"
-                              : getMyLatestDecision(currentArticle) === "rejected"
-                              ? "✕ Rejected"
-                              : "→ Skipped"}
+                            {getMyLatestDecision(currentArticle) === "accepted" ? (
+                              <>
+                                <Check className="h-3 w-3 inline" />
+                                <span>Accepted</span>
+                              </>
+                            ) : getMyLatestDecision(currentArticle) === "rejected" ? (
+                              <>
+                                <X className="h-3 w-3 inline" />
+                                <span>Rejected</span>
+                              </>
+                            ) : (
+                              <>
+                                <SkipForward className="h-3 w-3 inline" />
+                                <span>Skipped</span>
+                              </>
+                            )}
                           </span>
                         )}
                       </div>

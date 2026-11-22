@@ -1776,8 +1776,9 @@ export default function ContestDashboardClient({
 
                   {/* Bottom Strip */}
                   <div className="relative z-10 flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-zinc-800/80 font-mono">
-                    <span className="text-[11px]">
-                      📅 {formatDateDDMMYYYY(contest.start_date)} — {formatDateDDMMYYYY(contest.end_date)}
+                    <span className="text-[11px] inline-flex items-center gap-1.5">
+                      <Calendar className="h-3 w-3 text-zinc-400" />
+                      <span>{formatDateDDMMYYYY(contest.start_date)} — {formatDateDDMMYYYY(contest.end_date)}</span>
                     </span>
                     <span className="text-[11px] text-zinc-300 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700">
                       {n(contest.total_articles || 0)} {locale === "bn" ? "নিবন্ধ" : "articles"}

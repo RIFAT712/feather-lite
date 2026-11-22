@@ -359,8 +359,14 @@ export default async function Image({ params }: { params: Promise<{ code: string
             zIndex: 10,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#d4d4d8", fontSize: "15px", fontWeight: 600 }}>
-            <span>📅 {dateRange}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#d4d4d8", fontSize: "15px", fontWeight: 600 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+              <line x1="16" x2="16" y1="2" y2="6"/>
+              <line x1="8" x2="8" y1="2" y2="6"/>
+              <line x1="3" x2="21" y1="10" y2="10"/>
+            </svg>
+            <span>{dateRange}</span>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#71717a", fontSize: "14px", fontWeight: 600 }}>

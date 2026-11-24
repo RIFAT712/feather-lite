@@ -8,8 +8,15 @@ set +e
 # Tool: feather-lite (https://feather-lite.toolforge.org)
 # ==============================================================================
 
-TOOL_NAME="$(whoami | sed 's/^tools\.//')"
-TOOL_DIR="/data/project/${TOOL_NAME}"
+TOOL_DIR="${TOOL_DATA_DIR:-$HOME}"
+if [ ! -d "${TOOL_DIR}" ] || [ ! -w "${TOOL_DIR}" ]; then
+    if [ -d "/data/project/feather" ] && [ -w "/data/project/feather" ]; then
+        TOOL_DIR="/data/project/feather"
+    elif [ -d "/data/project/feather-lite" ] && [ -w "/data/project/feather-lite" ]; then
+        TOOL_DIR="/data/project/feather-lite"
+    fi
+fi
+TOOL_NAME="$(basename "${TOOL_DIR:-feather}")"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "=== [Feather] Initializing deployment from ${APP_DIR} for tool ${TOOL_NAME} ==="

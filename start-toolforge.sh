@@ -8,21 +8,22 @@ set +e
 # Tool: feather-lite (https://feather-lite.toolforge.org)
 # ==============================================================================
 
-TOOL_DIR="/data/project/feather-lite"
+TOOL_NAME="$(whoami | sed 's/^tools\.//')"
+TOOL_DIR="/data/project/${TOOL_NAME}"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "=== [Feather-Lite] Initializing deployment from ${APP_DIR} ==="
+echo "=== [Feather] Initializing deployment from ${APP_DIR} for tool ${TOOL_NAME} ==="
 
 # 1. Environment Configuration (Toolforge envvars take precedence if set)
 export PORT="${PORT:-8000}"
 export BACKEND_PORT="${BACKEND_PORT:-8081}"
 export INTERNAL_API_URL="${INTERNAL_API_URL:-http://127.0.0.1:${BACKEND_PORT}}"
 export DB_TYPE="${DB_TYPE:-sqlite}"
-export FRONTEND_URL="${FRONTEND_URL:-https://feather-lite.toolforge.org}"
-export OAUTH_CALLBACK_URL="${OAUTH_CALLBACK_URL:-https://feather-lite.toolforge.org/auth/callback}"
+export FRONTEND_URL="${FRONTEND_URL:-https://${TOOL_NAME}.toolforge.org}"
+export OAUTH_CALLBACK_URL="${OAUTH_CALLBACK_URL:-https://${TOOL_NAME}.toolforge.org/auth/callback}"
 export OWNER_USERNAME="${OWNER_USERNAME:-R1F4T}"
 
-# Database path resolution: check if /data/project/feather-lite is writable
+# Database path resolution: check if TOOL_DIR is writable
 if [ -d "${TOOL_DIR}" ] && [ -w "${TOOL_DIR}" ]; then
     export DATABASE_URL="${DATABASE_URL:-${TOOL_DIR}/feather.db}"
 else
@@ -30,7 +31,7 @@ else
     export DATABASE_URL="${DATABASE_URL:-${APP_DIR}/backend/data/feather.db}"
 fi
 
-echo "[Feather-Lite] Using DATABASE_URL=${DATABASE_URL}"
+echo "[Feather] Using DATABASE_URL=${DATABASE_URL}"
 
 # 2. Binary execution handling (copy to /tmp if read-only or not executable)
 EXEC_BIN="${APP_DIR}/backend/feather-server-amd64"

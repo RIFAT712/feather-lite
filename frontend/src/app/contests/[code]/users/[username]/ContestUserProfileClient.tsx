@@ -232,6 +232,20 @@ export default function ContestUserProfileClient({
       r.submitter.toLowerCase().includes(reviewSearch.toLowerCase().trim())
   );
 
+  // Virtualizer for reviews table (unmounts off-screen rows)
+  const reviewScrollContainerRef = useRef<HTMLDivElement>(null);
+  const reviewVirtualizer = useVirtualizer({
+    count: filteredReviews.length,
+    getScrollElement: () => reviewScrollContainerRef.current,
+    estimateSize: () => 40,
+    overscan: 10,
+  });
+
+  const virtualReviewRows = reviewVirtualizer.getVirtualItems();
+  const totalReviewVirtualSize = reviewVirtualizer.getTotalSize();
+  const paddingReviewTop = virtualReviewRows.length > 0 ? virtualReviewRows[0]?.start || 0 : 0;
+  const paddingReviewBottom = virtualReviewRows.length > 0 ? totalReviewVirtualSize - (virtualReviewRows[virtualReviewRows.length - 1]?.end || 0) : 0;
+
   const baseWikiUrl = profile.wiki_url || "https://bn.wikipedia.org";
 
   return (
@@ -584,67 +598,91 @@ export default function ContestUserProfileClient({
                   No evaluations matching your filter.
                 </p>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-border bg-card">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-border bg-muted/40 text-[11px] font-semibold text-muted-foreground">
-                        <th className="py-2.5 px-3">{t("feather-profile-th-article")}</th>
-                        <th className="py-2.5 px-3">{t("feather-profile-th-submitter")}</th>
-                        <th className="py-2.5 px-3">{t("feather-profile-th-decision")}</th>
-                        <th className="py-2.5 px-3">{t("feather-profile-th-comment")}</th>
-                        <th className="py-2.5 px-3">{t("feather-profile-th-reviewed")}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {filteredReviews.map((rev, idx) => (
-                        <tr key={idx} className="hover:bg-muted/30 transition-colors">
-                          <td className="py-2.5 px-3 font-medium">
-                            <a
-                              href={`${baseWikiUrl}/wiki/${encodeURIComponent(rev.article_title)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
-                            >
-                              {rev.article_title}
-                              <ExternalLink className="h-2.5 w-2.5 opacity-40" />
-                            </a>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <Link
-                              href={`/contests/${code}/users/${encodeURIComponent(rev.submitter)}`}
-                              className="text-primary hover:underline font-medium"
-                            >
-                              {rev.submitter}
-                            </Link>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <Badge
-                              variant={
-                                rev.decision === "accepted"
-                                  ? "default"
-                                  : rev.decision === "rejected"
-                                  ? "destructive"
-                                  : "secondary"
-                              }
-                              className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 ${
-                                rev.decision === "accepted"
-                                  ? "bg-emerald-600 hover:bg-emerald-600/90 text-white"
-                                  : ""
-                              }`}
-                            >
-                              {rev.decision}
-                            </Badge>
-                          </td>
-                          <td className="py-2.5 px-3 text-muted-foreground max-w-xs truncate" title={rev.comment}>
-                            {rev.comment || <span className="text-muted-foreground/40">&mdash;</span>}
-                          </td>
-                          <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">
-                            {formatUtcToTz(rev.reviewed_at, "UTC", "MMM d, yyyy")}
-                          </td>
+                <div className="rounded-lg border border-border bg-card overflow-hidden">
+                  <div ref={reviewScrollContainerRef} className="overflow-x-auto max-h-[440px] overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur-xs">
+                        <tr className="border-b border-border text-[11px] font-semibold text-muted-foreground">
+                          <th className="py-2.5 px-3">{t("feather-profile-th-article")}</th>
+                          <th className="py-2.5 px-3">{t("feather-profile-th-submitter")}</th>
+                          <th className="py-2.5 px-3">{t("feather-profile-th-decision")}</th>
+                          <th className="py-2.5 px-3">{t("feather-profile-th-comment")}</th>
+                          <th className="py-2.5 px-3">{t("feather-profile-th-reviewed")}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {paddingReviewTop > 0 && (
+                          <tr>
+                            <td style={{ height: `${paddingReviewTop}px` }} colSpan={5} />
+                          </tr>
+                        )}
+                        {virtualReviewRows.map((virtualRow) => {
+                          const rev = filteredReviews[virtualRow.index];
+                          if (!rev) return null;
+                          return (
+                            <tr key={virtualRow.index} className="hover:bg-muted/30 transition-colors">
+                              <td className="py-2.5 px-3 font-medium">
+                                <a
+                                  href={`${baseWikiUrl}/wiki/${encodeURIComponent(rev.article_title)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
+                                >
+                                  {rev.article_title}
+                                  <ExternalLink className="h-2.5 w-2.5 opacity-40" />
+                                </a>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <Link
+                                  href={`/contests/${code}/users/${encodeURIComponent(rev.submitter)}`}
+                                  className="text-primary hover:underline font-medium"
+                                >
+                                  {rev.submitter}
+                                </Link>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <Badge
+                                  variant={
+                                    rev.decision === "accepted"
+                                      ? "default"
+                                      : rev.decision === "rejected"
+                                      ? "destructive"
+                                      : "secondary"
+                                  }
+                                  className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 ${
+                                    rev.decision === "accepted"
+                                      ? "bg-emerald-600 hover:bg-emerald-600/90 text-white"
+                                      : ""
+                                  }`}
+                                >
+                                  {rev.decision}
+                                </Badge>
+                              </td>
+                              <td className="py-2.5 px-3 text-muted-foreground max-w-xs truncate" title={rev.comment}>
+                                {rev.comment || <span className="text-muted-foreground/40">&mdash;</span>}
+                              </td>
+                              <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">
+                                {formatUtcToTz(rev.reviewed_at, "UTC", "MMM d, yyyy")}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {paddingReviewBottom > 0 && (
+                          <tr>
+                            <td style={{ height: `${paddingReviewBottom}px` }} colSpan={5} />
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2 bg-muted/15 border-t border-border/80 text-xs text-muted-foreground">
+                    <span>
+                      {t("feather-contest-showing-subset", n(filteredReviews.length), n(profile.reviews.length))}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground/80 font-mono">
+                      {n(filteredReviews.length)} evaluations
+                    </span>
+                  </div>
                 </div>
               )}
             </CardContent>

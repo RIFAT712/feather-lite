@@ -1587,20 +1587,29 @@ export default function ContestStatsClient({
           </CardHeader>
           <CardContent className="p-0">
             {stats?.jury_performance && stats.jury_performance.length > 0 ? (
-              <Table>
+              <Table className="table-fixed w-full">
+                <colgroup>
+                  <col className="w-[30%] min-w-[140px]" />
+                  <col className="w-[90px]" />
+                  <col className="w-[90px]" />
+                  <col className="w-[90px]" />
+                  <col className="w-[130px]" />
+                  <col className="w-[100px]" />
+                  <col className="w-[110px]" />
+                </colgroup>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent bg-muted/40">
-                    <TableHead className="text-xs">{t("feather-stats-col-user")}</TableHead>
-                    <TableHead className="text-right text-xs">Reviews</TableHead>
-                    <TableHead className="text-right text-xs text-emerald-700 dark:text-emerald-400">
+                    <TableHead className="text-xs truncate">{t("feather-stats-col-user")}</TableHead>
+                    <TableHead className="text-right text-xs whitespace-nowrap">Reviews</TableHead>
+                    <TableHead className="text-right text-xs text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                       {t("feather-stats-col-accepted")}
                     </TableHead>
-                    <TableHead className="text-right text-xs text-rose-700 dark:text-rose-400">
+                    <TableHead className="text-right text-xs text-rose-700 dark:text-rose-400 whitespace-nowrap">
                       {t("feather-stats-col-rejected")}
                     </TableHead>
-                    <TableHead className="text-right text-xs">{t("feather-stats-col-rate")}</TableHead>
-                    <TableHead className="text-right text-xs">{t("feather-stats-col-active-days")}</TableHead>
-                    <TableHead className="text-right text-xs">{t("feather-stats-col-last-review")}</TableHead>
+                    <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-stats-col-rate")}</TableHead>
+                    <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-stats-col-active-days")}</TableHead>
+                    <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-stats-col-last-review")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1648,20 +1657,29 @@ export default function ContestStatsClient({
                 </TableBody>
               </Table>
             ) : contest?.juries && contest.juries.length > 0 ? (
-              <Table>
+              <Table className="table-fixed w-full">
+                <colgroup>
+                  <col className="w-[30%] min-w-[140px]" />
+                  <col className="w-[90px]" />
+                  <col className="w-[90px]" />
+                  <col className="w-[90px]" />
+                  <col className="w-[130px]" />
+                  <col className="w-[100px]" />
+                  <col className="w-[110px]" />
+                </colgroup>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent bg-muted/40">
-                    <TableHead className="text-xs">{t("feather-stats-col-user")}</TableHead>
-                    <TableHead className="text-right text-xs">Reviews</TableHead>
-                    <TableHead className="text-right text-xs text-emerald-700 dark:text-emerald-400">
+                    <TableHead className="text-xs truncate">{t("feather-stats-col-user")}</TableHead>
+                    <TableHead className="text-right text-xs whitespace-nowrap">Reviews</TableHead>
+                    <TableHead className="text-right text-xs text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                       {t("feather-stats-col-accepted")}
                     </TableHead>
-                    <TableHead className="text-right text-xs text-rose-700 dark:text-rose-400">
+                    <TableHead className="text-right text-xs text-rose-700 dark:text-rose-400 whitespace-nowrap">
                       {t("feather-stats-col-rejected")}
                     </TableHead>
-                    <TableHead className="text-right text-xs">{t("feather-stats-col-rate")}</TableHead>
-                    <TableHead className="text-right text-xs">{t("feather-stats-col-active-days")}</TableHead>
-                    <TableHead className="text-right text-xs">Status</TableHead>
+                    <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-stats-col-rate")}</TableHead>
+                    <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-stats-col-active-days")}</TableHead>
+                    <TableHead className="text-right text-xs whitespace-nowrap">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1748,25 +1766,33 @@ export default function ContestStatsClient({
                 </div>
               </div>
             ) : (
-              <Table>
+              <Table className="table-fixed w-full">
+                <colgroup>
+                  <col className="w-16" />
+                  <col className="w-[40%] min-w-[140px]" />
+                  <col className="w-[100px]" />
+                  <col className="w-[100px]" />
+                  <col className="w-[100px]" />
+                  <col className="w-[100px]" />
+                </colgroup>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent bg-muted/40">
-                    <TableHead className="w-16 text-center text-xs">
+                    <TableHead className="w-16 text-center text-xs whitespace-nowrap">
                       {t("feather-stats-col-rank")}
                     </TableHead>
-                    <TableHead className="text-xs">
+                    <TableHead className="text-xs truncate">
                       {t("feather-stats-col-user")}
                     </TableHead>
-                    <TableHead className="text-right text-xs">
+                    <TableHead className="text-right text-xs whitespace-nowrap">
                       {t("feather-stats-col-submitted")}
                     </TableHead>
-                    <TableHead className="text-right text-xs text-emerald-700 dark:text-emerald-400">
+                    <TableHead className="text-right text-xs text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                       {t("feather-stats-col-accepted")}
                     </TableHead>
-                    <TableHead className="text-right text-xs text-rose-700 dark:text-rose-400">
+                    <TableHead className="text-right text-xs text-rose-700 dark:text-rose-400 whitespace-nowrap">
                       {t("feather-stats-col-rejected")}
                     </TableHead>
-                    <TableHead className="text-right text-xs text-amber-700 dark:text-amber-400">
+                    <TableHead className="text-right text-xs text-amber-700 dark:text-amber-400 whitespace-nowrap">
                       {t("feather-stats-col-pending")}
                     </TableHead>
                   </TableRow>

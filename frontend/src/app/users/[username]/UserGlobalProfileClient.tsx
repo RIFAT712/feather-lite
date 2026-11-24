@@ -318,14 +318,21 @@ export default function UserGlobalProfileClient({
                           </div>
 
                           <div className="overflow-x-auto rounded-lg border border-border bg-card">
-                            <table className="w-full text-left text-xs">
+                            <table className="table-fixed w-full text-left text-xs">
+                              <colgroup>
+                                <col className="w-[38%] min-w-[140px]" />
+                                <col className="w-[110px]" />
+                                <col className="w-[120px]" />
+                                <col className="w-[95px]" />
+                                <col className="w-[115px]" />
+                              </colgroup>
                               <thead>
                                 <tr className="border-b border-border bg-muted/40 text-[11px] font-semibold text-muted-foreground">
-                                  <th className="py-2.5 px-3">{t("feather-profile-th-article")}</th>
-                                  <th className="py-2.5 px-3">{t("feather-profile-th-status")}</th>
-                                  <th className="py-2.5 px-3">{t("feather-profile-th-creator")}</th>
-                                  <th className="py-2.5 px-3 text-right">{t("feather-profile-th-words")}</th>
-                                  <th className="py-2.5 px-3">{t("feather-profile-th-submitted")}</th>
+                                  <th className="py-2.5 px-3 truncate">{t("feather-profile-th-article")}</th>
+                                  <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-status")}</th>
+                                  <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-creator")}</th>
+                                  <th className="py-2.5 px-3 text-right whitespace-nowrap">{t("feather-profile-th-words")}</th>
+                                  <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-submitted")}</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-border">
@@ -477,14 +484,21 @@ export default function UserGlobalProfileClient({
                       {isExpanded && (
                         <div className="border-t border-border bg-muted/10 p-3 sm:p-4 animate-in fade-in-0 duration-150">
                           <div className="overflow-x-auto rounded-lg border border-border bg-card">
-                            <table className="w-full text-left text-xs">
+                            <table className="table-fixed w-full text-left text-xs">
+                              <colgroup>
+                                <col className="w-[35%] min-w-[140px]" />
+                                <col className="w-[130px]" />
+                                <col className="w-[110px]" />
+                                <col className="w-[30%]" />
+                                <col className="w-[120px]" />
+                              </colgroup>
                               <thead>
                                 <tr className="border-b border-border bg-muted/40 text-[11px] font-semibold text-muted-foreground">
-                                  <th className="py-2.5 px-3">{t("feather-profile-th-article")}</th>
-                                  <th className="py-2.5 px-3">{t("feather-profile-th-submitter")}</th>
-                                  <th className="py-2.5 px-3">{t("feather-profile-th-decision")}</th>
-                                  <th className="py-2.5 px-3">{t("feather-profile-th-comment")}</th>
-                                  <th className="py-2.5 px-3">{t("feather-profile-th-reviewed")}</th>
+                                  <th className="py-2.5 px-3 truncate">{t("feather-profile-th-article")}</th>
+                                  <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-submitter")}</th>
+                                  <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-decision")}</th>
+                                  <th className="py-2.5 px-3 truncate">{t("feather-profile-th-comment")}</th>
+                                  <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-reviewed")}</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-border">

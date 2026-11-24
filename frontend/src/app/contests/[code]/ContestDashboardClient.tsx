@@ -2855,18 +2855,27 @@ export default function ContestDashboardClient({
                 <>
                   {/* Desktop Table View (>= sm) */}
                   <div className="hidden sm:block">
-                    <Table>
+                    <Table className="table-fixed w-full">
+                      <colgroup>
+                        <col className="w-16" />
+                        <col className="w-[35%] min-w-[140px]" />
+                        {contest.is_umbrella && <col className="w-[15%]" />}
+                        <col className="w-[100px]" />
+                        {showWords && <col className="w-[95px]" />}
+                        {showBytes && <col className="w-[95px]" />}
+                        <col className="w-[105px]" />
+                      </colgroup>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent">
-                          <TableHead className="w-16 text-center text-xs">{t("feather-standings-col-rank")}</TableHead>
-                          <TableHead className="text-xs">{t("feather-standings-col-user")}</TableHead>
+                          <TableHead className="w-16 text-center text-xs whitespace-nowrap">{t("feather-standings-col-rank")}</TableHead>
+                          <TableHead className="text-xs truncate">{t("feather-standings-col-user")}</TableHead>
                           {contest.is_umbrella && (
-                            <TableHead className="text-xs">{t("feather-campaign-wikis-contributed")}</TableHead>
+                            <TableHead className="text-xs truncate">{t("feather-campaign-wikis-contributed")}</TableHead>
                           )}
-                          <TableHead className="text-right text-xs">{t("feather-standings-col-accepted")}</TableHead>
-                          {showWords && <TableHead className="text-right text-xs">{t("feather-standings-col-words")}</TableHead>}
-                          {showBytes && <TableHead className="text-right text-xs">{t("feather-standings-col-bytes")}</TableHead>}
-                          <TableHead className="text-right text-xs">{t("feather-standings-col-submitted")}</TableHead>
+                          <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-standings-col-accepted")}</TableHead>
+                          {showWords && <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-standings-col-words")}</TableHead>}
+                          {showBytes && <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-standings-col-bytes")}</TableHead>}
+                          <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-standings-col-submitted")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -3799,16 +3808,24 @@ export default function ContestDashboardClient({
                   </div>
 
                   <div className="rounded-xl border border-border/80 overflow-hidden bg-card shadow-2xs">
-                    <Table>
+                    <Table className="table-fixed w-full">
+                      <colgroup>
+                        <col className="w-[35%] min-w-[140px]" />
+                        <col className="w-[100px]" />
+                        <col className="w-[90px]" />
+                        <col className="w-[90px]" />
+                        <col className="w-[140px]" />
+                        {contest.distribute_jury_queue && <col className="w-[100px]" />}
+                      </colgroup>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent bg-muted/20">
-                          <TableHead className="text-xs">{t("feather-jury-col-member")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-jury-col-judged")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-jury-col-accepted")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-jury-col-rejected")}</TableHead>
-                          <TableHead className="text-right text-xs">{t("feather-jury-col-acceptance-rate")}</TableHead>
+                          <TableHead className="text-xs truncate">{t("feather-jury-col-member")}</TableHead>
+                          <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-jury-col-judged")}</TableHead>
+                          <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-jury-col-accepted")}</TableHead>
+                          <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-jury-col-rejected")}</TableHead>
+                          <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-jury-col-acceptance-rate")}</TableHead>
                           {contest.distribute_jury_queue && (
-                            <TableHead className="text-right text-xs">{t("feather-jury-col-assigned")}</TableHead>
+                            <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-jury-col-assigned")}</TableHead>
                           )}
                         </TableRow>
                       </TableHeader>

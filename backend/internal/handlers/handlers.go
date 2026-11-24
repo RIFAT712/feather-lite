@@ -3582,7 +3582,7 @@ func (h *Handler) GetStandings(w http.ResponseWriter, r *http.Request) {
 		} else if isAdmin, cached := mwclient.IsCachedAdmin(s.Username); cached && isAdmin {
 			s.Role = "admin"
 		} else {
-			go h.checkAndPromoteUser(s.Username)
+			s.Role = "participant"
 		}
 		if wikisStr != "" {
 			s.WikisContributed = strings.Split(wikisStr, ",")

@@ -136,7 +136,7 @@ function ParticipantArticlesDrawer({
   const rowVirtualizer = useVirtualizer({
     count: submissions.length,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: () => 41,
+    estimateSize: () => 44,
     overscan: 10,
   });
 
@@ -180,21 +180,29 @@ function ParticipantArticlesDrawer({
         ref={scrollContainerRef}
         className="max-h-[440px] overflow-y-auto scroll-smooth"
       >
-        <Table>
+        <Table className="table-fixed w-full">
+          <colgroup>
+            <col className="w-[45%] min-w-[140px]" />
+            <col className="w-[100px]" />
+            {showWords && <col className="w-[80px]" />}
+            {showBytes && <col className="w-[80px]" />}
+            <col className="w-[110px]" />
+            <col className="w-[44px]" />
+          </colgroup>
           <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur-xs">
             <TableRow className="hover:bg-transparent bg-muted/40 border-b border-border/80">
-              <TableHead className="text-xs">{t("feather-contest-col-article")}</TableHead>
-              <TableHead className="text-center text-xs">{t("feather-contest-col-status")}</TableHead>
-              {showWords && <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>}
-              {showBytes && <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>}
-              <TableHead className="text-right text-xs">{t("feather-contest-col-date")}</TableHead>
-              <TableHead className="w-12 text-center text-xs"></TableHead>
+              <TableHead className="text-xs truncate">{t("feather-contest-col-article")}</TableHead>
+              <TableHead className="text-center text-xs whitespace-nowrap">{t("feather-contest-col-status")}</TableHead>
+              {showWords && <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-words")}</TableHead>}
+              {showBytes && <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-bytes")}</TableHead>}
+              <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-date")}</TableHead>
+              <TableHead className="text-center text-xs"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paddingTop > 0 && (
-              <tr>
-                <td style={{ height: `${paddingTop}px` }} colSpan={colSpan} />
+              <tr style={{ height: `${paddingTop}px` }}>
+                <td colSpan={colSpan} className="p-0 border-0" />
               </tr>
             )}
             {virtualRows.map((virtualRow) => {
@@ -203,25 +211,24 @@ function ParticipantArticlesDrawer({
               return (
                 <TableRow
                   key={art.id}
-                  data-index={virtualRow.index}
-                  ref={rowVirtualizer.measureElement}
-                  className="hover:bg-muted/40 transition-colors"
+                  className="hover:bg-muted/40 transition-colors h-[44px]"
                 >
-                  <TableCell className="font-medium text-xs">
+                  <TableCell className="font-medium text-xs truncate">
                     <a
                       href={`${baseWiki}/wiki/${encodeURIComponent(art.title)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 hover:text-primary hover:underline text-foreground"
+                      className="inline-flex items-center gap-1.5 hover:text-primary hover:underline text-foreground max-w-full truncate"
+                      title={art.title}
                     >
-                      <span>{art.title}</span>
-                      <ExternalLink className="h-2.5 w-2.5 opacity-40" />
+                      <span className="truncate">{art.title}</span>
+                      <ExternalLink className="h-2.5 w-2.5 opacity-40 shrink-0" />
                     </a>
                     {art.validation_error && (
-                      <div className="text-[10px] text-destructive mt-0.5">{art.validation_error}</div>
+                      <div className="text-[10px] text-destructive truncate mt-0.5" title={art.validation_error}>{art.validation_error}</div>
                     )}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center whitespace-nowrap">
                     <Badge
                       variant={
                         art.status === "accepted"
@@ -246,19 +253,19 @@ function ParticipantArticlesDrawer({
                     </Badge>
                   </TableCell>
                   {showWords && (
-                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground whitespace-nowrap">
                       {n(art.word_count)}
                     </TableCell>
                   )}
                   {showBytes && (
-                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground whitespace-nowrap">
                       {n(art.byte_count)}
                     </TableCell>
                   )}
                   <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
                     {art.submitted_at ? formatDate(art.submitted_at) : "—"}
                   </TableCell>
-                  <TableCell className="text-center p-2">
+                  <TableCell className="text-center p-2 whitespace-nowrap">
                     <a
                       href={`${baseWiki}/wiki/${encodeURIComponent(art.title)}`}
                       target="_blank"
@@ -273,8 +280,8 @@ function ParticipantArticlesDrawer({
               );
             })}
             {paddingBottom > 0 && (
-              <tr>
-                <td style={{ height: `${paddingBottom}px` }} colSpan={colSpan} />
+              <tr style={{ height: `${paddingBottom}px` }}>
+                <td colSpan={colSpan} className="p-0 border-0" />
               </tr>
             )}
           </TableBody>
@@ -3200,17 +3207,28 @@ export default function ContestDashboardClient({
 
                     {/* Table with Header Titles */}
                     <div className="overflow-x-auto">
-                      <Table>
+                      <Table className="table-fixed w-full">
+                        <colgroup>
+                          <col className="w-10" />
+                          <col className="w-[30%] min-w-[140px]" />
+                          <col className="w-[100px]" />
+                          <col className="w-[100px]" />
+                          <col className="w-[100px]" />
+                          <col className="w-[100px]" />
+                          {showWords && <col className="w-[90px]" />}
+                          {showBytes && <col className="w-[90px]" />}
+                          <col className="w-12" />
+                        </colgroup>
                         <TableHeader>
                           <TableRow className="hover:bg-transparent bg-muted/20">
                             <TableHead className="w-10 text-center"></TableHead>
-                            <TableHead className="text-xs">{t("feather-contest-col-submitter")}</TableHead>
-                            <TableHead className="text-right text-xs">{t("feather-contest-col-total-entries")}</TableHead>
-                            <TableHead className="text-right text-xs">{t("feather-contest-filter-accepted")}</TableHead>
-                            <TableHead className="text-right text-xs">{t("feather-contest-filter-pending")}</TableHead>
-                            <TableHead className="text-right text-xs">{t("feather-contest-filter-rejected")}</TableHead>
-                            {showWords && <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>}
-                            {showBytes && <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>}
+                            <TableHead className="text-xs truncate">{t("feather-contest-col-submitter")}</TableHead>
+                            <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-total-entries")}</TableHead>
+                            <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-filter-accepted")}</TableHead>
+                            <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-filter-pending")}</TableHead>
+                            <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-filter-rejected")}</TableHead>
+                            {showWords && <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-words")}</TableHead>}
+                            {showBytes && <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-bytes")}</TableHead>}
                             <TableHead className="w-12 text-center text-xs"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -3341,17 +3359,26 @@ export default function ContestDashboardClient({
               ) : filteredArticles && filteredArticles.length > 0 ? (
                 <>
                   {/* Desktop Table View (>= sm) */}
-                  <div className="hidden sm:block">
-                    <Table>
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table className="table-fixed w-full">
+                      <colgroup>
+                        <col className="w-[34%] min-w-[140px]" />
+                        <col className="w-[140px]" />
+                        <col className="w-[110px]" />
+                        {showWords && <col className="w-[85px]" />}
+                        {showBytes && <col className="w-[85px]" />}
+                        <col className="w-[120px]" />
+                        <col className="w-[110px]" />
+                      </colgroup>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent">
-                          <TableHead className="text-xs">{t("feather-contest-col-article")}</TableHead>
-                          <TableHead className="text-xs">{t("feather-contest-col-submitter")}</TableHead>
-                          <TableHead className="text-center text-xs">{t("feather-contest-col-status")}</TableHead>
-                          {showWords && <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>}
-                          {showBytes && <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>}
-                          <TableHead className="text-right text-xs">{t("feather-contest-col-date")}</TableHead>
-                          <TableHead className="text-center text-xs">Discussion</TableHead>
+                          <TableHead className="text-xs truncate">{t("feather-contest-col-article")}</TableHead>
+                          <TableHead className="text-xs truncate">{t("feather-contest-col-submitter")}</TableHead>
+                          <TableHead className="text-center text-xs whitespace-nowrap">{t("feather-contest-col-status")}</TableHead>
+                          {showWords && <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-words")}</TableHead>}
+                          {showBytes && <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-bytes")}</TableHead>}
+                          <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-date")}</TableHead>
+                          <TableHead className="text-center text-xs whitespace-nowrap">Discussion</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

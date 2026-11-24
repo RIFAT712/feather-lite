@@ -412,22 +412,31 @@ export default function ContestUserProfileClient({
                   ref={scrollContainerRef}
                   className="overflow-x-auto max-h-[580px] overflow-y-auto scroll-smooth"
                 >
-                  <table className="w-full text-left text-xs border-collapse">
+                  <table className="table-fixed w-full text-left text-xs border-collapse">
+                    <colgroup>
+                      <col className="w-[32%] min-w-[140px]" />
+                      <col className="w-[105px]" />
+                      <col className="w-[120px]" />
+                      <col className="w-[26%]" />
+                      {showWords && <col className="w-[80px]" />}
+                      {showBytes && <col className="w-[80px]" />}
+                      <col className="w-[110px]" />
+                    </colgroup>
                     <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur-xs text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border">
                       <tr>
-                        <th className="py-2.5 px-3">{t("feather-profile-th-article")}</th>
-                        <th className="py-2.5 px-3">{t("feather-profile-th-status")}</th>
-                        <th className="py-2.5 px-3">{t("feather-profile-th-jury")}</th>
-                        <th className="py-2.5 px-3">{t("feather-profile-th-comment")}</th>
-                        {showWords && <th className="py-2.5 px-3 text-right">{t("feather-profile-th-words")}</th>}
-                        {showBytes && <th className="py-2.5 px-3 text-right">{t("feather-profile-th-bytes")}</th>}
-                        <th className="py-2.5 px-3">{t("feather-profile-th-submitted")}</th>
+                        <th className="py-2.5 px-3 truncate">{t("feather-profile-th-article")}</th>
+                        <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-status")}</th>
+                        <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-jury")}</th>
+                        <th className="py-2.5 px-3 truncate">{t("feather-profile-th-comment")}</th>
+                        {showWords && <th className="py-2.5 px-3 text-right whitespace-nowrap">{t("feather-profile-th-words")}</th>}
+                        {showBytes && <th className="py-2.5 px-3 text-right whitespace-nowrap">{t("feather-profile-th-bytes")}</th>}
+                        <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-submitted")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
                       {paddingTop > 0 && (
-                        <tr>
-                          <td style={{ height: `${paddingTop}px` }} colSpan={colSpan} />
+                        <tr style={{ height: `${paddingTop}px` }}>
+                          <td colSpan={colSpan} className="p-0 border-0" />
                         </tr>
                       )}
                       {virtualRows.map((virtualRow) => {
@@ -438,27 +447,26 @@ export default function ContestUserProfileClient({
                         return (
                           <tr
                             key={sub.id}
-                            data-index={virtualRow.index}
-                            ref={rowVirtualizer.measureElement}
-                            className="hover:bg-muted/30 transition-colors"
+                            className="hover:bg-muted/30 transition-colors h-[44px]"
                           >
-                            <td className="py-2.5 px-3 font-medium">
+                            <td className="py-2.5 px-3 font-medium truncate">
                               <a
                                 href={`${baseWikiUrl}/wiki/${encodeURIComponent(sub.title)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
+                                className="text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 max-w-full truncate"
+                                title={sub.title}
                               >
-                                {sub.title}
-                                <ExternalLink className="h-2.5 w-2.5 opacity-40" />
+                                <span className="truncate">{sub.title}</span>
+                                <ExternalLink className="h-2.5 w-2.5 opacity-40 shrink-0" />
                               </a>
                               {sub.validation_error && (
-                                <div className="text-[10px] text-destructive mt-0.5">
+                                <div className="text-[10px] text-destructive truncate mt-0.5" title={sub.validation_error}>
                                   {sub.validation_error}
                                 </div>
                               )}
                             </td>
-                            <td className="py-2.5 px-3">
+                            <td className="py-2.5 px-3 whitespace-nowrap">
                               <Badge
                                 variant={
                                   sub.status === "accepted"
@@ -484,7 +492,7 @@ export default function ContestUserProfileClient({
                                   : t("feather-contest-filter-failed")}
                               </Badge>
                             </td>
-                            <td className="py-2.5 px-3 text-muted-foreground">
+                            <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap truncate">
                               {latestReview ? (
                                 <Link
                                   href={`/contests/${code}/users/${encodeURIComponent(latestReview.jury)}`}
@@ -498,7 +506,7 @@ export default function ContestUserProfileClient({
                                 </span>
                               )}
                             </td>
-                            <td className="py-2.5 px-3 text-muted-foreground max-w-xs truncate" title={latestReview?.comment || ""}>
+                            <td className="py-2.5 px-3 text-muted-foreground truncate" title={latestReview?.comment || ""}>
                               {latestReview?.comment ? (
                                 latestReview.comment
                               ) : (
@@ -506,12 +514,12 @@ export default function ContestUserProfileClient({
                               )}
                             </td>
                             {showWords && (
-                              <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
+                              <td className="py-2.5 px-3 text-right font-mono text-muted-foreground whitespace-nowrap">
                                 {n(sub.word_count)}
                               </td>
                             )}
                             {showBytes && (
-                              <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
+                              <td className="py-2.5 px-3 text-right font-mono text-muted-foreground whitespace-nowrap">
                                 {n(sub.byte_count)}
                               </td>
                             )}
@@ -522,8 +530,8 @@ export default function ContestUserProfileClient({
                         );
                       })}
                       {paddingBottom > 0 && (
-                        <tr>
-                          <td style={{ height: `${paddingBottom}px` }} colSpan={colSpan} />
+                        <tr style={{ height: `${paddingBottom}px` }}>
+                          <td colSpan={colSpan} className="p-0 border-0" />
                         </tr>
                       )}
                     </tbody>
@@ -600,39 +608,47 @@ export default function ContestUserProfileClient({
               ) : (
                 <div className="rounded-lg border border-border bg-card overflow-hidden">
                   <div ref={reviewScrollContainerRef} className="overflow-x-auto max-h-[440px] overflow-y-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur-xs">
-                        <tr className="border-b border-border text-[11px] font-semibold text-muted-foreground">
-                          <th className="py-2.5 px-3">{t("feather-profile-th-article")}</th>
-                          <th className="py-2.5 px-3">{t("feather-profile-th-submitter")}</th>
-                          <th className="py-2.5 px-3">{t("feather-profile-th-decision")}</th>
-                          <th className="py-2.5 px-3">{t("feather-profile-th-comment")}</th>
-                          <th className="py-2.5 px-3">{t("feather-profile-th-reviewed")}</th>
+                    <table className="table-fixed w-full text-left text-xs border-collapse">
+                      <colgroup>
+                        <col className="w-[34%] min-w-[140px]" />
+                        <col className="w-[140px]" />
+                        <col className="w-[105px]" />
+                        <col className="w-[32%]" />
+                        <col className="w-[115px]" />
+                      </colgroup>
+                      <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur-xs text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border">
+                        <tr>
+                          <th className="py-2.5 px-3 truncate">{t("feather-profile-th-article")}</th>
+                          <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-submitter")}</th>
+                          <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-decision")}</th>
+                          <th className="py-2.5 px-3 truncate">{t("feather-profile-th-comment")}</th>
+                          <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-reviewed")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
                         {paddingReviewTop > 0 && (
-                          <tr>
-                            <td style={{ height: `${paddingReviewTop}px` }} colSpan={5} />
+                          <tr style={{ height: `${paddingReviewTop}px` }}>
+                            <td colSpan={5} className="p-0 border-0" />
                           </tr>
                         )}
                         {virtualReviewRows.map((virtualRow) => {
                           const rev = filteredReviews[virtualRow.index];
                           if (!rev) return null;
                           return (
-                            <tr key={virtualRow.index} className="hover:bg-muted/30 transition-colors">
-                              <td className="py-2.5 px-3 font-medium">
+                            <tr key={virtualRow.index} className="hover:bg-muted/30 transition-colors h-[40px]">
+                              <td className="py-2.5 px-3 font-medium truncate">
                                 <a
                                   href={`${baseWikiUrl}/wiki/${encodeURIComponent(rev.article_title)}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
+                                  className="text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 max-w-full truncate"
+                                  title={rev.article_title}
                                 >
-                                  {rev.article_title}
-                                  <ExternalLink className="h-2.5 w-2.5 opacity-40" />
+                                  <span className="truncate">{rev.article_title}</span>
+                                  <ExternalLink className="h-2.5 w-2.5 opacity-40 shrink-0" />
                                 </a>
                               </td>
-                              <td className="py-2.5 px-3">
+                              <td className="py-2.5 px-3 whitespace-nowrap truncate">
                                 <Link
                                   href={`/contests/${code}/users/${encodeURIComponent(rev.submitter)}`}
                                   className="text-primary hover:underline font-medium"
@@ -640,7 +656,7 @@ export default function ContestUserProfileClient({
                                   {rev.submitter}
                                 </Link>
                               </td>
-                              <td className="py-2.5 px-3">
+                              <td className="py-2.5 px-3 whitespace-nowrap">
                                 <Badge
                                   variant={
                                     rev.decision === "accepted"
@@ -658,7 +674,7 @@ export default function ContestUserProfileClient({
                                   {rev.decision}
                                 </Badge>
                               </td>
-                              <td className="py-2.5 px-3 text-muted-foreground max-w-xs truncate" title={rev.comment}>
+                              <td className="py-2.5 px-3 text-muted-foreground truncate" title={rev.comment}>
                                 {rev.comment || <span className="text-muted-foreground/40">&mdash;</span>}
                               </td>
                               <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">
@@ -668,8 +684,8 @@ export default function ContestUserProfileClient({
                           );
                         })}
                         {paddingReviewBottom > 0 && (
-                          <tr>
-                            <td style={{ height: `${paddingReviewBottom}px` }} colSpan={5} />
+                          <tr style={{ height: `${paddingReviewBottom}px` }}>
+                            <td colSpan={5} className="p-0 border-0" />
                           </tr>
                         )}
                       </tbody>

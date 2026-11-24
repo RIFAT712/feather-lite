@@ -686,6 +686,7 @@
     "feather-jury-action-review-assigned": "Review queue",
     "feather-jury-export-title": "Export report",
     "feather-nav-language-select": "Select language",
+    "feather-nav-language-heading": "Interface Language",
     "feather-review-access-restricted-title": "Jury review restricted",
     "feather-review-access-restricted-desc": "The jury review queue is restricted to assigned jury members and contest organizers. Please log in with your Wikimedia account to continue.",
     "feather-review-not-jury-desc": "Your account () is not assigned as a jury member for this contest. Only designated juries can evaluate submissions.",

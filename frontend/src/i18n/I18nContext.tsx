@@ -1,18 +1,38 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from "react";
+import Banana from "banana-i18n";
 import enMessages from "./en.json";
-import bnMessages from "./bn.json";
-import arMessages from "./ar.json";
-import faMessages from "./fa.json";
-import { formatLocaleNumber, formatLocaleDate, convertDigits as convertDigitsRaw, parseLocaleDigits } from "./numbers";
+import rawManifest from "./manifest.generated.json";
+import {
+  formatLocaleNumber,
+  formatLocaleDate,
+  convertDigits as convertDigitsRaw,
+  parseLocaleDigits,
+} from "./numbers";
 import { isRtlLocale, getLocaleDirection } from "./rtl";
 
-export type Locale = "en" | "bn" | "ar" | "fa";
+export type Locale = string;
+
+export interface SupportedLanguage {
+  code: string;
+  name: string;
+}
+
+export const supportedLanguages: SupportedLanguage[] = rawManifest as SupportedLanguage[];
 
 export interface I18nContextType {
-  locale: Locale;
-  setLocale: (locale: Locale) => void;
+  locale: string;
+  setLocale: (locale: string) => void;
+  supportedLanguages: SupportedLanguage[];
   t: (key: string, ...params: (string | number | bigint)[]) => string;
   formatNumber: (value: number | bigint | string, options?: Intl.NumberFormatOptions) => string;
   n: (value: number | bigint | string, options?: Intl.NumberFormatOptions) => string;
@@ -23,16 +43,33 @@ export interface I18nContextType {
   dir: "ltr" | "rtl";
 }
 
-const messages: Record<Locale, Record<string, string>> = {
-  en: enMessages as unknown as Record<string, string>,
-  bn: bnMessages as unknown as Record<string, string>,
-  ar: arMessages as unknown as Record<string, string>,
-  fa: faMessages as unknown as Record<string, string>,
-};
+/**
+ * Resolves a given locale string against the generated manifest.
+ * Checks exact match first, then base language code (e.g. "bn-BD" -> "bn").
+ */
+export function resolveLocale(desired: string | null | undefined): string | null {
+  if (!desired) return null;
+  const clean = desired.trim().toLowerCase();
+  if (!clean) return null;
 
-const I18nContext = createContext<I18nContextType>({
+  const exact = supportedLanguages.find((l) => l.code.toLowerCase() === clean);
+  if (exact) return exact.code;
+
+  const base = clean.split("-")[0];
+  const baseMatch = supportedLanguages.find((l) => l.code.toLowerCase() === base);
+  if (baseMatch) return baseMatch.code;
+
+  return null;
+}
+
+// Module-level in-memory cache for loaded message files
+const messageCache = new Map<string, Record<string, string>>();
+messageCache.set("en", enMessages as unknown as Record<string, string>);
+
+const defaultContextValue: I18nContextType = {
   locale: "en",
   setLocale: () => {},
+  supportedLanguages,
   t: (key) => key,
   formatNumber: (val) => String(val),
   n: (val) => String(val),
@@ -41,43 +78,96 @@ const I18nContext = createContext<I18nContextType>({
   parseDigits: (val) => String(val),
   isRtl: false,
   dir: "ltr",
-});
+};
+
+const I18nContext = createContext<I18nContextType>(defaultContextValue);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
+  const [locale, setLocaleState] = useState<string>("en");
+  const [loadedVersion, setLoadedVersion] = useState<number>(0);
+
+  // Initialize Banana-i18n instance lazily once with "en" as the fallback locale
+  const [banana] = useState<Banana>(() => {
+    return new Banana("en", {
+      finalFallback: "en",
+      messages: {
+        en: enMessages as unknown as Record<string, string>,
+      },
+    });
+  });
+
+  const loadLocaleMessages = useCallback(
+    async (targetLocale: string) => {
+      if (targetLocale === "en") return true;
+      if (messageCache.has(targetLocale)) {
+        banana.load(messageCache.get(targetLocale)!, targetLocale);
+        return true;
+      }
+      try {
+        const mod = await import(`./${targetLocale}.json`);
+        const msgs = (mod.default || mod) as Record<string, string>;
+        messageCache.set(targetLocale, msgs);
+        banana.load(msgs, targetLocale);
+        return true;
+      } catch (err) {
+        console.warn(`[i18n] Failed to dynamically load messages for locale "${targetLocale}":`, err);
+        return false;
+      }
+    },
+    [banana]
+  );
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("feather_lang") as Locale;
-      if (saved && (saved === "en" || saved === "bn" || saved === "ar" || saved === "fa")) {
-        setLocaleState(saved);
-        document.documentElement.lang = saved;
-        document.documentElement.dir = getLocaleDirection(saved);
+      const saved = localStorage.getItem("feather_lang");
+      let resolved = resolveLocale(saved);
+
+      if (!resolved) {
+        const browserLangs = navigator.languages?.length ? navigator.languages : [navigator.language];
+        for (const lang of browserLangs) {
+          resolved = resolveLocale(lang);
+          if (resolved) break;
+        }
+      }
+
+      const initialLocale = resolved || "en";
+      if (initialLocale !== "en") {
+        loadLocaleMessages(initialLocale).then(() => {
+          banana.setLocale(initialLocale);
+          setLocaleState(initialLocale);
+          setLoadedVersion((v) => v + 1);
+          document.documentElement.lang = initialLocale;
+          document.documentElement.dir = getLocaleDirection(initialLocale);
+        });
       } else {
-        const browserLang = navigator.language?.toLowerCase() || "";
-        let detected: Locale = "en";
-        if (browserLang.startsWith("bn")) detected = "bn";
-        else if (browserLang.startsWith("ar")) detected = "ar";
-        else if (browserLang.startsWith("fa")) detected = "fa";
-        setLocaleState(detected);
-        document.documentElement.lang = detected;
-        document.documentElement.dir = getLocaleDirection(detected);
+        document.documentElement.lang = "en";
+        document.documentElement.dir = getLocaleDirection("en");
       }
     } catch {
       // In SSR or restricted storage environments
     }
-  }, []);
+  }, [banana, loadLocaleMessages]);
 
-  const setLocale = useCallback((newLocale: Locale) => {
-    setLocaleState(newLocale);
-    try {
-      localStorage.setItem("feather_lang", newLocale);
-      document.documentElement.lang = newLocale;
-      document.documentElement.dir = getLocaleDirection(newLocale);
-    } catch {
-      // ignore
-    }
-  }, []);
+  const setLocale = useCallback(
+    async (newLocale: string) => {
+      const resolved = resolveLocale(newLocale) || "en";
+      if (resolved !== "en") {
+        await loadLocaleMessages(resolved);
+      }
+      banana.setLocale(resolved);
+      setLocaleState(resolved);
+      setLoadedVersion((v) => v + 1);
+
+      try {
+        localStorage.setItem("feather_lang", resolved);
+        document.documentElement.lang = resolved;
+        document.documentElement.dir = getLocaleDirection(resolved);
+      } catch {
+        // ignore
+      }
+    },
+    [banana, loadLocaleMessages]
+  );
 
   const formatNumber = useCallback(
     (value: number | bigint | string, options?: Intl.NumberFormatOptions): string => {
@@ -109,52 +199,19 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback(
     (key: string, ...params: (string | number | bigint)[]): string => {
-      // 1. Check current locale
-      let text = messages[locale]?.[key];
-      // 2. Fallback to English
-      if (!text && locale !== "en") {
-        text = messages.en?.[key];
-      }
-      // 3. Fallback to raw key
-      if (!text) {
-        return key;
-      }
-
-      // Replace $1, $2, etc. (Translatewiki standard)
-      // Automatically format number/bigint parameters with native digits and locale grouping!
-      if (params.length > 0) {
-        // Handle {{PLURAL:$n|one|other}} (Translatewiki / MediaWiki standard)
-        text = text.replace(/\{\{PLURAL:\$([0-9]+)\|([^|{}]+)\|([^|{}]+)\}\}/gi, (_match, paramIdxStr, singular, plural) => {
-          const pIndex = parseInt(paramIdxStr, 10) - 1;
-          const val = params[pIndex];
-          const num = typeof val === "number" || typeof val === "bigint" ? Number(val) : parseFloat(String(val));
-          if (!isNaN(num) && num === 1) {
-            return singular;
-          }
-          return plural;
-        });
-
-        params.forEach((param, index) => {
-          const placeholder = `$${index + 1}`;
-          let formattedParam: string;
-          if (typeof param === "number" || typeof param === "bigint") {
-            formattedParam = formatLocaleNumber(param, locale);
-          } else {
-            formattedParam = String(param);
-          }
-          text = text.replace(new RegExp(`\\${placeholder}`, "g"), formattedParam);
-        });
-      }
-
-      return text;
+      // Pass raw numbers (converting bigint to number) into banana.i18n() so CLDR plural evaluation works accurately
+      const normalizedParams = params.map((param) => (typeof param === "bigint" ? Number(param) : param));
+      return banana.i18n(key, ...normalizedParams);
     },
-    [locale]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [banana, locale, loadedVersion]
   );
 
   const contextValue = useMemo(
     () => ({
       locale,
       setLocale,
+      supportedLanguages,
       t,
       formatNumber,
       n: formatNumber,

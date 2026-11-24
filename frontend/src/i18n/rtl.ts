@@ -6,6 +6,7 @@
 export const RTL_LOCALES = new Set([
   "ar",  // Arabic (العربية)
   "arc", // Aramaic
+  "azb", // South Azerbaijani (تۆرکجه)
   "bcc", // Southern Balochi
   "bgn", // Western Balochi
   "bqi", // Bakhtiari
@@ -31,6 +32,17 @@ export const RTL_LOCALES = new Set([
  */
 export function isRtlLocale(locale: string): boolean {
   if (!locale) return false;
+  try {
+    const intlLoc = new Intl.Locale(locale) as unknown as {
+      textInfo?: { direction?: string };
+      getTextInfo?: () => { direction?: string };
+    };
+    const dir = intlLoc.textInfo?.direction || intlLoc.getTextInfo?.()?.direction;
+    if (dir === "rtl") return true;
+    if (dir === "ltr") return false;
+  } catch {
+    // Fallback if Intl.Locale or direction property is not supported
+  }
   const base = locale.toLowerCase().split("-")[0];
   return RTL_LOCALES.has(base);
 }

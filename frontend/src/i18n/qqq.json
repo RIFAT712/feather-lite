@@ -686,6 +686,7 @@
     "feather-jury-action-review-assigned": "Action link to open review queue for a specific jury member.",
     "feather-jury-export-title": "Menu label for exporting contest jury reports.",
     "feather-nav-language-select": "Tooltip and accessibility label for the language switcher dropdown in the navbar.",
+    "feather-nav-language-heading": "Header label inside the interface language selector dropdown menu.",
     "feather-review-access-restricted-title": "Title of access denied card when an unauthenticated user or non-jury accesses the review queue.",
     "feather-review-access-restricted-desc": "Description explaining that the user must authenticate with a Wikimedia account to access the jury review queue.",
     "feather-review-not-jury-desc": "Message shown to authenticated users who are participants and not jury members.\n*  - Wikimedia username of the logged-in user.",

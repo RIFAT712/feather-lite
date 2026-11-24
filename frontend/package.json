@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "manifest:i18n": "node scripts/generate-i18n-manifest.mjs",
+    "predev": "node scripts/generate-i18n-manifest.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/generate-i18n-manifest.mjs",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
@@ -14,6 +17,7 @@
     "@tanstack/react-virtual": "^3.14.26",
     "@wikimedia/codex": "^2.8.0",
     "@wikimedia/codex-icons": "^2.8.0",
+    "banana-i18n": "^2.4.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "harfbuzzjs": "^1.6.4",

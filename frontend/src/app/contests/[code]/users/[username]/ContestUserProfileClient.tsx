@@ -34,6 +34,7 @@ export default function ContestUserProfileClient({
   const [reviewsOpen, setReviewsOpen] = useState(true);
   const [submissionSearch, setSubmissionSearch] = useState("");
   const [reviewSearch, setReviewSearch] = useState("");
+  const [visibleSubmissions, setVisibleSubmissions] = useState(100);
 
   const { data: profile, isLoading, error } = useQuery<ContestUserProfile>({
     queryKey: ["contestUserProfile", code, username],
@@ -324,7 +325,7 @@ export default function ContestUserProfileClient({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {filteredSubmissions.map((sub) => {
+                    {filteredSubmissions.slice(0, visibleSubmissions).map((sub) => {
                       const latestReview = sub.reviews && sub.reviews.length > 0 ? sub.reviews[0] : null;
 
                       return (
@@ -410,6 +411,39 @@ export default function ContestUserProfileClient({
                     })}
                   </tbody>
                 </table>
+                {filteredSubmissions.length > visibleSubmissions && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-2.5 bg-muted/20 border-t border-border/80 text-xs text-muted-foreground">
+                    <span>
+                      {t(
+                        "feather-contest-showing-subset",
+                        n(Math.min(visibleSubmissions, filteredSubmissions.length)),
+                        n(filteredSubmissions.length)
+                      )}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setVisibleSubmissions((prev) => prev + 100)}
+                        className="text-xs h-7 cursor-pointer"
+                      >
+                        {t("feather-contest-load-more")} (+100)
+                      </Button>
+                      {filteredSubmissions.length <= 1000 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setVisibleSubmissions(filteredSubmissions.length)}
+                          className="text-xs h-7 cursor-pointer"
+                        >
+                          {t("feather-contest-show-all")}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

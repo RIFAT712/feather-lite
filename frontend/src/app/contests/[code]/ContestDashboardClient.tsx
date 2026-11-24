@@ -70,6 +70,8 @@ function ParticipantArticlesDrawer({
   formatDate: (date: any, options?: any) => string;
 }) {
   const { t, n } = useI18n();
+  const INITIAL_LIMIT = 50;
+  const [visibleCount, setVisibleCount] = useState<number>(INITIAL_LIMIT);
   const hasAll = Boolean(cachedArticles && cachedArticles.length >= expectedTotal && expectedTotal > 0);
 
   const { data: userProfile, isLoading } = useQuery({
@@ -90,6 +92,15 @@ function ParticipantArticlesDrawer({
     }
     return list;
   }, [rawSubmissions, statusFilter]);
+
+  // Reset visible limit on user or filter change
+  useEffect(() => {
+    setVisibleCount(INITIAL_LIMIT);
+  }, [username, statusFilter]);
+
+  const displayedSubmissions = useMemo(() => {
+    return submissions.slice(0, visibleCount);
+  }, [submissions, visibleCount]);
 
   if (isLoading && (!rawSubmissions || rawSubmissions.length === 0)) {
     return (
@@ -124,7 +135,7 @@ function ParticipantArticlesDrawer({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {submissions.map((art: any) => (
+          {displayedSubmissions.map((art: any) => (
             <TableRow key={art.id} className="hover:bg-muted/40 transition-colors">
               <TableCell className="font-medium text-xs">
                 <a
@@ -192,6 +203,42 @@ function ParticipantArticlesDrawer({
           ))}
         </TableBody>
       </Table>
+      {submissions.length > visibleCount && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-2.5 bg-muted/20 border-t border-border/80 text-xs text-muted-foreground">
+          <span>
+            {t("feather-contest-showing-subset", n(displayedSubmissions.length), n(submissions.length))}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setVisibleCount((prev) => prev + 50)}
+              className="text-xs h-7 cursor-pointer"
+            >
+              {t("feather-contest-load-more")} (+50)
+            </Button>
+            {submissions.length <= 1000 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setVisibleCount(submissions.length)}
+                className="text-xs h-7 cursor-pointer"
+              >
+                {t("feather-contest-show-all")}
+              </Button>
+            )}
+            <Link
+              href={`/contests/${code}/users/${encodeURIComponent(username)}`}
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-medium ml-1"
+            >
+              <span>{t("feather-profile-view-full")}</span>
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

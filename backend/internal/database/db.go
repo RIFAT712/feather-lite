@@ -230,10 +230,10 @@ func parseFlexTime(s string) *time.Time {
 
 // Keyset Paginated Article Fetch - O(1) time on 50,000+ entries (supports standalone & umbrella campaigns)
 func (d *DB) GetArticlesKeyset(contestID int64, beforeID int64, status string, assignedToID int64, limit int) (*models.KeysetPaginationResult, error) {
-	return d.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, "", limit)
+	return d.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, "", "", limit)
 }
 
-func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status string, assignedToID int64, assignedToUsername string, limit int) (*models.KeysetPaginationResult, error) {
+func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status string, assignedToID int64, assignedToUsername string, submitterUsername string, limit int) (*models.KeysetPaginationResult, error) {
 	if limit <= 0 || limit > 500 {
 		limit = 50
 	}
@@ -271,6 +271,10 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 	} else if strings.TrimSpace(assignedToUsername) != "" {
 		baseQuery += " AND ju.wiki_username = ?"
 		args = append(args, strings.TrimSpace(assignedToUsername))
+	}
+	if strings.TrimSpace(submitterUsername) != "" {
+		baseQuery += " AND u.wiki_username = ? COLLATE NOCASE"
+		args = append(args, strings.TrimSpace(submitterUsername))
 	}
 
 	baseQuery += " ORDER BY a.id DESC LIMIT ?"

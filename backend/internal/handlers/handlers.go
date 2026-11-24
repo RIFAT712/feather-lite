@@ -1718,8 +1718,9 @@ func (h *Handler) GetContestArticles(w http.ResponseWriter, r *http.Request) {
 		assignedToID, _ = strconv.ParseInt(a, 10, 64)
 	}
 	assignedToUsername := strings.TrimSpace(r.URL.Query().Get("assigned_to"))
+	submitter := strings.TrimSpace(r.URL.Query().Get("submitter"))
 
-	res, err := h.db.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, assignedToUsername, limit)
+	res, err := h.db.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, assignedToUsername, submitter, limit)
 	if err != nil {
 		log.Printf("[GetContestArticles] Error querying articles for contest %d (%s): %v", contestID, code, err)
 		jsonError(w, http.StatusInternalServerError, "Failed to query articles")
@@ -3772,6 +3773,7 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 	defer rows.Close()
 
 	submissions := make([]models.ContestUserSubmission, 0)
+	subIndexMap := make(map[int64]int)
 	for rows.Next() {
 		var sub models.ContestUserSubmission
 		if err := rows.Scan(
@@ -3780,27 +3782,34 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 		); err != nil {
 			continue
 		}
-
-		// Query reviews for this submission
-		rRows, err := h.db.Query(`
-			SELECT COALESCE(ju.wiki_username, 'Jury'), r.status, COALESCE(r.comment, ''), r.timestamp
-			FROM reviews r
-			LEFT JOIN users ju ON r.reviewer_id = ju.id
-			WHERE r.article_id = ?
-			ORDER BY r.timestamp DESC
-		`, sub.ID)
 		sub.Reviews = make([]models.ContestUserSubmissionReview, 0)
+		subIndexMap[sub.ID] = len(submissions)
+		submissions = append(submissions, sub)
+	}
+
+	// Fetch all reviews for this user's submissions in ONE indexed batch query instead of N+1 loop
+	if len(submissions) > 0 {
+		reviewsQuery := `
+			SELECT r.article_id, COALESCE(ju.wiki_username, 'Jury'), r.status, COALESCE(r.comment, ''), r.timestamp
+			FROM reviews r
+			JOIN articles a ON r.article_id = a.id
+			LEFT JOIN users ju ON r.reviewer_id = ju.id
+			WHERE a.contest_id = ? AND a.submitter_id = ?
+			ORDER BY r.timestamp DESC
+		`
+		rRows, err := h.db.Query(reviewsQuery, contestID, userID)
 		if err == nil {
 			for rRows.Next() {
+				var articleID int64
 				var rev models.ContestUserSubmissionReview
-				if err := rRows.Scan(&rev.Jury, &rev.Decision, &rev.Comment, &rev.ReviewedAt); err == nil {
-					sub.Reviews = append(sub.Reviews, rev)
+				if err := rRows.Scan(&articleID, &rev.Jury, &rev.Decision, &rev.Comment, &rev.ReviewedAt); err == nil {
+					if idx, ok := subIndexMap[articleID]; ok {
+						submissions[idx].Reviews = append(submissions[idx].Reviews, rev)
+					}
 				}
 			}
 			rRows.Close()
 		}
-
-		submissions = append(submissions, sub)
 	}
 
 	// 2. Fetch reviews conducted by this user in this contest

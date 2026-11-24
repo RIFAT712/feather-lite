@@ -59,13 +59,16 @@ func Connect(cfg *config.Config) (*DB, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to open sqlite: %w", err)
 		}
-		db.SetMaxOpenConns(10)
-		db.SetMaxIdleConns(5)
+		db.SetMaxOpenConns(25)
+		db.SetMaxIdleConns(10)
 		db.SetConnMaxLifetime(1 * time.Hour)
 
 		_, _ = db.Exec("PRAGMA journal_mode(WAL);")
 		_, _ = db.Exec("PRAGMA busy_timeout(10000);")
 		_, _ = db.Exec("PRAGMA synchronous(NORMAL);")
+		_, _ = db.Exec("PRAGMA cache_size = -64000;")  // 64MB memory page cache
+		_, _ = db.Exec("PRAGMA mmap_size = 268435456;") // 256MB memory-mapped I/O
+		_, _ = db.Exec("PRAGMA temp_store = MEMORY;")   // In-memory temp tables, sorting, aggregations
 		_, _ = db.Exec("PRAGMA wal_autocheckpoint(500);")
 		_, _ = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);")
 	}
@@ -157,6 +160,10 @@ func Connect(cfg *config.Config) (*DB, error) {
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_contests_parent ON contests(parent_contest_id);")
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_contests_is_umbrella ON contests(is_umbrella);")
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_talk_jobs_queue ON talk_page_jobs(status, attempts, id);")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_articles_submitter_keyset ON articles(contest_id, submitter_id, id DESC);")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_articles_contest_dates ON articles(contest_id, submitted_at);")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_articles_assigned_status ON articles(contest_id, assigned_to_id, status);")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_reviews_reviewer_contest ON reviews(reviewer_id, article_id);")
 
 	// Recover any orphaned jobs stuck in 'processing' state back to 'queued' on startup
 	_, _ = db.Exec("UPDATE talk_page_jobs SET status = 'queued' WHERE status = 'processing';")

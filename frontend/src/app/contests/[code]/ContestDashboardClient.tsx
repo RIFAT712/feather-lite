@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useState, useMemo, useEffect, useCallback, Fragment } from "react";
+import { use, useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { 
   fetchContest, fetchStandings, fetchArticles, createSubContest,
   fetchAvailableContests, attachContestToCampaign, detachContestFromCampaign,
@@ -86,19 +87,17 @@ function ParticipantArticlesDrawer({
   const [currentCursor, setCurrentCursor] = useState<number | undefined>(undefined);
   const [hasMoreCursor, setHasMoreCursor] = useState<boolean>(false);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
-  const [visibleCachedCount, setVisibleCachedCount] = useState<number>(PAGE_SIZE);
 
   // Sync cursor state when initialData arrives or query inputs change
   useEffect(() => {
     setExtraItems([]);
-    setVisibleCachedCount(PAGE_SIZE);
     if (initialData) {
       setCurrentCursor(initialData.next_cursor);
       setHasMoreCursor(initialData.has_more);
     }
   }, [username, statusFilter, initialData]);
 
-  // If we already had all cached articles, use them; otherwise use cursor results
+  // All loaded submissions for this drawer
   const submissions = useMemo(() => {
     if (hasAll && cachedArticles) {
       let list = cachedArticles.filter((s: any) => s.status !== "validation_failed");
@@ -111,44 +110,47 @@ function ParticipantArticlesDrawer({
     return [...baseItems, ...extraItems];
   }, [hasAll, cachedArticles, statusParam, initialData?.items, extraItems]);
 
-  const displayedSubmissions = useMemo(() => {
-    if (hasAll) {
-      return submissions.slice(0, visibleCachedCount);
-    }
-    return submissions;
-  }, [hasAll, submissions, visibleCachedCount]);
-
   const totalCount = useMemo(() => {
     if (hasAll) return submissions.length;
     if (initialData?.total !== undefined) return initialData.total;
     return expectedTotal;
   }, [hasAll, submissions.length, initialData?.total, expectedTotal]);
 
-  const canLoadMore = useMemo(() => {
-    if (hasAll) {
-      return submissions.length > visibleCachedCount;
-    }
-    return hasMoreCursor;
-  }, [hasAll, submissions.length, visibleCachedCount, hasMoreCursor]);
-
-  const handleLoadMore = async () => {
-    if (hasAll) {
-      setVisibleCachedCount((prev) => prev + PAGE_SIZE);
-      return;
-    }
-    if (!currentCursor || isLoadingMore) return;
+  // Infinite scroll trigger: load next batch when scrolling near the bottom
+  const loadMoreData = useCallback(async () => {
+    if (hasAll || !currentCursor || isLoadingMore || !hasMoreCursor) return;
     setIsLoadingMore(true);
     try {
       const res = await fetchArticles(code, currentCursor, statusParam, PAGE_SIZE, undefined, username);
       setExtraItems((prev) => [...prev, ...res.items]);
       setCurrentCursor(res.next_cursor);
       setHasMoreCursor(res.has_more);
-    } catch (err) {
+    } catch {
       toast.error(t("feather-contest-load-more-error"));
     } finally {
       setIsLoadingMore(false);
     }
-  };
+  }, [hasAll, currentCursor, isLoadingMore, hasMoreCursor, code, statusParam, username, t]);
+
+  // Virtualizer for 60 FPS viewport rendering (unrenders off-screen DOM nodes)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: submissions.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 41,
+    overscan: 10,
+  });
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+
+  // Trigger infinite scroll when approaching the bottom of loaded submissions
+  useEffect(() => {
+    if (virtualRows.length === 0) return;
+    const lastRendered = virtualRows[virtualRows.length - 1];
+    if (lastRendered && lastRendered.index >= submissions.length - 8 && hasMoreCursor && !isLoadingMore) {
+      loadMoreData();
+    }
+  }, [virtualRows, submissions.length, hasMoreCursor, isLoadingMore, loadMoreData]);
 
   if (isLoading && !hasAll) {
     return (
@@ -168,140 +170,139 @@ function ParticipantArticlesDrawer({
   }
 
   const baseWiki = wikiUrl || "https://bn.wikipedia.org";
+  const colSpan = 5 + (showWords ? 1 : 0) + (showBytes ? 1 : 0);
+  const totalVirtualSize = rowVirtualizer.getTotalSize();
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0]?.start || 0 : 0;
+  const paddingBottom = virtualRows.length > 0 ? totalVirtualSize - (virtualRows[virtualRows.length - 1]?.end || 0) : 0;
 
   return (
     <div className="rounded-lg border border-border/70 overflow-hidden bg-card/60 shadow-2xs">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent bg-muted/40">
-            <TableHead className="text-xs">{t("feather-contest-col-article")}</TableHead>
-            <TableHead className="text-center text-xs">{t("feather-contest-col-status")}</TableHead>
-            {showWords && <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>}
-            {showBytes && <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>}
-            <TableHead className="text-right text-xs">{t("feather-contest-col-date")}</TableHead>
-            <TableHead className="w-12 text-center text-xs"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {displayedSubmissions.map((art: any) => (
-            <TableRow key={art.id} className="hover:bg-muted/40 transition-colors">
-              <TableCell className="font-medium text-xs">
-                <a
-                  href={`${baseWiki}/wiki/${encodeURIComponent(art.title)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 hover:text-primary hover:underline text-foreground"
-                >
-                  <span>{art.title}</span>
-                  <ExternalLink className="h-2.5 w-2.5 opacity-40" />
-                </a>
-                {art.validation_error && (
-                  <div className="text-[10px] text-destructive mt-0.5">{art.validation_error}</div>
-                )}
-              </TableCell>
-              <TableCell className="text-center">
-                <Badge
-                  variant={
-                    art.status === "accepted"
-                      ? "default"
-                      : art.status === "rejected"
-                      ? "destructive"
-                      : art.status === "validation_failed"
-                      ? "outline"
-                      : "secondary"
-                  }
-                  className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 ${
-                    art.status === "accepted" ? "bg-emerald-600 hover:bg-emerald-600/90 text-white" : ""
-                  }`}
-                >
-                  {art.status === "accepted"
-                    ? t("feather-contest-filter-accepted")
-                    : art.status === "pending"
-                    ? t("feather-contest-filter-pending")
-                    : art.status === "rejected"
-                    ? t("feather-contest-filter-rejected")
-                    : t("feather-contest-filter-failed")}
-                </Badge>
-              </TableCell>
-              {showWords && (
-                <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                  {n(art.word_count)}
-                </TableCell>
-              )}
-              {showBytes && (
-                <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                  {n(art.byte_count)}
-                </TableCell>
-              )}
-              <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                {art.submitted_at ? formatDate(art.submitted_at) : "—"}
-              </TableCell>
-              <TableCell className="text-center p-2">
-                <a
-                  href={`${baseWiki}/wiki/${encodeURIComponent(art.title)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground/60 hover:text-primary p-1 inline-flex"
-                  title="Open on Wikipedia"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </TableCell>
+      <div
+        ref={scrollContainerRef}
+        className="max-h-[440px] overflow-y-auto scroll-smooth"
+      >
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur-xs">
+            <TableRow className="hover:bg-transparent bg-muted/40 border-b border-border/80">
+              <TableHead className="text-xs">{t("feather-contest-col-article")}</TableHead>
+              <TableHead className="text-center text-xs">{t("feather-contest-col-status")}</TableHead>
+              {showWords && <TableHead className="text-right text-xs">{t("feather-contest-col-words")}</TableHead>}
+              {showBytes && <TableHead className="text-right text-xs">{t("feather-contest-col-bytes")}</TableHead>}
+              <TableHead className="text-right text-xs">{t("feather-contest-col-date")}</TableHead>
+              <TableHead className="w-12 text-center text-xs"></TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      {canLoadMore && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-2.5 bg-muted/20 border-t border-border/80 text-xs text-muted-foreground">
-          <span>
-            {t("feather-contest-showing-subset", n(displayedSubmissions.length), n(totalCount))}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={isLoadingMore}
-              onClick={handleLoadMore}
-              className="text-xs h-7 cursor-pointer"
-            >
-              {isLoadingMore ? "..." : `${t("feather-contest-load-more")} (+50)`}
-            </Button>
-            {hasAll && submissions.length <= 1000 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setVisibleCachedCount(submissions.length)}
-                className="text-xs h-7 cursor-pointer"
-              >
-                {t("feather-contest-show-all")}
-              </Button>
+          </TableHeader>
+          <TableBody>
+            {paddingTop > 0 && (
+              <tr>
+                <td style={{ height: `${paddingTop}px` }} colSpan={colSpan} />
+              </tr>
             )}
-            <Link
-              href={`/contests/${code}/users/${encodeURIComponent(username)}`}
-              className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-medium ml-1"
-            >
-              <span>{t("feather-profile-view-full")}</span>
-              <ExternalLink className="h-3 w-3" />
-            </Link>
+            {virtualRows.map((virtualRow) => {
+              const art = submissions[virtualRow.index];
+              if (!art) return null;
+              return (
+                <TableRow
+                  key={art.id}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  className="hover:bg-muted/40 transition-colors"
+                >
+                  <TableCell className="font-medium text-xs">
+                    <a
+                      href={`${baseWiki}/wiki/${encodeURIComponent(art.title)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 hover:text-primary hover:underline text-foreground"
+                    >
+                      <span>{art.title}</span>
+                      <ExternalLink className="h-2.5 w-2.5 opacity-40" />
+                    </a>
+                    {art.validation_error && (
+                      <div className="text-[10px] text-destructive mt-0.5">{art.validation_error}</div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge
+                      variant={
+                        art.status === "accepted"
+                          ? "default"
+                          : art.status === "rejected"
+                          ? "destructive"
+                          : art.status === "validation_failed"
+                          ? "outline"
+                          : "secondary"
+                      }
+                      className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 ${
+                        art.status === "accepted" ? "bg-emerald-600 hover:bg-emerald-600/90 text-white" : ""
+                      }`}
+                    >
+                      {art.status === "accepted"
+                        ? t("feather-contest-filter-accepted")
+                        : art.status === "pending"
+                        ? t("feather-contest-filter-pending")
+                        : art.status === "rejected"
+                        ? t("feather-contest-filter-rejected")
+                        : t("feather-contest-filter-failed")}
+                    </Badge>
+                  </TableCell>
+                  {showWords && (
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                      {n(art.word_count)}
+                    </TableCell>
+                  )}
+                  {showBytes && (
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                      {n(art.byte_count)}
+                    </TableCell>
+                  )}
+                  <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                    {art.submitted_at ? formatDate(art.submitted_at) : "—"}
+                  </TableCell>
+                  <TableCell className="text-center p-2">
+                    <a
+                      href={`${baseWiki}/wiki/${encodeURIComponent(art.title)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground/60 hover:text-primary p-1 inline-flex"
+                      title="Open on Wikipedia"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {paddingBottom > 0 && (
+              <tr>
+                <td style={{ height: `${paddingBottom}px` }} colSpan={colSpan} />
+              </tr>
+            )}
+          </TableBody>
+        </Table>
+
+        {/* Subtle background streaming indicator during infinite scroll */}
+        {isLoadingMore && (
+          <div className="py-2.5 text-center text-xs text-muted-foreground flex items-center justify-center gap-2 border-t border-border/40 bg-muted/20">
+            <div className="h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span>Loading more...</span>
           </div>
-        </div>
-      )}
-      {!canLoadMore && totalCount > 0 && (
-        <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t border-border/60 text-xs text-muted-foreground">
-          <span>
-            {t("feather-contest-showing-subset", n(displayedSubmissions.length), n(totalCount))}
-          </span>
-          <Link
-            href={`/contests/${code}/users/${encodeURIComponent(username)}`}
-            className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-medium"
-          >
-            <span>{t("feather-profile-view-full")}</span>
-            <ExternalLink className="h-3 w-3" />
-          </Link>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Footer bar with live virtual count & link to full profile */}
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/15 border-t border-border/70 text-xs text-muted-foreground">
+        <span>
+          {t("feather-contest-showing-subset", n(submissions.length), n(totalCount))}
+        </span>
+        <Link
+          href={`/contests/${code}/users/${encodeURIComponent(username)}`}
+          className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-medium"
+        >
+          <span>{t("feather-profile-view-full")}</span>
+          <ExternalLink className="h-3 w-3" />
+        </Link>
+      </div>
     </div>
   );
 }

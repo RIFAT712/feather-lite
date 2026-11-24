@@ -162,6 +162,10 @@ CREATE INDEX IF NOT EXISTS idx_articles_contest_keyset ON articles(contest_id, i
 CREATE INDEX IF NOT EXISTS idx_articles_contest_status ON articles(contest_id, status, id DESC);
 CREATE INDEX IF NOT EXISTS idx_articles_jury_queue ON articles(contest_id, assigned_to_id, status, id DESC);
 CREATE INDEX IF NOT EXISTS idx_articles_submitter ON articles(contest_id, submitter_id);
+CREATE INDEX IF NOT EXISTS idx_articles_submitter_keyset ON articles(contest_id, submitter_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_articles_contest_dates ON articles(contest_id, submitted_at);
+CREATE INDEX IF NOT EXISTS idx_articles_assigned_status ON articles(contest_id, assigned_to_id, status);
+CREATE INDEX IF NOT EXISTS idx_reviews_reviewer_contest ON reviews(reviewer_id, article_id);
 CREATE INDEX IF NOT EXISTS idx_articles_rereview ON articles(contest_id, re_review_requested, id DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read, id DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_all ON notifications(user_id, id DESC);

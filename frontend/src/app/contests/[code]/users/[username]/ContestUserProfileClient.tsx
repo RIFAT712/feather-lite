@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { fetchContestUserProfile, ContestUserProfile } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
 import {
@@ -34,7 +35,6 @@ export default function ContestUserProfileClient({
   const [reviewsOpen, setReviewsOpen] = useState(true);
   const [submissionSearch, setSubmissionSearch] = useState("");
   const [reviewSearch, setReviewSearch] = useState("");
-  const [visibleSubmissions, setVisibleSubmissions] = useState(100);
 
   const { data: profile, isLoading, error } = useQuery<ContestUserProfile>({
     queryKey: ["contestUserProfile", code, username],
@@ -142,6 +142,21 @@ export default function ContestUserProfileClient({
   const filteredSubmissions = validSubmissions.filter((s) =>
     s.title.toLowerCase().includes(submissionSearch.toLowerCase().trim())
   );
+
+  // Virtualizer for 60 FPS viewport rendering (unmounts off-screen rows)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: filteredSubmissions.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 44,
+    overscan: 10,
+  });
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalVirtualSize = rowVirtualizer.getTotalSize();
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0]?.start || 0 : 0;
+  const paddingBottom = virtualRows.length > 0 ? totalVirtualSize - (virtualRows[virtualRows.length - 1]?.end || 0) : 0;
+  const colSpan = 5 + (showWords ? 1 : 0) + (showBytes ? 1 : 0);
 
   // Filter reviews
   const filteredReviews = profile.reviews.filter(
@@ -311,139 +326,140 @@ export default function ContestUserProfileClient({
                   : "No submissions matching your filter."}
               </p>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-border bg-card">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/40 text-[11px] font-semibold text-muted-foreground">
-                      <th className="py-2.5 px-3">{t("feather-profile-th-article")}</th>
-                      <th className="py-2.5 px-3">{t("feather-profile-th-status")}</th>
-                      <th className="py-2.5 px-3">{t("feather-profile-th-jury")}</th>
-                      <th className="py-2.5 px-3">{t("feather-profile-th-comment")}</th>
-                      {showWords && <th className="py-2.5 px-3 text-right">{t("feather-profile-th-words")}</th>}
-                      {showBytes && <th className="py-2.5 px-3 text-right">{t("feather-profile-th-bytes")}</th>}
-                      <th className="py-2.5 px-3">{t("feather-profile-th-submitted")}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {filteredSubmissions.slice(0, visibleSubmissions).map((sub) => {
-                      const latestReview = sub.reviews && sub.reviews.length > 0 ? sub.reviews[0] : null;
-
-                      return (
-                        <tr key={sub.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="py-2.5 px-3 font-medium">
-                            <a
-                              href={`${baseWikiUrl}/wiki/${encodeURIComponent(sub.title)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
-                            >
-                              {sub.title}
-                              <ExternalLink className="h-2.5 w-2.5 opacity-40" />
-                            </a>
-                            {sub.validation_error && (
-                              <div className="text-[10px] text-destructive mt-0.5">
-                                {sub.validation_error}
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <Badge
-                              variant={
-                                sub.status === "accepted"
-                                  ? "default"
-                                  : sub.status === "rejected"
-                                  ? "destructive"
-                                  : sub.status === "validation_failed"
-                                  ? "outline"
-                                  : "secondary"
-                              }
-                              className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 ${
-                                sub.status === "accepted"
-                                  ? "bg-emerald-600 hover:bg-emerald-600/90 text-white"
-                                  : ""
-                              }`}
-                            >
-                              {sub.status === "accepted"
-                                ? t("feather-contest-filter-accepted")
-                                : sub.status === "pending"
-                                ? t("feather-contest-filter-pending")
-                                : sub.status === "rejected"
-                                ? t("feather-contest-filter-rejected")
-                                : t("feather-contest-filter-failed")}
-                            </Badge>
-                          </td>
-                          <td className="py-2.5 px-3 text-muted-foreground">
-                            {latestReview ? (
-                              <Link
-                                href={`/contests/${code}/users/${encodeURIComponent(latestReview.jury)}`}
-                                className="text-primary hover:underline font-medium"
-                              >
-                                {latestReview.jury}
-                              </Link>
-                            ) : (
-                              <span className="text-muted-foreground/60 italic">
-                                {t("feather-profile-awaiting-review")}
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-muted-foreground max-w-xs truncate" title={latestReview?.comment || ""}>
-                            {latestReview?.comment ? (
-                              latestReview.comment
-                            ) : (
-                              <span className="text-muted-foreground/40">&mdash;</span>
-                            )}
-                          </td>
-                          {showWords && (
-                            <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
-                              {n(sub.word_count)}
-                            </td>
-                          )}
-                          {showBytes && (
-                            <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
-                              {n(sub.byte_count)}
-                            </td>
-                          )}
-                          <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">
-                            {formatUtcToTz(sub.submitted_at, "UTC", "MMM d, yyyy")}
-                          </td>
+              <div className="rounded-lg border border-border bg-card overflow-hidden">
+                <div
+                  ref={scrollContainerRef}
+                  className="overflow-x-auto max-h-[580px] overflow-y-auto scroll-smooth"
+                >
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur-xs text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border">
+                      <tr>
+                        <th className="py-2.5 px-3">{t("feather-profile-th-article")}</th>
+                        <th className="py-2.5 px-3">{t("feather-profile-th-status")}</th>
+                        <th className="py-2.5 px-3">{t("feather-profile-th-jury")}</th>
+                        <th className="py-2.5 px-3">{t("feather-profile-th-comment")}</th>
+                        {showWords && <th className="py-2.5 px-3 text-right">{t("feather-profile-th-words")}</th>}
+                        {showBytes && <th className="py-2.5 px-3 text-right">{t("feather-profile-th-bytes")}</th>}
+                        <th className="py-2.5 px-3">{t("feather-profile-th-submitted")}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {paddingTop > 0 && (
+                        <tr>
+                          <td style={{ height: `${paddingTop}px` }} colSpan={colSpan} />
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                {filteredSubmissions.length > visibleSubmissions && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-2.5 bg-muted/20 border-t border-border/80 text-xs text-muted-foreground">
-                    <span>
-                      {t(
-                        "feather-contest-showing-subset",
-                        n(Math.min(visibleSubmissions, filteredSubmissions.length)),
-                        n(filteredSubmissions.length)
                       )}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setVisibleSubmissions((prev) => prev + 100)}
-                        className="text-xs h-7 cursor-pointer"
-                      >
-                        {t("feather-contest-load-more")} (+100)
-                      </Button>
-                      {filteredSubmissions.length <= 1000 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setVisibleSubmissions(filteredSubmissions.length)}
-                          className="text-xs h-7 cursor-pointer"
-                        >
-                          {t("feather-contest-show-all")}
-                        </Button>
+                      {virtualRows.map((virtualRow) => {
+                        const sub = filteredSubmissions[virtualRow.index];
+                        if (!sub) return null;
+                        const latestReview = sub.reviews && sub.reviews.length > 0 ? sub.reviews[0] : null;
+
+                        return (
+                          <tr
+                            key={sub.id}
+                            data-index={virtualRow.index}
+                            ref={rowVirtualizer.measureElement}
+                            className="hover:bg-muted/30 transition-colors"
+                          >
+                            <td className="py-2.5 px-3 font-medium">
+                              <a
+                                href={`${baseWikiUrl}/wiki/${encodeURIComponent(sub.title)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
+                              >
+                                {sub.title}
+                                <ExternalLink className="h-2.5 w-2.5 opacity-40" />
+                              </a>
+                              {sub.validation_error && (
+                                <div className="text-[10px] text-destructive mt-0.5">
+                                  {sub.validation_error}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <Badge
+                                variant={
+                                  sub.status === "accepted"
+                                    ? "default"
+                                    : sub.status === "rejected"
+                                    ? "destructive"
+                                    : sub.status === "validation_failed"
+                                    ? "outline"
+                                    : "secondary"
+                                }
+                                className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 ${
+                                  sub.status === "accepted"
+                                    ? "bg-emerald-600 hover:bg-emerald-600/90 text-white"
+                                    : ""
+                                }`}
+                              >
+                                {sub.status === "accepted"
+                                  ? t("feather-contest-filter-accepted")
+                                  : sub.status === "pending"
+                                  ? t("feather-contest-filter-pending")
+                                  : sub.status === "rejected"
+                                  ? t("feather-contest-filter-rejected")
+                                  : t("feather-contest-filter-failed")}
+                              </Badge>
+                            </td>
+                            <td className="py-2.5 px-3 text-muted-foreground">
+                              {latestReview ? (
+                                <Link
+                                  href={`/contests/${code}/users/${encodeURIComponent(latestReview.jury)}`}
+                                  className="text-primary hover:underline font-medium"
+                                >
+                                  {latestReview.jury}
+                                </Link>
+                              ) : (
+                                <span className="text-muted-foreground/60 italic">
+                                  {t("feather-profile-awaiting-review")}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-muted-foreground max-w-xs truncate" title={latestReview?.comment || ""}>
+                              {latestReview?.comment ? (
+                                latestReview.comment
+                              ) : (
+                                <span className="text-muted-foreground/40">&mdash;</span>
+                              )}
+                            </td>
+                            {showWords && (
+                              <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
+                                {n(sub.word_count)}
+                              </td>
+                            )}
+                            {showBytes && (
+                              <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
+                                {n(sub.byte_count)}
+                              </td>
+                            )}
+                            <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">
+                              {formatUtcToTz(sub.submitted_at, "UTC", "MMM d, yyyy")}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {paddingBottom > 0 && (
+                        <tr>
+                          <td style={{ height: `${paddingBottom}px` }} colSpan={colSpan} />
+                        </tr>
                       )}
-                    </div>
-                  </div>
-                )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex items-center justify-between px-4 py-2 bg-muted/15 border-t border-border/80 text-xs text-muted-foreground">
+                  <span>
+                    {t(
+                      "feather-contest-showing-subset",
+                      n(filteredSubmissions.length),
+                      n(totalSubmissions)
+                    )}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground/80 font-mono">
+                    {n(filteredSubmissions.length)} submissions
+                  </span>
+                </div>
               </div>
             )}
           </CardContent>

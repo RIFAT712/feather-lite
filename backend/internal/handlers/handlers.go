@@ -2869,6 +2869,59 @@ func (h *Handler) GetJuryStats(w http.ResponseWriter, r *http.Request) {
 		resp.ProgressPercent = int(math.Round(float64(resp.ReviewedArticles) / float64(resp.TotalArticles) * 100))
 	}
 
+	// 1. Batch query assigned counts for all juries in contest
+	type assignStat struct {
+		assigned int
+		pending  int
+	}
+	assignMap := make(map[int64]assignStat)
+	if assignRows, err := h.db.Query(`
+		SELECT assigned_to_id,
+		       COUNT(id) as total_assigned,
+		       COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_assigned
+		FROM articles
+		WHERE contest_id = ? AND assigned_to_id IS NOT NULL
+		GROUP BY assigned_to_id
+	`, contestID); err == nil {
+		defer assignRows.Close()
+		for assignRows.Next() {
+			var uid int64
+			var st assignStat
+			if err := assignRows.Scan(&uid, &st.assigned, &st.pending); err == nil {
+				assignMap[uid] = st
+			}
+		}
+	}
+
+	// 2. Batch query reviews conducted by all reviewers in contest
+	type reviewStat struct {
+		judged   int
+		accepted int
+		rejected int
+		skipped  int
+	}
+	revMap := make(map[int64]reviewStat)
+	if revRows, err := h.db.Query(`
+		SELECT r.reviewer_id,
+		       COUNT(r.id),
+		       COUNT(CASE WHEN r.status = 'accepted' THEN 1 END),
+		       COUNT(CASE WHEN r.status = 'rejected' THEN 1 END),
+		       COUNT(CASE WHEN r.status = 'skipped' THEN 1 END)
+		FROM reviews r
+		JOIN articles a ON r.article_id = a.id
+		WHERE a.contest_id = ?
+		GROUP BY r.reviewer_id
+	`, contestID); err == nil {
+		defer revRows.Close()
+		for revRows.Next() {
+			var uid int64
+			var rst reviewStat
+			if err := revRows.Scan(&uid, &rst.judged, &rst.accepted, &rst.rejected, &rst.skipped); err == nil {
+				revMap[uid] = rst
+			}
+		}
+	}
+
 	juryQuery := `
 		SELECT DISTINCT u.id, u.wiki_username
 		FROM users u
@@ -2890,26 +2943,15 @@ func (h *Handler) GetJuryStats(w http.ResponseWriter, r *http.Request) {
 			var jp JuryMemberProgress
 			jp.Username = username
 
-			_ = h.db.QueryRow(`
-				SELECT COUNT(*) FROM articles 
-				WHERE contest_id = ? AND assigned_to_id = ? AND status = 'pending'
-			`, contestID, jid).Scan(&jp.Remaining)
+			ast := assignMap[jid]
+			jp.Remaining = ast.pending
+			jp.Assigned = ast.assigned
 
-			_ = h.db.QueryRow(`
-				SELECT COUNT(*) FROM articles 
-				WHERE contest_id = ? AND assigned_to_id = ?
-			`, contestID, jid).Scan(&jp.Assigned)
-
-			_ = h.db.QueryRow(`
-				SELECT 
-					COUNT(r.id),
-					COUNT(CASE WHEN r.status = 'accepted' THEN 1 END),
-					COUNT(CASE WHEN r.status = 'rejected' THEN 1 END),
-					COUNT(CASE WHEN r.status = 'skipped' THEN 1 END)
-				FROM reviews r
-				JOIN articles a ON r.article_id = a.id
-				WHERE a.contest_id = ? AND r.reviewer_id = ?
-			`, contestID, jid).Scan(&jp.Judged, &jp.Accepted, &jp.Rejected, &jp.Skipped)
+			rst := revMap[jid]
+			jp.Judged = rst.judged
+			jp.Accepted = rst.accepted
+			jp.Rejected = rst.rejected
+			jp.Skipped = rst.skipped
 
 			if jp.Judged > 0 {
 				jp.AcceptanceRate = math.Round((float64(jp.Accepted)/float64(jp.Judged))*1000) / 10

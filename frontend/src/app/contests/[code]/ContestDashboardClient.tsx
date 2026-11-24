@@ -70,39 +70,87 @@ function ParticipantArticlesDrawer({
   formatDate: (date: any, options?: any) => string;
 }) {
   const { t, n } = useI18n();
-  const INITIAL_LIMIT = 50;
-  const [visibleCount, setVisibleCount] = useState<number>(INITIAL_LIMIT);
+  const PAGE_SIZE = 50;
   const hasAll = Boolean(cachedArticles && cachedArticles.length >= expectedTotal && expectedTotal > 0);
+  const statusParam = statusFilter && statusFilter !== "all" ? statusFilter : undefined;
 
-  const { data: userProfile, isLoading } = useQuery({
-    queryKey: ["contestUserProfile", code, username],
-    queryFn: () => fetchContestUserProfile(code, username),
+  // Keyset cursor pagination for articles by this submitter
+  const { data: initialData, isLoading } = useQuery<KeysetResponse>({
+    queryKey: ["contestArticlesBySubmitter", code, username, statusParam],
+    queryFn: () => fetchArticles(code, undefined, statusParam, PAGE_SIZE, undefined, username),
     enabled: !hasAll,
     staleTime: 60 * 1000,
   });
 
-  const rawSubmissions = (hasAll && cachedArticles)
-    ? cachedArticles
-    : (userProfile?.submissions || cachedArticles || []);
+  const [extraItems, setExtraItems] = useState<Article[]>([]);
+  const [currentCursor, setCurrentCursor] = useState<number | undefined>(undefined);
+  const [hasMoreCursor, setHasMoreCursor] = useState<boolean>(false);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [visibleCachedCount, setVisibleCachedCount] = useState<number>(PAGE_SIZE);
 
-  const submissions = useMemo(() => {
-    let list = rawSubmissions.filter((s: any) => s.status !== "validation_failed");
-    if (statusFilter && statusFilter !== "all") {
-      list = list.filter((s: any) => s.status === statusFilter);
-    }
-    return list;
-  }, [rawSubmissions, statusFilter]);
-
-  // Reset visible limit on user or filter change
+  // Sync cursor state when initialData arrives or query inputs change
   useEffect(() => {
-    setVisibleCount(INITIAL_LIMIT);
-  }, [username, statusFilter]);
+    setExtraItems([]);
+    setVisibleCachedCount(PAGE_SIZE);
+    if (initialData) {
+      setCurrentCursor(initialData.next_cursor);
+      setHasMoreCursor(initialData.has_more);
+    }
+  }, [username, statusFilter, initialData]);
+
+  // If we already had all cached articles, use them; otherwise use cursor results
+  const submissions = useMemo(() => {
+    if (hasAll && cachedArticles) {
+      let list = cachedArticles.filter((s: any) => s.status !== "validation_failed");
+      if (statusParam) {
+        list = list.filter((s: any) => s.status === statusParam);
+      }
+      return list;
+    }
+    const baseItems = initialData?.items || [];
+    return [...baseItems, ...extraItems];
+  }, [hasAll, cachedArticles, statusParam, initialData?.items, extraItems]);
 
   const displayedSubmissions = useMemo(() => {
-    return submissions.slice(0, visibleCount);
-  }, [submissions, visibleCount]);
+    if (hasAll) {
+      return submissions.slice(0, visibleCachedCount);
+    }
+    return submissions;
+  }, [hasAll, submissions, visibleCachedCount]);
 
-  if (isLoading && (!rawSubmissions || rawSubmissions.length === 0)) {
+  const totalCount = useMemo(() => {
+    if (hasAll) return submissions.length;
+    if (initialData?.total !== undefined) return initialData.total;
+    return expectedTotal;
+  }, [hasAll, submissions.length, initialData?.total, expectedTotal]);
+
+  const canLoadMore = useMemo(() => {
+    if (hasAll) {
+      return submissions.length > visibleCachedCount;
+    }
+    return hasMoreCursor;
+  }, [hasAll, submissions.length, visibleCachedCount, hasMoreCursor]);
+
+  const handleLoadMore = async () => {
+    if (hasAll) {
+      setVisibleCachedCount((prev) => prev + PAGE_SIZE);
+      return;
+    }
+    if (!currentCursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await fetchArticles(code, currentCursor, statusParam, PAGE_SIZE, undefined, username);
+      setExtraItems((prev) => [...prev, ...res.items]);
+      setCurrentCursor(res.next_cursor);
+      setHasMoreCursor(res.has_more);
+    } catch (err) {
+      toast.error(t("feather-contest-load-more-error"));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  if (isLoading && !hasAll) {
     return (
       <div className="p-4 space-y-2">
         <Skeleton className="h-4 w-48 rounded" />
@@ -111,7 +159,7 @@ function ParticipantArticlesDrawer({
     );
   }
 
-  if (submissions.length === 0) {
+  if (submissions.length === 0 && !isLoading) {
     return (
       <div className="py-4 text-center text-xs text-muted-foreground italic">
         {t("feather-contest-submissions-empty")}
@@ -203,27 +251,28 @@ function ParticipantArticlesDrawer({
           ))}
         </TableBody>
       </Table>
-      {submissions.length > visibleCount && (
+      {canLoadMore && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-2.5 bg-muted/20 border-t border-border/80 text-xs text-muted-foreground">
           <span>
-            {t("feather-contest-showing-subset", n(displayedSubmissions.length), n(submissions.length))}
+            {t("feather-contest-showing-subset", n(displayedSubmissions.length), n(totalCount))}
           </span>
           <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setVisibleCount((prev) => prev + 50)}
+              disabled={isLoadingMore}
+              onClick={handleLoadMore}
               className="text-xs h-7 cursor-pointer"
             >
-              {t("feather-contest-load-more")} (+50)
+              {isLoadingMore ? "..." : `${t("feather-contest-load-more")} (+50)`}
             </Button>
-            {submissions.length <= 1000 && (
+            {hasAll && submissions.length <= 1000 && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setVisibleCount(submissions.length)}
+                onClick={() => setVisibleCachedCount(submissions.length)}
                 className="text-xs h-7 cursor-pointer"
               >
                 {t("feather-contest-show-all")}
@@ -237,6 +286,20 @@ function ParticipantArticlesDrawer({
               <ExternalLink className="h-3 w-3" />
             </Link>
           </div>
+        </div>
+      )}
+      {!canLoadMore && totalCount > 0 && (
+        <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t border-border/60 text-xs text-muted-foreground">
+          <span>
+            {t("feather-contest-showing-subset", n(displayedSubmissions.length), n(totalCount))}
+          </span>
+          <Link
+            href={`/contests/${code}/users/${encodeURIComponent(username)}`}
+            className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-medium"
+          >
+            <span>{t("feather-profile-view-full")}</span>
+            <ExternalLink className="h-3 w-3" />
+          </Link>
         </div>
       )}
     </div>

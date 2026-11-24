@@ -368,6 +368,7 @@
     "feather-contest-submissions-empty": "No articles have been submitted to this contest yet.",
     "feather-contest-col-total-entries": "Total entries",
     "feather-contest-load-more": "Load more submissions",
+    "feather-contest-load-more-error": "Failed to load more submissions.",
     "feather-contest-showing-subset": "Showing $1 of $2 submissions",
     "feather-contest-show-all": "Show all",
     "feather-profile-view-full": "View full profile",

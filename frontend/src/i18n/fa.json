@@ -278,6 +278,7 @@
   "feather-contest-submissions-empty": "No articles have been submitted to this contest yet.",
   "feather-contest-col-total-entries": "مجموع ارسال‌ها",
   "feather-contest-load-more": "بارگذاری موارد بیشتر",
+  "feather-contest-load-more-error": "بارگیری موارد بیشتر با شکست مواجه شد.",
   "feather-contest-showing-subset": "نمایش $1 از $2 مورد ارسالی",
   "feather-contest-show-all": "نمایش همه",
   "feather-profile-view-full": "مشاهده نمایه کامل",

@@ -368,6 +368,7 @@
     "feather-contest-submissions-empty": "এই প্রতিযোগিতায় এখনও কোনো নিবন্ধ জমা দেওয়া হয়নি।",
     "feather-contest-col-total-entries": "মোট নিবন্ধ",
     "feather-contest-load-more": "আরও নিবন্ধ দেখুন",
+    "feather-contest-load-more-error": "আরও নিবন্ধ লোড করতে ব্যর্থ হয়েছে।",
     "feather-contest-showing-subset": "$2টি জমা দেওয়া নিবন্ধের মধ্যে $1টি দেখানো হচ্ছে",
     "feather-contest-show-all": "সবগুলো দেখুন",
     "feather-profile-view-full": "সম্পূর্ণ প্রোফাইল দেখুন",

@@ -278,6 +278,7 @@
   "feather-contest-submissions-empty": "No articles have been submitted to this contest yet.",
   "feather-contest-col-total-entries": "إجمالي المشاركات",
   "feather-contest-load-more": "تحميل المزيد من المشاركات",
+  "feather-contest-load-more-error": "فشل تحميل المزيد من المشاركات.",
   "feather-contest-showing-subset": "عرض $1 من أصل $2 مشاركة",
   "feather-contest-show-all": "عرض الكل",
   "feather-profile-view-full": "عرض الملف الشخصي الكامل",

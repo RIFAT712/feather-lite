@@ -3799,15 +3799,37 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	// 1. Fetch user submissions in this contest
+	limit := 100
+	if lStr := r.URL.Query().Get("limit"); lStr != "" {
+		if parsed, err := strconv.Atoi(lStr); err == nil && parsed > 0 && parsed <= 500 {
+			limit = parsed
+		} else if lStr == "all" {
+			limit = 50000
+		}
+	}
+	beforeID := int64(0)
+	if bStr := r.URL.Query().Get("before_id"); bStr != "" {
+		if parsed, err := strconv.ParseInt(bStr, 10, 64); err == nil && parsed > 0 {
+			beforeID = parsed
+		}
+	}
+
+	// 1. Fetch user submissions in this contest (keyset limited for fast sub-millisecond SSR payload)
 	subQuery := `
 		SELECT a.id, a.title, a.status, COALESCE(a.validation_error, ''), 
 		       a.word_count, a.byte_count, a.submitted_at
 		FROM articles a
 		WHERE a.contest_id = ? AND a.submitter_id = ? AND a.status != 'validation_failed'
-		ORDER BY a.submitted_at DESC
 	`
-	rows, err := h.db.Query(subQuery, contestID, userID)
+	subArgs := []any{contestID, userID}
+	if beforeID > 0 {
+		subQuery += " AND a.id < ?"
+		subArgs = append(subArgs, beforeID)
+	}
+	subQuery += " ORDER BY a.id DESC LIMIT ?"
+	subArgs = append(subArgs, limit)
+
+	rows, err := h.db.Query(subQuery, subArgs...)
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, "Failed to query submissions")
 		return

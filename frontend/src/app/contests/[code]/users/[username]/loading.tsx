@@ -36,6 +36,36 @@ export default function ContestUserLoading() {
           </Card>
         ))}
       </div>
+
+      {/* Submissions Table Skeleton */}
+      <Card className="border-border shadow-xs overflow-hidden">
+        <CardHeader className="p-4 sm:p-6 border-b border-border bg-muted/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <Skeleton className="h-5 w-44 rounded" />
+            <Skeleton className="h-8 w-60 rounded" />
+          </div>
+        </CardHeader>
+        <div className="p-4 space-y-3">
+          <div className="flex items-center justify-between py-2 border-b border-border/60">
+            <Skeleton className="h-4 w-32 rounded" />
+            <Skeleton className="h-4 w-16 rounded" />
+            <Skeleton className="h-4 w-20 rounded" />
+            <Skeleton className="h-4 w-36 rounded" />
+            <Skeleton className="h-4 w-16 rounded" />
+            <Skeleton className="h-4 w-24 rounded" />
+          </div>
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="flex items-center justify-between py-2.5 border-b border-border/30">
+              <Skeleton className="h-4 w-44 rounded" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-4 w-20 rounded" />
+              <Skeleton className="h-4 w-40 rounded" />
+              <Skeleton className="h-4 w-12 rounded" />
+              <Skeleton className="h-4 w-24 rounded" />
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

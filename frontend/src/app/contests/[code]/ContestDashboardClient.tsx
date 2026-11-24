@@ -112,9 +112,8 @@ function ParticipantArticlesDrawer({
 
   const totalCount = useMemo(() => {
     if (hasAll) return submissions.length;
-    if (initialData?.total !== undefined) return initialData.total;
-    return expectedTotal;
-  }, [hasAll, submissions.length, initialData?.total, expectedTotal]);
+    return Math.max(submissions.length, expectedTotal);
+  }, [hasAll, submissions.length, expectedTotal]);
 
   // Infinite scroll trigger: load next batch when scrolling near the bottom
   const loadMoreData = useCallback(async () => {
@@ -3312,7 +3311,15 @@ export default function ContestDashboardClient({
                                         showWords={showWords}
                                         showBytes={showBytes}
                                         cachedArticles={userArticlesMap[sub.username]}
-                                        expectedTotal={sub.total}
+                                        expectedTotal={
+                                          statusFilter === "accepted"
+                                            ? sub.accepted
+                                            : statusFilter === "pending"
+                                            ? sub.pending
+                                            : statusFilter === "rejected"
+                                            ? sub.rejected
+                                            : sub.total
+                                        }
                                         statusFilter={statusFilter}
                                         formatDate={formatDate}
                                       />

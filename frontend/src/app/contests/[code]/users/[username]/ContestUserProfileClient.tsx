@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { fetchContestUserProfile, ContestUserProfile } from "@/lib/api";
+import { fetchContestUserProfile, fetchArticles, ContestUserProfile } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
 import {
   ArrowLeft, ExternalLink, Trophy, CheckCircle, XCircle,
@@ -40,6 +40,7 @@ export default function ContestUserProfileClient({
     queryKey: ["contestUserProfile", code, username],
     queryFn: () => fetchContestUserProfile(code, username),
     initialData: initialProfile || undefined,
+    staleTime: 60 * 1000,
     enabled: !!code && !!username,
   });
 
@@ -124,11 +125,11 @@ export default function ContestUserProfileClient({
   // Filter out any validation failures so they do not appear in the user submissions list
   const validSubmissions = profile.submissions.filter((s) => s.status !== "validation_failed");
 
-  // Calculate aggregates
-  const totalSubmissions = validSubmissions.length;
-  const totalAccepted = validSubmissions.filter((s) => s.status === "accepted").length;
-  const totalRejected = validSubmissions.filter((s) => s.status === "rejected").length;
-  const totalPending = validSubmissions.filter((s) => s.status === "pending").length;
+  // Calculate aggregates from standing (or fallback to submissions)
+  const totalSubmissions = profile.standing?.submitted_count ?? validSubmissions.length;
+  const totalAccepted = profile.standing?.accepted_count ?? validSubmissions.filter((s) => s.status === "accepted").length;
+  const totalRejected = profile.standing?.rejected_count ?? validSubmissions.filter((s) => s.status === "rejected").length;
+  const totalPending = profile.standing?.pending_count ?? validSubmissions.filter((s) => s.status === "pending").length;
   const totalWords = profile.standing?.total_words ?? 
     validSubmissions
       .filter((s) => s.status === "accepted")
@@ -138,10 +139,67 @@ export default function ContestUserProfileClient({
       .filter((s) => s.status === "accepted")
       .reduce((sum, s) => sum + s.byte_count, 0);
 
+  const [extraSubmissions, setExtraSubmissions] = useState<any[]>([]);
+  const [currentCursor, setCurrentCursor] = useState<number | undefined>(() => {
+    if (validSubmissions.length > 0) {
+      return validSubmissions[validSubmissions.length - 1].id;
+    }
+    return undefined;
+  });
+  const [hasMoreCursor, setHasMoreCursor] = useState<boolean>(() => {
+    return totalSubmissions > validSubmissions.length;
+  });
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+
+  // Sync cursor when profile changes
+  useEffect(() => {
+    setExtraSubmissions([]);
+    if (validSubmissions.length > 0) {
+      setCurrentCursor(validSubmissions[validSubmissions.length - 1].id);
+      setHasMoreCursor(totalSubmissions > validSubmissions.length);
+    }
+  }, [username, code]);
+
+  const allSubmissions = useMemo(() => {
+    return [...validSubmissions, ...extraSubmissions];
+  }, [validSubmissions, extraSubmissions]);
+
   // Filter submissions
-  const filteredSubmissions = validSubmissions.filter((s) =>
-    s.title.toLowerCase().includes(submissionSearch.toLowerCase().trim())
-  );
+  const filteredSubmissions = useMemo(() => {
+    if (!submissionSearch.trim()) return allSubmissions;
+    const q = submissionSearch.toLowerCase().trim();
+    return allSubmissions.filter((s) => s.title.toLowerCase().includes(q));
+  }, [allSubmissions, submissionSearch]);
+
+  const loadMoreData = useCallback(async () => {
+    if (!currentCursor || isLoadingMore || !hasMoreCursor) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await fetchArticles(code, currentCursor, undefined, 50, undefined, username);
+      const mapped = res.items.map((art: any) => ({
+        id: art.id,
+        title: art.title,
+        status: art.status,
+        validation_error: art.validation_error || "",
+        word_count: art.word_count || 0,
+        byte_count: art.byte_count || 0,
+        submitted_at: art.submitted_at || "",
+        reviews: (art.reviews || []).map((r: any) => ({
+          jury: r.reviewer_username || r.jury || "Jury",
+          decision: r.status || "reviewed",
+          comment: r.comment || "",
+          reviewed_at: r.timestamp || r.reviewed_at || "",
+        })),
+      }));
+      setExtraSubmissions((prev) => [...prev, ...mapped]);
+      setCurrentCursor(res.next_cursor);
+      setHasMoreCursor(res.has_more);
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [code, currentCursor, isLoadingMore, hasMoreCursor, username]);
 
   // Virtualizer for 60 FPS viewport rendering (unmounts off-screen rows)
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -157,6 +215,15 @@ export default function ContestUserProfileClient({
   const paddingTop = virtualRows.length > 0 ? virtualRows[0]?.start || 0 : 0;
   const paddingBottom = virtualRows.length > 0 ? totalVirtualSize - (virtualRows[virtualRows.length - 1]?.end || 0) : 0;
   const colSpan = 5 + (showWords ? 1 : 0) + (showBytes ? 1 : 0);
+
+  // Trigger infinite scroll when approaching the bottom of loaded submissions
+  useEffect(() => {
+    if (virtualRows.length === 0) return;
+    const lastRendered = virtualRows[virtualRows.length - 1];
+    if (lastRendered && lastRendered.index >= filteredSubmissions.length - 8 && hasMoreCursor && !isLoadingMore) {
+      loadMoreData();
+    }
+  }, [virtualRows, filteredSubmissions.length, hasMoreCursor, isLoadingMore, loadMoreData]);
 
   // Filter reviews
   const filteredReviews = profile.reviews.filter(

@@ -2,6 +2,9 @@ import { Metadata } from "next";
 import { getServerContest, getServerContestUserProfile } from "@/lib/server-api";
 import ContestUserProfileClient from "./ContestUserProfileClient";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface PageProps {
   params: Promise<{ code: string; username: string }>;
 }

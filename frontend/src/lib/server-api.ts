@@ -144,7 +144,7 @@ export async function getServerContestUserProfile(
       `${INTERNAL_API_URL}/api/contests/${encodeURIComponent(code)}/users/${encodeURIComponent(username)}`,
       {
         headers,
-        next: { revalidate: 15 },
+        cache: "no-store",
       }
     );
     if (!res.ok) return null;

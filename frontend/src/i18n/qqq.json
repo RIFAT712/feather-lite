@@ -142,7 +142,7 @@
     "feather-templates-builder-desc": "Help text explaining how templates are automatically prepended and reordered.",
     "feather-templates-configured-count": "Suffix count of templates configured in the builder.",
     "feather-templates-add-btn": "Button label to add another talk page template row.",
-    "feather-templates-placeholder": "Input placeholder showing example template name.",
+    "feather-templates-placeholder": "Input placeholder showing example template name without wikitext curly braces.",
     "feather-templates-vars-title": "Header for dynamic placeholder tags available in talk templates.",
     "feather-templates-vars-hint": "Subtext explaining dynamic variables are replaced on edit.",
     "feather-var-user": "Description for the $USER variable tag.",

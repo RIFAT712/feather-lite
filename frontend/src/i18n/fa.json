@@ -126,7 +126,7 @@
   "feather-templates-builder-desc": "یک یا چند الگو را تعیین کنید تا پس از ارسال مقاله، به طور خودکار در بالای صفحه بحث آن قرار گیرد. برای مرتب‌سازی مجدد بکشید.",
   "feather-templates-configured-count": "الگو پیکربندی شد",
   "feather-templates-add-btn": "افزودن الگوی دیگر",
-  "feather-templates-placeholder": "مثلاً Wiki Loves Earth 2026 یا {{Wiki Loves Earth 2026}}",
+  "feather-templates-placeholder": "مثلاً Wiki Loves Earth 2026 یا الگو:Wiki Loves Earth 2026",
   "feather-templates-preview-title": "پیش‌نمایش متن ویکی صفحه بحث",
   "feather-templates-empty": "هنوز الگویی پیکربندی نشده است. برای شروع روی '+ افزودن الگوی دیگر' کلیک کنید.",
   "feather-templates-queue-notice": "تنظیم سرعت ربات‌های مدیاویکی: ویرایش‌ها در صف قرار گرفته و مطابق با سیاست‌های ویکی‌مدیا با سرعت ۱ ویرایش در هر ۳ ثانیه پردازش می‌شوند.",

@@ -199,9 +199,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback(
     (key: string, ...params: (string | number | bigint)[]): string => {
-      // Pass raw numbers (converting bigint to number) into banana.i18n() so CLDR plural evaluation works accurately
-      const normalizedParams = params.map((param) => (typeof param === "bigint" ? Number(param) : param));
-      return banana.i18n(key, ...normalizedParams);
+      try {
+        // Pass raw numbers (converting bigint to number) into banana.i18n() so CLDR plural evaluation works accurately
+        const normalizedParams = params.map((param) => (typeof param === "bigint" ? Number(param) : param));
+        return banana.i18n(key, ...normalizedParams);
+      } catch (err) {
+        console.warn(`[i18n] Failed to format message for key "${key}":`, err);
+        const raw = banana.getMessage(key);
+        return raw || key;
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [banana, locale, loadedVersion]

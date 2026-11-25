@@ -142,7 +142,7 @@
     "feather-templates-builder-desc": "Set one or more templates to automatically prepend to the article talk page upon submission. Drag to reorder.",
     "feather-templates-configured-count": "template(s) configured",
     "feather-templates-add-btn": "Add another template",
-    "feather-templates-placeholder": "e.g. Wiki Loves Earth 2026 or {{Wiki Loves Earth 2026}}",
+    "feather-templates-placeholder": "e.g. Wiki Loves Earth 2026 or Template:Wiki Loves Earth 2026",
     "feather-templates-vars-title": "Dynamic placeholders",
     "feather-templates-vars-hint": "Replaced automatically during talk page edit",
     "feather-var-user": "Submitter username",

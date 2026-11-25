@@ -126,7 +126,7 @@
   "feather-templates-builder-desc": "عيّن قالباً أو أكثر ليتم إدراجه تلقائياً في صفحة نقاش المقالة عند إرسالها. اسحب لإعادة الترتيب.",
   "feather-templates-configured-count": "قالب تم تكوينه",
   "feather-templates-add-btn": "إضافة قالب آخر",
-  "feather-templates-placeholder": "مثال: Wiki Loves Earth 2026 أو {{Wiki Loves Earth 2026}}",
+  "feather-templates-placeholder": "مثال: Wiki Loves Earth 2026 أو قالب:Wiki Loves Earth 2026",
   "feather-templates-preview-title": "معاينة نص ويكي لصفحة النقاش",
   "feather-templates-empty": "لم يتم تكوين أي قوالب بعد. انقر فوق '+ إضافة قالب آخر' للبدء.",
   "feather-templates-queue-notice": "تنظيم بوتات ويكيميديا: يتم وضع التعديلات في قائمة الانتظار ومعالجتها بمعدل تعديل واحد كل 3 ثوانٍ وفقاً لسياسات ويكيميديا.",

@@ -142,7 +142,7 @@
     "feather-templates-builder-desc": "জমাকৃত নিবন্ধের আলাপ পাতায় স্বয়ংক্রিয়ভাবে যুক্ত করার জন্য এক বা একাধিক টেমপ্লেট নির্ধারণ করুন। ক্রম পরিবর্তন করতে ড্র্যাগ করে সাজান।",
     "feather-templates-configured-count": "টি টেমপ্লেট নির্ধারিত",
     "feather-templates-add-btn": "আরেকটি টেমপ্লেট যুক্ত করুন",
-    "feather-templates-placeholder": "যেমন: উইকি লাভস আর্থ ২০২৬ বা {{উইকি লাভস আর্থ ২০২৬}}",
+    "feather-templates-placeholder": "যেমন: উইকি লাভস আর্থ ২০২৬ বা টেমপ্লেট:উইকি লাভস আর্থ ২০২৬",
     "feather-templates-vars-title": "গতিশীল ভ্যারিয়েবলসমূহ",
     "feather-templates-vars-hint": "আলাপ পাতায় সম্পাদনার সময় স্বয়ংক্রিয়ভাবে প্রতিস্থাপিত হবে",
     "feather-var-user": "জমা প্রদানকারীর নাম",

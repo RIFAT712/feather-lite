@@ -132,8 +132,16 @@ func main() {
 		api.Post("/articles/{id}/request-re-review", h.RequestArticleReReview)
 
 		// Community Chat & Moderation routes
+		// Single Contest Chat (Local room)
 		api.Get("/contests/{code}/chat", h.GetChatMessages)
 		api.Post("/contests/{code}/chat", h.PostChatMessage)
+
+		// Multi-Community Campaign Chat (Campaign room)
+		api.Get("/contests/{code}/campaign-chat", h.GetCampaignChatMessages)
+		api.Post("/contests/{code}/campaign-chat", h.PostCampaignChatMessage)
+		api.Get("/campaigns/{code}/chat", h.GetCampaignChatMessages)
+		api.Post("/campaigns/{code}/chat", h.PostCampaignChatMessage)
+
 		api.Delete("/contests/{code}/chat/{messageId}", h.DeleteChatMessage)
 		api.Post("/contests/{code}/chat/moderate", h.ModerateChatUser)
 		api.Get("/contests/{code}/chat/moderation", h.GetChatModerationLog)

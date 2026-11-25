@@ -1197,6 +1197,7 @@ export interface UserChatStatus {
   ban_reason?: string;
 }
 
+// Single Contest Chat (Dedicated endpoint)
 export async function fetchChatMessages(
   contestCode: string,
   beforeId?: number,
@@ -1208,11 +1209,11 @@ export async function fetchChatMessages(
   if (isCampaign) params.set("is_campaign", "true");
   params.set("limit", limit.toString());
 
-  const res = await fetch(`${API_BASE}/contests/${contestCode}/chat?${params.toString()}`, {
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(contestCode)}/chat?${params.toString()}`, {
     cache: "no-store",
     credentials: "include",
   });
-  if (!res.ok) throw new Error("Failed to fetch chat messages");
+  if (!res.ok) throw new Error("Failed to fetch contest chat messages");
   return res.json();
 }
 
@@ -1221,7 +1222,7 @@ export async function postChatMessage(
   message: string,
   isCampaignChat?: boolean
 ): Promise<CommunityChatMessage> {
-  const res = await fetch(`${API_BASE}/contests/${contestCode}/chat`, {
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(contestCode)}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -1230,6 +1231,41 @@ export async function postChatMessage(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || err.message || "Failed to post message");
+  }
+  return res.json();
+}
+
+// Multi-Community Campaign Chat (Dedicated endpoint)
+export async function fetchCampaignChatMessages(
+  contestCode: string,
+  beforeId?: number,
+  limit: number = 40
+): Promise<ChatMessageKeysetResult> {
+  const params = new URLSearchParams();
+  if (beforeId) params.set("before_id", beforeId.toString());
+  params.set("limit", limit.toString());
+
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(contestCode)}/campaign-chat?${params.toString()}`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch campaign chat messages");
+  return res.json();
+}
+
+export async function postCampaignChatMessage(
+  contestCode: string,
+  message: string
+): Promise<CommunityChatMessage> {
+  const res = await fetch(`${API_BASE}/contests/${encodeURIComponent(contestCode)}/campaign-chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ message }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || err.message || "Failed to post campaign message");
   }
   return res.json();
 }

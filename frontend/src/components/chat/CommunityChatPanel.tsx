@@ -6,6 +6,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchChatMessages,
   postChatMessage,
+  fetchCampaignChatMessages,
+  postCampaignChatMessage,
   deleteChatMessage,
   moderateChatUser,
   fetchChatModerationLog,
@@ -110,8 +112,11 @@ export default function CommunityChatPanel({
     isFetching: isFetchingMessages,
     refetch: refetchMessages,
   } = useQuery({
-    queryKey: ["chat-messages", contestCode, isCampaignChat],
-    queryFn: () => fetchChatMessages(contestCode, undefined, isCampaignChat, 100),
+    queryKey: ["chat-messages", contestCode, isCampaignChat ? "campaign" : "local"],
+    queryFn: () =>
+      isCampaignChat
+        ? fetchCampaignChatMessages(contestCode, undefined, 100)
+        : fetchChatMessages(contestCode, undefined, undefined, 100),
     refetchInterval: 5000,
   });
 
@@ -133,7 +138,10 @@ export default function CommunityChatPanel({
 
   // Mutation: Post Message
   const postMutation = useMutation({
-    mutationFn: (msg: string) => postChatMessage(contestCode, msg, isCampaignChat),
+    mutationFn: (msg: string) =>
+      isCampaignChat
+        ? postCampaignChatMessage(contestCode, msg)
+        : postChatMessage(contestCode, msg),
     onSuccess: () => {
       setMessageText("");
       setAutoModError(null);

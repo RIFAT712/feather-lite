@@ -48,9 +48,23 @@ func (h *Handler) resolveContestAndCampaign(code string, isCampaignRequested boo
 	return contestID, contestID, false, nil
 }
 
-// GetChatMessages retrieves keyset-paginated messages for a contest or campaign chat room.
+// GetCampaignChatMessages retrieves keyset-paginated messages specifically for the multi-community campaign lounge.
+func (h *Handler) GetCampaignChatMessages(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+
+	_, targetContestID, _, err := h.resolveContestAndCampaign(code, true)
+	if err != nil {
+		jsonError(w, http.StatusNotFound, "Campaign not found")
+		return
+	}
+
+	h.getChatMessagesInternal(w, r, targetContestID, true)
+}
+
+// GetChatMessages retrieves keyset-paginated messages for a single contest's local chat room.
 func (h *Handler) GetChatMessages(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
+	// Backwards compatibility fallback if query param is explicitly passed
 	isCampaign := r.URL.Query().Get("is_campaign") == "true"
 
 	_, targetContestID, isCamp, err := h.resolveContestAndCampaign(code, isCampaign)
@@ -59,6 +73,10 @@ func (h *Handler) GetChatMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.getChatMessagesInternal(w, r, targetContestID, isCamp)
+}
+
+func (h *Handler) getChatMessagesInternal(w http.ResponseWriter, r *http.Request, targetContestID int, isCamp bool) {
 	limit := 40
 	if l := r.URL.Query().Get("limit"); l != "" {
 		if val, err := strconv.Atoi(l); err == nil && val > 0 && val <= 100 {
@@ -72,6 +90,7 @@ func (h *Handler) GetChatMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var rows *sql.Rows
+	var err error
 	campVal := 0
 	if isCamp {
 		campVal = 1
@@ -156,7 +175,25 @@ func (h *Handler) GetChatMessages(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PostChatMessage sends a chat message with automated toxicity/NSFW detection and auto-moderation.
+// PostCampaignChatMessage posts a message directly to the dedicated multi-community campaign lounge.
+func (h *Handler) PostCampaignChatMessage(w http.ResponseWriter, r *http.Request) {
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil {
+		jsonError(w, http.StatusUnauthorized, "Authentication required to chat")
+		return
+	}
+
+	code := chi.URLParam(r, "code")
+	var req models.PostChatMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	req.IsCampaignChat = true
+	h.postChatMessageInternal(w, r, currentUser, code, req)
+}
+
+// PostChatMessage sends a chat message for a single contest's local chat room.
 func (h *Handler) PostChatMessage(w http.ResponseWriter, r *http.Request) {
 	currentUser := auth.GetUser(r.Context())
 	if currentUser == nil {
@@ -170,6 +207,11 @@ func (h *Handler) PostChatMessage(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
+
+	h.postChatMessageInternal(w, r, currentUser, code, req)
+}
+
+func (h *Handler) postChatMessageInternal(w http.ResponseWriter, r *http.Request, currentUser *auth.Claims, code string, req models.PostChatMessageRequest) {
 
 	trimmedMessage := strings.TrimSpace(req.Message)
 	if len(trimmedMessage) == 0 {

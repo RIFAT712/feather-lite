@@ -437,7 +437,7 @@ export default function ContestStatsClient({
                   <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-muted-foreground ml-1.5 font-mono">
                     <Calendar className="h-3.5 w-3.5 text-muted-foreground/70" />
                     <span>
-                      {formatDate(contest.start_date)} – {formatDate(contest.end_date)}
+                      {formatDate(contest.start_date, { timeZone: contest.wiki_tz || "UTC" })} – {formatDate(contest.end_date, { timeZone: contest.wiki_tz || "UTC" })}
                     </span>
                   </span>
                 )}

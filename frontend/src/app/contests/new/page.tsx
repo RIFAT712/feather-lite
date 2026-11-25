@@ -397,8 +397,8 @@ export default function NewContestPage() {
       wiki_lang: isUmbrella ? (selectedExistingContests[0]?.wiki_lang || "en") : (wikiLang.trim() || "bn"),
       wiki_tz: wikiTZ.trim() || "UTC",
       onwiki_page_url: onwikiPageUrl.trim() || undefined,
-      start_date: new Date(startDate).toISOString(),
-      end_date: new Date(endDate).toISOString(),
+      start_date: startDate,
+      end_date: endDate,
       is_umbrella: isUmbrella,
       existing_contest_codes: isUmbrella ? selectedExistingContests.map((c) => c.code) : undefined,
       existing_contest_ids: isUmbrella ? selectedExistingContests.map((c) => c.id) : undefined,
@@ -409,11 +409,11 @@ export default function NewContestPage() {
       rule_created_in_window: isUmbrella ? false : createdInWindow,
       custom_creation_start_date:
         !isUmbrella && !createdInWindow && customCreationStart
-          ? new Date(customCreationStart).toISOString()
+          ? customCreationStart
           : undefined,
       custom_creation_end_date:
         !isUmbrella && !createdInWindow && customCreationEnd
-          ? new Date(customCreationEnd).toISOString()
+          ? customCreationEnd
           : undefined,
       min_bytes: isUmbrella ? 0 : (hasMinBytes ? Number(minBytes) || 0 : 0),
       min_words: isUmbrella ? 0 : (hasMinWords ? Number(minWords) || 0 : 0),

@@ -6,6 +6,7 @@ backend/feather-server.exe
 backend/*.db
 backend/*.db-wal
 backend/*.db-shm
+backend/scratch_test_time.go
 *.log
 
 # Dependencies

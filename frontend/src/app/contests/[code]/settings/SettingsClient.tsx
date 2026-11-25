@@ -56,7 +56,7 @@ import TimezoneSelector from "@/components/contests/TimezoneSelector";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
 import TalkQueueMonitor from "@/components/contests/TalkQueueMonitor";
-import { calculateEndOfDay } from "@/lib/time";
+import { calculateEndOfDay, formatDateForPicker } from "@/lib/time";
 
 interface SettingsClientProps {
   code: string;
@@ -142,17 +142,6 @@ export default function SettingsClient({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeletingContest, setIsDeletingContest] = useState(false);
 
-  function formatDateForInput(d?: string | Date) {
-    if (!d) return "";
-    try {
-      const date = new Date(d);
-      if (isNaN(date.getTime())) return "";
-      return date.toISOString().slice(0, 16);
-    } catch {
-      return "";
-    }
-  }
-
   const applyDuration = (days: number) => {
     if (!editStartDate) return;
     setEditEndDate(calculateEndOfDay(editStartDate, days));
@@ -165,8 +154,8 @@ export default function SettingsClient({
       setEditDescription(contest.description || "");
       setEditOnwikiPageUrl(contest.onwiki_page_url || "");
       setEditStatus(contest.status || "active");
-      setEditStartDate(formatDateForInput(contest.start_date));
-      setEditEndDate(formatDateForInput(contest.end_date));
+      setEditStartDate(formatDateForPicker(contest.start_date, contest.wiki_tz || "UTC"));
+      setEditEndDate(formatDateForPicker(contest.end_date, contest.wiki_tz || "UTC"));
       setEditTZ(contest.wiki_tz || "UTC");
       setHasEditMinWords((contest.min_words ?? 0) > 0);
       setEditMinWords(contest.min_words && contest.min_words > 0 ? contest.min_words : 300);
@@ -212,8 +201,8 @@ export default function SettingsClient({
       name: editName.trim(),
       description: editDescription.trim(),
       status: editStatus,
-      start_date: new Date(editStartDate).toISOString(),
-      end_date: new Date(editEndDate).toISOString(),
+      start_date: editStartDate,
+      end_date: editEndDate,
       wiki_tz: editTZ,
       onwiki_page_url: editOnwikiPageUrl.trim(),
       min_words: hasEditMinWords ? (Number(editMinWords) || 0) : 0,

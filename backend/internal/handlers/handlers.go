@@ -481,7 +481,7 @@ func (h *Handler) GetUserRole(w http.ResponseWriter, r *http.Request) {
 
 func parseFlexibleDate(dateStr string, tz string, defaultTime time.Time) time.Time {
 	if strings.TrimSpace(dateStr) == "" {
-		return defaultTime
+		return defaultTime.UTC()
 	}
 	loc, err := time.LoadLocation(strings.TrimSpace(tz))
 	if err != nil {
@@ -496,10 +496,10 @@ func parseFlexibleDate(dateStr string, tz string, defaultTime time.Time) time.Ti
 	}
 	for _, f := range formats {
 		if t, err := time.ParseInLocation(f, dateStr, loc); err == nil {
-			return t
+			return t.UTC()
 		}
 	}
-	return defaultTime
+	return defaultTime.UTC()
 }
 
 func generateContestCode() string {
@@ -628,15 +628,13 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 	}
 	var customCreationStart, customCreationEnd *time.Time
 	if !req.RuleCreatedInWindow {
-		if req.CustomCreationStartDate != "" {
-			if t, err := time.Parse(time.RFC3339, req.CustomCreationStartDate); err == nil {
-				customCreationStart = &t
-			}
+		if strings.TrimSpace(req.CustomCreationStartDate) != "" {
+			t := parseFlexibleDate(req.CustomCreationStartDate, wikiTZ, startDate)
+			customCreationStart = &t
 		}
-		if req.CustomCreationEndDate != "" {
-			if t, err := time.Parse(time.RFC3339, req.CustomCreationEndDate); err == nil {
-				customCreationEnd = &t
-			}
+		if strings.TrimSpace(req.CustomCreationEndDate) != "" {
+			t := parseFlexibleDate(req.CustomCreationEndDate, wikiTZ, endDate)
+			customCreationEnd = &t
 		}
 	}
 	rankByWords := 0

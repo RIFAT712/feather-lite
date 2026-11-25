@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
 import { getProjectMeta, getWikiInfo, getOnwikiPageLink } from "@/lib/wikis";
+import { formatDateDDMMYYYYTz } from "@/lib/time";
 import { MetaWikiLogoIcon } from "@/components/icons/CodexIcons";
 import WikiSelector from "@/components/contests/WikiSelector";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -660,18 +661,8 @@ export default function ContestDashboardClient({
 
   const formatDateDDMMYYYY = useCallback((dateStr: string) => {
     if (!dateStr) return "";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = String(d.getFullYear());
-    const formatted = `${day}/${month}/${year}`;
-    if (locale === "bn") {
-      const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-      return formatted.replace(/[0-9]/g, (ch) => bnDigits[Number(ch)]);
-    }
-    return formatted;
-  }, [locale]);
+    return formatDateDDMMYYYYTz(dateStr, contest?.wiki_tz || "UTC", locale);
+  }, [contest?.wiki_tz, locale]);
 
   const isJuryOrOrganizer = useMemo(() => {
     if (!me?.is_authenticated) return false;

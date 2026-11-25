@@ -715,11 +715,11 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
 
                     <span
                       className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 shrink-0 whitespace-nowrap ml-auto"
-                      title={`${formatDate(c.start_date)} – ${formatDate(c.end_date)}`}
+                      title={`${formatDate(c.start_date, { timeZone: c.wiki_tz || "UTC" })} – ${formatDate(c.end_date, { timeZone: c.wiki_tz || "UTC" })}`}
                     >
                       <Calendar className="h-3 w-3 text-muted-foreground/70 shrink-0" />
                       <span>
-                        {formatDate(c.start_date, { month: "short", day: "numeric" })} – {formatDate(c.end_date, { month: "short", day: "numeric" })}
+                        {formatDate(c.start_date, { month: "short", day: "numeric", timeZone: c.wiki_tz || "UTC" })} – {formatDate(c.end_date, { month: "short", day: "numeric", timeZone: c.wiki_tz || "UTC" })}
                       </span>
                     </span>
                   </div>
@@ -759,7 +759,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       </span>
                       <span className="font-mono text-[10px] text-muted-foreground/80">
                         {isUpcoming
-                          ? formatDate(c.start_date, { month: "short", day: "numeric" })
+                          ? formatDate(c.start_date, { month: "short", day: "numeric", timeZone: c.wiki_tz || "UTC" })
                           : t("feather-time-elapsed", isEnded ? 100 : time.percent)}
                       </span>
                     </div>

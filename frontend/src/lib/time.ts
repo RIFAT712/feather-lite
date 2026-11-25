@@ -141,3 +141,79 @@ export function formatUtcToTz(
   }
 }
 
+/**
+ * Formats any ISO timestamp, Date object, or date string into "YYYY-MM-DDTHH:mm" in the specified timezone.
+ * Used for DateTimePicker inputs to ensure timeline values reflect the contest's configured timezone,
+ * completely immune to client browser local offset drift.
+ */
+export function formatDateForPicker(d?: string | Date | null, tz: string = "UTC"): string {
+  if (!d) return "";
+  const targetTz = (tz || "UTC").trim();
+
+  // If already an unzoned string in "YYYY-MM-DDTHH:mm" format (no Z and no +/- offset), return directly
+  if (typeof d === "string") {
+    const trimmed = d.trim();
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) {
+      return trimmed;
+    }
+  }
+
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (isNaN(date.getTime())) return "";
+
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: targetTz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      hourCycle: "h23",
+    });
+    const parts = formatter.formatToParts(date);
+    const getPart = (t: string) => parts.find((p) => p.type === t)?.value || "";
+    const y = getPart("year");
+    const m = getPart("month");
+    const day = getPart("day");
+    let hour = getPart("hour");
+    if (hour === "24") hour = "00";
+    const min = getPart("minute");
+    return `${y}-${m}-${day}T${hour}:${min}`;
+  } catch {
+    try {
+      return date.toISOString().slice(0, 16);
+    } catch {
+      return "";
+    }
+  }
+}
+
+/**
+ * Formats a date string into DD/MM/YYYY in the specified timezone.
+ * Supports localized Bengali numerals when locale === "bn".
+ */
+export function formatDateDDMMYYYYTz(dateStr: string, tz: string = "UTC", locale: string = "en"): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  try {
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone: tz || "UTC",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const formatted = formatter.format(d);
+    if (locale === "bn") {
+      const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+      return formatted.replace(/[0-9]/g, (ch) => bnDigits[Number(ch)]);
+    }
+    return formatted;
+  } catch {
+    return dateStr;
+  }
+}
+
+

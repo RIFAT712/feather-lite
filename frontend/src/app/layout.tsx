@@ -4,7 +4,7 @@ import Providers from "./providers";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://feather-lite.toolforge.org";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://feather.toolforge.org";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

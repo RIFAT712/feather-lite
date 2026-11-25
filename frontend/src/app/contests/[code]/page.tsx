@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = contest?.name ? `${contest.name} — Feather` : "Contest — Feather";
   const description = contest?.description || `Wiki article contest ${contest?.name || code} on Feather.`;
   const contestPath = `/contests/${encodeURIComponent(code)}`;
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://feather-lite.toolforge.org";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://feather.toolforge.org";
   const contestUrl = `${siteUrl}${contestPath}`;
   const ogImageUrl = `${siteUrl}${contestPath}/opengraph-image`;
 

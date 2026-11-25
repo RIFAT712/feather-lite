@@ -1073,7 +1073,7 @@ export default function ContestDashboardClient({
     if (typeof window !== "undefined" && window.location.origin) {
       return `${window.location.origin}/contests/${code}`;
     }
-    return `https://feather-lite.toolforge.org/contests/${code}`;
+    return `https://feather.toolforge.org/contests/${code}`;
   }, [code]);
 
   // Social share URLs
@@ -1918,7 +1918,7 @@ export default function ContestDashboardClient({
                 {/* Social Card Info Strip (URL + Meta snippet) */}
                 <div className="p-3 bg-zinc-900/90 text-xs space-y-0.5">
                   <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground/80">
-                    feather-lite.toolforge.org
+                    feather.toolforge.org
                   </div>
                   <div className="font-bold text-foreground text-xs sm:text-sm line-clamp-1">
                     {contest.name} — Feather

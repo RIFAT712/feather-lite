@@ -4,7 +4,7 @@ A high-throughput, modern Wiki Article Contest Management & Judging Platform bui
 
 Engineered specifically to handle **50,000+ entries** with sub-millisecond query response times, zero DOM lag, and a sleek modern interface.
 
-* **Live on Wikimedia Toolforge:** [https://feather-lite.toolforge.org](https://feather-lite.toolforge.org)
+* **Live on Wikimedia Toolforge:** [https://feather.toolforge.org](https://feather.toolforge.org)
 * **License:** GNU General Public License v3.0 (GPL-3.0-or-later)
 
 ---

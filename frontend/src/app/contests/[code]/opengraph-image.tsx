@@ -370,7 +370,7 @@ export default async function Image({ params }: { params: Promise<{ code: string
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#71717a", fontSize: "14px", fontWeight: 600 }}>
-            <span>feather-lite.toolforge.org</span>
+            <span>feather.toolforge.org</span>
           </div>
         </div>
       </div>

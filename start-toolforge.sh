@@ -5,7 +5,7 @@ set +e
 
 # ==============================================================================
 # Feather 2.0 - Toolforge Combined Entrypoint
-# Tool: feather-lite (https://feather-lite.toolforge.org)
+# Tool: feather (https://feather.toolforge.org)
 # ==============================================================================
 
 TOOL_DIR="${TOOL_DATA_DIR:-$HOME}"

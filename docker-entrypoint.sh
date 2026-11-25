@@ -15,8 +15,8 @@ export PORT="${PORT:-8000}"
 export BACKEND_PORT="${BACKEND_PORT:-8081}"
 export DB_TYPE="${DB_TYPE:-sqlite}"
 export DATABASE_URL="${DATABASE_URL:-${TOOL_DIR}/feather.db}"
-export FRONTEND_URL="${FRONTEND_URL:-https://feather-lite.toolforge.org}"
-export OAUTH_CALLBACK_URL="${OAUTH_CALLBACK_URL:-https://feather-lite.toolforge.org/auth/callback}"
+export FRONTEND_URL="${FRONTEND_URL:-https://feather.toolforge.org}"
+export OAUTH_CALLBACK_URL="${OAUTH_CALLBACK_URL:-https://feather.toolforge.org/auth/callback}"
 export OWNER_USERNAME="${OWNER_USERNAME:-R1F4T}"
 
 # 1. Start Go Backend in background

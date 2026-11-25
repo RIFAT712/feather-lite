@@ -124,17 +124,17 @@ pnpm build
 
 ### Wikimedia Toolforge Deployment
 Feather is deployed to Wikimedia Cloud Services (Toolforge) under tool `feather-lite`.
-* **Live Toolforge URL**: `https://feather-lite.toolforge.org`
+* **Live Toolforge URL**: `https://feather.toolforge.org`
 * **Source Repository**: `https://github.com/RIFAT712/feather-lite.git` (`main` branch)
 * **Toolforge Build & Deploy**:
   ```bash
   # 1. Trigger build via SSH
   ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new login.toolforge.org \
-    "become feather-lite toolforge build start https://github.com/RIFAT712/feather-lite.git"
+    "become feather toolforge build start https://github.com/RIFAT712/feather-lite.git"
   
   # 2. Restart webservice after successful build
   ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new login.toolforge.org \
-    "become feather-lite toolforge webservice restart"
+    "become feather toolforge webservice restart"
   ```
 
 ---
@@ -256,7 +256,7 @@ All agents modifying code in this repository must uphold the following rules:
 
 ### K. MCP Tooling & Diagnostic Protocol
 * **Puppeteer MCP (`puppeteer`):**
-  * Use `puppeteer_navigate`, `puppeteer_screenshot`, and `puppeteer_evaluate` to verify live deployments on Toolforge (`https://feather-lite.toolforge.org`), inspect rendered DOM trees, test inputs, and validate responsive layouts.
+  * Use `puppeteer_navigate`, `puppeteer_screenshot`, and `puppeteer_evaluate` to verify live deployments on Toolforge (`https://feather.toolforge.org`), inspect rendered DOM trees, test inputs, and validate responsive layouts.
 * **Ponytail MCP (`ponytail`):**
   * Channels senior developer discipline via `ponytail_instructions`. Enforce minimal working diffs, stdlib-first solutions, and prompt root-cause resolutions over symptomatic patches.
 * **Context-Mode MCP (`context-mode`):**

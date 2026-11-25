@@ -8,6 +8,21 @@ const nextConfig: NextConfig = {
     // Verified locally via `tsc --noEmit` before commits; skips duplicate build-time typecheck on Toolforge
     ignoreBuildErrors: true,
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "feather-lite.toolforge.org",
+          },
+        ],
+        destination: "https://feather.toolforge.org/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

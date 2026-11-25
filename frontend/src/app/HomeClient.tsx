@@ -542,7 +542,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={`skeleton-${i}`}
-              className="group flex flex-col justify-between rounded-lg border border-border bg-card p-3.5 sm:p-4 min-h-[210px] gap-2.5 [contain-intrinsic-size:auto_210px]"
+              className="group flex flex-col justify-between rounded-xl border border-border/60 bg-card p-4 min-h-[220px] gap-3 [contain-intrinsic-size:auto_220px]"
             >
               <div className="space-y-2">
                 {/* Meta badges & time row */}
@@ -551,38 +551,39 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                     <Skeleton className="h-5 w-16 rounded-md" />
                     <Skeleton className="h-5 w-24 rounded-md" />
                   </div>
-                  <Skeleton className="h-4 w-16 rounded" />
+                  <Skeleton className="h-4 w-16 rounded ml-auto" />
                 </div>
 
                 {/* Title & Description */}
                 <div className="space-y-1">
                   <Skeleton className="h-5 w-3/4 rounded" />
-                  <Skeleton className="h-3.5 w-full rounded" />
+                  <Skeleton className="h-8 w-full rounded" />
                 </div>
 
                 {/* Timeline Tracker */}
-                <div className="space-y-1 pt-0.5">
+                <div className="space-y-1.5 pt-0.5">
                   <div className="flex items-center justify-between text-[11px]">
                     <Skeleton className="h-3 w-20 rounded" />
-                    <Skeleton className="h-3 w-8 rounded" />
+                    <Skeleton className="h-3 w-12 rounded" />
                   </div>
                   <Skeleton className="h-1.5 w-full rounded-full" />
                 </div>
 
                 {/* Clean Metrics Row */}
-                <div className="flex items-center gap-3 pt-1.5 border-t border-border/50">
-                  <Skeleton className="h-4 w-20 rounded" />
-                  <Skeleton className="h-4 w-20 rounded" />
+                <div className="flex items-center gap-3 pt-2 border-t border-border/50">
+                  <Skeleton className="h-4 w-16 rounded" />
+                  <Skeleton className="h-4 w-16 rounded" />
+                  <Skeleton className="h-4 w-20 rounded ml-auto" />
                 </div>
               </div>
 
               {/* Actions Footer */}
-              <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-border/60">
+              <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-border/50">
                 <div className="flex items-center gap-1.5">
-                  <Skeleton className="h-7 w-16 rounded-md" />
+                  <Skeleton className="h-7 w-20 rounded-md" />
                   <Skeleton className="h-7 w-24 rounded-md" />
                 </div>
-                <Skeleton className="h-7 w-20 rounded-md" />
+                <Skeleton className="size-7 rounded-md ml-auto" />
               </div>
             </div>
           ))}
@@ -611,12 +612,12 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
             return (
               <div
                 key={c.id}
-                className="group flex flex-col justify-between rounded-lg border border-border bg-card p-3.5 sm:p-4 hover:border-foreground/25 hover:shadow-2xs transition-colors duration-150 text-card-foreground gap-2.5 [content-visibility:auto] [contain-intrinsic-size:auto_210px]"
+                className="group flex flex-col justify-between rounded-xl border border-border/70 dark:border-border/60 bg-card p-4 hover:border-foreground/20 dark:hover:border-foreground/25 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 ease-out text-card-foreground gap-3 [content-visibility:auto] [contain-intrinsic-size:auto_220px]"
               >
                 <div className="space-y-2">
                   {/* Meta badges & time row */}
                   <div className="flex items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                    <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                       {/* Status Indicator Badge */}
                       {(() => {
                         let label = c.status;
@@ -672,24 +673,13 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       })()}
 
                       {c.is_umbrella ? (
-                        <>
-                          <div
-                            className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5 rounded-md text-[11px] font-medium text-foreground/90 bg-muted/30 border border-border/70 shrink-0 whitespace-nowrap"
-                            title={t("feather-campaign-badge")}
-                          >
-                            <MetaWikiLogoIcon className="h-3.5 w-3.5 shrink-0" />
-                            <span className="font-medium">{t("feather-campaign-badge")}</span>
-                          </div>
-                          {Boolean(c.sub_contest_count) && (
-                            <div
-                              className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5 rounded-md text-[11px] font-medium shrink-0 whitespace-nowrap bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/25"
-                              title={t("feather-campaign-tab-communities")}
-                            >
-                              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                              <span>{t("feather-campaign-communities-count", c.sub_contest_count || 0)}</span>
-                            </div>
-                          )}
-                        </>
+                        <div
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5 rounded-md text-[11px] font-medium text-foreground/90 bg-muted/40 dark:bg-muted/30 border border-border/70 shrink-0 max-w-[170px] sm:max-w-none"
+                          title={t("feather-campaign-badge")}
+                        >
+                          <MetaWikiLogoIcon className="h-3.5 w-3.5 shrink-0" />
+                          <span className="font-medium truncate">{t("feather-campaign-badge")}</span>
+                        </div>
                       ) : (() => {
                         const pMeta = getProjectMeta(c.wiki_dbname);
                         const pName = t(`feather-project-${pMeta.id}`) || (locale === "bn" ? pMeta.nativeName : pMeta.name);
@@ -697,7 +687,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                         return (
                           <Badge
                             variant="outline"
-                            className="text-[11px] font-medium gap-1.5 px-2 py-0.5 h-5 text-foreground/90 bg-muted/30 border-border/70 hover:bg-muted/50 transition-colors shrink-0 whitespace-nowrap"
+                            className="text-[11px] font-medium gap-1.5 px-2 py-0.5 h-5 text-foreground/90 bg-muted/40 dark:bg-muted/30 border-border/70 hover:bg-muted/50 transition-colors shrink-0 whitespace-nowrap"
                             title={`${wikiInfo?.englishName || pMeta.name} (${c.wiki_dbname})`}
                           >
                             <img
@@ -724,10 +714,10 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                     </div>
 
                     <span
-                      className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 shrink-0"
+                      className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 shrink-0 whitespace-nowrap ml-auto"
                       title={`${formatDate(c.start_date)} – ${formatDate(c.end_date)}`}
                     >
-                      <Calendar className="h-3 w-3 text-muted-foreground/70" />
+                      <Calendar className="h-3 w-3 text-muted-foreground/70 shrink-0" />
                       <span>
                         {formatDate(c.start_date, { month: "short", day: "numeric" })} – {formatDate(c.end_date, { month: "short", day: "numeric" })}
                       </span>
@@ -735,7 +725,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                   </div>
 
                   {/* Title & Description */}
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     <h2 className="text-sm sm:text-base font-bold tracking-tight line-clamp-1">
                       <Link
                         href={`/contests/${c.code}`}
@@ -745,72 +735,76 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       </Link>
                     </h2>
 
-                    <p className="line-clamp-1 text-xs text-muted-foreground leading-normal">
+                    <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed h-8">
                       {c.description || t("feather-contest-no-desc")}
                     </p>
                   </div>
 
                   {/* Timeline Tracker */}
-                  <div className="space-y-1 pt-0.5">
+                  <div className="space-y-1.5 pt-0.5">
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span className="flex items-center gap-1 text-[10.5px] font-medium">
-                        <Clock className="h-3 w-3 text-muted-foreground/70" />
-                        {isEnded
-                          ? t("feather-contest-ended")
-                          : time.notStarted
-                          ? (time.diffDays <= 1
-                              ? (time.hours > 0 ? t("feather-contest-starts-in-hours", time.hours) : t("feather-contest-starts-in-today"))
-                              : t("feather-contest-starts-in-days", time.diffDays))
-                          : time.diffDays <= 0
-                          ? t("feather-contest-today-end")
-                          : t("feather-contest-days-left", time.diffDays)}
+                      <span className="flex items-center gap-1.5 text-[10.5px] font-medium">
+                        <Clock className={`h-3 w-3 shrink-0 ${isUpcoming ? "text-blue-500" : isActive ? "text-emerald-500" : "text-muted-foreground/70"}`} />
+                        <span>
+                          {isEnded
+                            ? t("feather-contest-ended")
+                            : time.notStarted
+                            ? (time.diffDays <= 1
+                                ? (time.hours > 0 ? t("feather-contest-starts-in-hours", time.hours) : t("feather-contest-starts-in-today"))
+                                : t("feather-contest-starts-in-days", time.diffDays))
+                            : time.diffDays <= 0
+                            ? t("feather-contest-today-end")
+                            : t("feather-contest-days-left", time.diffDays)}
+                        </span>
                       </span>
-                      <span className="font-mono text-[10px]">
-                        {t("feather-time-elapsed", isEnded ? 100 : time.percent)}
+                      <span className="font-mono text-[10px] text-muted-foreground/80">
+                        {isUpcoming
+                          ? formatDate(c.start_date, { month: "short", day: "numeric" })
+                          : t("feather-time-elapsed", isEnded ? 100 : time.percent)}
                       </span>
                     </div>
-                    <div className="h-1.5 w-full bg-muted/80 rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-muted/60 dark:bg-muted/40 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full ${
+                        className={`h-full rounded-full transition-all duration-300 ${
                           isEnded
-                            ? "bg-muted-foreground/50"
-                            : time.notStarted
-                            ? "bg-blue-500"
+                            ? "bg-muted-foreground/40"
+                            : isUpcoming
+                            ? "bg-blue-500/30"
                             : time.diffDays <= 3
                             ? "bg-amber-500"
                             : "bg-primary"
                         }`}
-                        style={{ width: `${isEnded ? 100 : time.percent}%` }}
+                        style={{ width: `${isEnded ? 100 : isUpcoming ? 0 : time.percent}%` }}
                       />
                     </div>
                   </div>
 
                   {/* Clean Metrics Row */}
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1.5 border-t border-border/50">
-                    <span className="flex items-center gap-1" title={t("feather-contest-submitted")}>
-                      <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                      <strong className="text-foreground font-semibold font-mono">{n(total)}</strong>
-                      <span className="text-[11px]">{t("feather-contest-submitted")}</span>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border/50">
+                    <span className="flex items-center gap-1.5" title={t("feather-contest-submitted")}>
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      <strong className="text-foreground font-semibold font-mono text-xs">{n(total)}</strong>
+                      <span className="text-[11px] text-muted-foreground">{t("feather-contest-submitted")}</span>
                     </span>
 
-                    <span className="flex items-center gap-1" title={t("feather-contest-accepted")}>
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <strong className="text-foreground font-semibold font-mono">{n(accepted)}</strong>
-                      <span className="text-[11px]">{t("feather-contest-accepted")}</span>
+                    <span className="flex items-center gap-1.5" title={t("feather-contest-accepted")}>
+                      <CheckCircle2 className={`h-3.5 w-3.5 ${accepted > 0 ? "text-emerald-500" : "text-muted-foreground/60"}`} />
+                      <strong className="text-foreground font-semibold font-mono text-xs">{n(accepted)}</strong>
+                      <span className="text-[11px] text-muted-foreground">{t("feather-contest-accepted")}</span>
                     </span>
 
                     {c.is_umbrella ? (
-                      <span className="flex items-center gap-1 text-primary" title={t("feather-campaign-communities-count", c.sub_contest_count || 0)}>
+                      <span className="flex items-center gap-1.5 ml-auto text-primary" title={t("feather-campaign-communities-count", c.sub_contest_count || 0)}>
                         <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <strong className="text-foreground font-semibold font-mono">{n(c.sub_contest_count || 0)}</strong>
-                        <span className="text-[11px] font-medium">
+                        <strong className="text-foreground font-semibold font-mono text-xs">{n(c.sub_contest_count || 0)}</strong>
+                        <span className="text-[11px] font-medium text-foreground/80">
                           {t(c.sub_contest_count === 1 ? "feather-campaign-stat-community-singular" : "feather-campaign-stat-communities")}
                         </span>
                       </span>
                     ) : c.total_juries ? (
-                      <span className="flex items-center gap-1" title={t("feather-home-stats-juries")}>
-                        <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                        <strong className="text-foreground font-semibold font-mono">{c.total_juries}</strong>
+                      <span className="flex items-center gap-1.5 ml-auto text-muted-foreground" title={t("feather-home-stats-juries")}>
+                        <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground/70" />
+                        <strong className="text-foreground font-semibold font-mono text-xs">{c.total_juries}</strong>
                         <span className="text-[11px]">{t("feather-home-stats-juries")}</span>
                       </span>
                     ) : null}
@@ -818,14 +812,14 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                 </div>
 
                 {/* Actions Footer */}
-                <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-border/60">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+                <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-border/50">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <Link
                       href={`/contests/${c.code}`}
                       className={buttonVariants({
                         variant: "default",
                         size: "sm",
-                        className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 shadow-none shrink-0",
+                        className: "h-7 text-xs gap-1.5 font-medium cursor-pointer px-2.5 shadow-none shrink-0 rounded-md active:scale-[0.98] transition-transform",
                       })}
                     >
                       <Eye className="h-3.5 w-3.5 shrink-0" />
@@ -838,12 +832,12 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                         className={buttonVariants({
                           variant: "outline",
                           size: "sm",
-                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 max-w-full overflow-hidden flex-initial whitespace-nowrap shrink-0",
+                          className: "h-7 text-xs gap-1.5 font-medium cursor-pointer px-2.5 bg-background hover:bg-muted/60 border-border/70 shrink-0 rounded-md active:scale-[0.98] transition-all",
                         })}
                         title={t("feather-campaign-tab-communities")}
                       >
                         <Globe className="h-3.5 w-3.5 shrink-0 text-primary" />
-                        <span className="truncate min-w-0 capitalize">
+                        <span className="capitalize">
                           {t("feather-campaign-stat-communities")}
                         </span>
                       </Link>
@@ -853,25 +847,26 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                         className={buttonVariants({
                           variant: "outline",
                           size: "sm",
-                          className: "h-7 text-xs gap-1 font-medium cursor-pointer px-2 sm:px-2.5 min-w-0 max-w-full overflow-hidden flex-initial whitespace-nowrap shrink-0",
+                          className: "h-7 text-xs gap-1.5 font-medium cursor-pointer px-2.5 bg-background hover:bg-muted/60 border-border/70 shrink-0 rounded-md active:scale-[0.98] transition-all",
                         })}
                         title={t("feather-contest-action-submit")}
                       >
                         <Send className="h-3 w-3 shrink-0" />
-                        <span className="truncate min-w-0">{t("feather-contest-action-submit")}</span>
+                        <span>{t("feather-contest-action-submit")}</span>
                       </Link>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-0.5 shrink-0 ml-auto">
+                  <div className="flex items-center gap-1 shrink-0 ml-auto">
                     <Link
                       href={`/contests/${c.code}#standings`}
                       className={buttonVariants({
-                        variant: "ghost",
-                        size: "sm",
-                        className: "h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer shrink-0",
+                        variant: "outline",
+                        size: "icon-sm",
+                        className: "size-7 bg-background/50 hover:bg-muted text-muted-foreground hover:text-foreground border-border/60 hover:border-border rounded-md active:scale-[0.96] transition-all cursor-pointer shrink-0 flex items-center justify-center",
                       })}
                       title={c.is_umbrella ? t("feather-campaign-tab-leaderboard") : t("feather-contest-action-standings")}
+                      aria-label={c.is_umbrella ? t("feather-campaign-tab-leaderboard") : t("feather-contest-action-standings")}
                     >
                       <Trophy className="h-3.5 w-3.5" />
                     </Link>
@@ -880,11 +875,12 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       <Link
                         href={`/contests/${c.code}/review`}
                         className={buttonVariants({
-                          variant: "ghost",
-                          size: "sm",
-                          className: "h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer shrink-0",
+                          variant: "outline",
+                          size: "icon-sm",
+                          className: "size-7 bg-background/50 hover:bg-muted text-muted-foreground hover:text-foreground border-border/60 hover:border-border rounded-md active:scale-[0.96] transition-all cursor-pointer shrink-0 flex items-center justify-center",
                         })}
                         title={t("feather-contest-action-review")}
+                        aria-label={t("feather-contest-action-review")}
                       >
                         <ShieldCheck className="h-3.5 w-3.5" />
                       </Link>

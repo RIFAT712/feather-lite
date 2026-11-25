@@ -1558,7 +1558,21 @@ export default function ContestDashboardClient({
             <div className="flex flex-col sm:flex-row lg:flex-col items-stretch lg:items-end gap-2.5 shrink-0 w-full sm:w-auto">
               {/* Primary User Actions */}
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                {contest.status !== "pending_approval" ? (
+                {contest.is_umbrella ? (
+                  <Button
+                    onClick={() => {
+                      setActiveTab("communities");
+                      const el = document.getElementById("campaign-tabs");
+                      el?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    variant="default"
+                    size="default"
+                    className="flex-1 sm:flex-none gap-2 cursor-pointer font-semibold shadow-xs text-xs sm:text-sm px-4 py-2"
+                  >
+                    <Layers className="h-4 w-4" />
+                    <span>{t("feather-campaign-tab-communities")}</span>
+                  </Button>
+                ) : contest.status !== "pending_approval" ? (
                   <Link
                     href={`/contests/${code}/submit`}
                     className={buttonVariants({
@@ -2131,7 +2145,7 @@ export default function ContestDashboardClient({
       )}
 
       {/* 3. Multi-Tab Workspace */}
-      <Tabs value={activeTab || (contest.is_umbrella ? "communities" : "standings")} onValueChange={setActiveTab} className="w-full space-y-4">
+      <Tabs id="campaign-tabs" value={activeTab || (contest.is_umbrella ? "communities" : "standings")} onValueChange={setActiveTab} className="w-full space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 pb-2">
           {/* Horizontally scrollable tabs on mobile without scrollbar */}
           <div className="w-full sm:w-auto overflow-x-auto no-scrollbar py-0.5">

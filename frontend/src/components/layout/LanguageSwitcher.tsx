@@ -21,6 +21,11 @@ export default function LanguageSwitcher() {
     supportedLanguages.find((l) => l.code === locale) ||
     supportedLanguages[0] || { code: "en", name: "English" };
 
+  // Sort languages strictly alphabetically by language code
+  const sortedLanguages = React.useMemo(() => {
+    return [...supportedLanguages].sort((a, b) => a.code.localeCompare(b.code));
+  }, [supportedLanguages]);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -43,7 +48,7 @@ export default function LanguageSwitcher() {
         <DropdownMenuSeparator className="my-1" />
 
         <DropdownMenuGroup>
-          {supportedLanguages.map((lang) => {
+          {sortedLanguages.map((lang) => {
             const isSelected = locale === lang.code;
             const itemDir = getLocaleDirection(lang.code);
             return (

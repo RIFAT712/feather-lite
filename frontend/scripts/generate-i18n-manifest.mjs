@@ -37,12 +37,8 @@ const entries = langCodes.map((code) => ({
   name: getLanguageName(code),
 }));
 
-// Ensure 'en' is first as default/canonical base language, then sort others alphabetically by code
-entries.sort((a, b) => {
-  if (a.code === "en") return -1;
-  if (b.code === "en") return 1;
-  return a.code.localeCompare(b.code);
-});
+// Sort languages alphabetically by language code
+entries.sort((a, b) => a.code.localeCompare(b.code));
 
 const newContent = JSON.stringify(entries, null, 2) + "\n";
 if (fs.existsSync(manifestPath)) {

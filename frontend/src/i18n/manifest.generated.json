@@ -1,15 +1,15 @@
 [
   {
-    "code": "en",
-    "name": "English"
-  },
-  {
     "code": "ar",
     "name": "العربية"
   },
   {
     "code": "bn",
     "name": "বাংলা"
+  },
+  {
+    "code": "en",
+    "name": "English"
   },
   {
     "code": "fa",

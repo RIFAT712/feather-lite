@@ -119,14 +119,34 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("feather_lang");
-      let resolved = resolveLocale(saved);
+      // 1. Check URL query params for ?userlang=... or ?uselang=... (Wikimedia standard)
+      let urlLang: string | null = null;
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        urlLang = params.get("userlang") || params.get("uselang");
+      }
 
-      if (!resolved) {
-        const browserLangs = navigator.languages?.length ? navigator.languages : [navigator.language];
-        for (const lang of browserLangs) {
-          resolved = resolveLocale(lang);
-          if (resolved) break;
+      let resolved = resolveLocale(urlLang);
+      if (resolved) {
+        // Explicitly requested in URL query: save immediately so it persists!
+        try {
+          localStorage.setItem("feather_lang", resolved);
+          document.cookie = `feather_lang=${resolved};path=/;max-age=31536000;SameSite=Lax`;
+        } catch {
+          // ignore
+        }
+      } else {
+        // 2. Fall back to saved localStorage preference
+        const saved = localStorage.getItem("feather_lang");
+        resolved = resolveLocale(saved);
+
+        // 3. Fall back to browser language
+        if (!resolved && typeof navigator !== "undefined") {
+          const browserLangs = navigator.languages?.length ? navigator.languages : [navigator.language];
+          for (const lang of browserLangs) {
+            resolved = resolveLocale(lang);
+            if (resolved) break;
+          }
         }
       }
 
@@ -140,6 +160,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           document.documentElement.dir = getLocaleDirection(initialLocale);
         });
       } else {
+        banana.setLocale("en");
+        setLocaleState("en");
+        setLoadedVersion((v) => v + 1);
         document.documentElement.lang = "en";
         document.documentElement.dir = getLocaleDirection("en");
       }
@@ -160,6 +183,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
       try {
         localStorage.setItem("feather_lang", resolved);
+        document.cookie = `feather_lang=${resolved};path=/;max-age=31536000;SameSite=Lax`;
         document.documentElement.lang = resolved;
         document.documentElement.dir = getLocaleDirection(resolved);
       } catch {
@@ -168,6 +192,28 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     },
     [banana, loadLocaleMessages]
   );
+
+  // Listen for dynamic popstate / URL query changes with ?userlang=... or ?uselang=...
+  useEffect(() => {
+    const handleUrlQueryChange = () => {
+      try {
+        if (typeof window === "undefined") return;
+        const params = new URLSearchParams(window.location.search);
+        const urlLang = params.get("userlang") || params.get("uselang");
+        if (urlLang) {
+          const resolved = resolveLocale(urlLang);
+          if (resolved && resolved !== locale) {
+            setLocale(resolved);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener("popstate", handleUrlQueryChange);
+    return () => window.removeEventListener("popstate", handleUrlQueryChange);
+  }, [locale, setLocale]);
 
   const formatNumber = useCallback(
     (value: number | bigint | string, options?: Intl.NumberFormatOptions): string => {

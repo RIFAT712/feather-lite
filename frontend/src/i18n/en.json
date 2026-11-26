@@ -851,5 +851,6 @@
     "feather-profile-chart-contests-desc": "Accepted, pending, and rejected articles across participated contests.",
     "feather-profile-chart-timeline-title": "Monthly contribution activity",
     "feather-profile-chart-timeline-desc": "Article submissions and jury evaluations over time.",
-    "feather-profile-chart-reviews-label": "Reviews"
+    "feather-profile-chart-reviews-label": "Reviews",
+    "feather-contest-mode-label": "Contest mode"
 }

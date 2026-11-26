@@ -1063,12 +1063,13 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 
 	var contestID int64
 	var currentCreatedByID sql.NullInt64
-	var currentTZ string
+	var currentDbName, currentURL, currentLang, currentTZ string
+	var currentIsUmbrella int
 	var currentStart, currentEnd time.Time
 	err := h.db.QueryRow(`
-		SELECT id, created_by_id, wiki_tz, start_date, end_date 
+		SELECT id, created_by_id, wiki_dbname, wiki_url, wiki_lang, wiki_tz, COALESCE(is_umbrella, 0), start_date, end_date 
 		FROM contests WHERE code = ?
-	`, code).Scan(&contestID, &currentCreatedByID, &currentTZ, &currentStart, &currentEnd)
+	`, code).Scan(&contestID, &currentCreatedByID, &currentDbName, &currentURL, &currentLang, &currentTZ, &currentIsUmbrella, &currentStart, &currentEnd)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Contest not found")
 		return
@@ -1162,10 +1163,48 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 		isDraft = 1
 	}
 
+	wikiDbName := strings.TrimSpace(req.WikiDbName)
+	if wikiDbName == "" {
+		wikiDbName = currentDbName
+	}
+	wikiURL := strings.TrimSpace(req.WikiURL)
+	if wikiURL == "" && req.WikiDbName == "" {
+		wikiURL = currentURL
+	}
+	wikiLang := strings.TrimSpace(req.WikiLang)
+	if wikiLang == "" {
+		wikiLang = currentLang
+	}
+
+	isUmbrellaBool := currentIsUmbrella == 1
+	if req.IsUmbrella != nil {
+		isUmbrellaBool = *req.IsUmbrella
+	}
+	isUmbrellaInt := 0
+	if isUmbrellaBool {
+		isUmbrellaInt = 1
+	}
+
+	var customCreationStart, customCreationEnd *time.Time
+	if !isUmbrellaBool && !req.RuleCreatedInWindow {
+		if strings.TrimSpace(req.CustomCreationStartDate) != "" {
+			parsed := parseFlexibleDate(req.CustomCreationStartDate, tz, startDate)
+			customCreationStart = &parsed
+		}
+		if strings.TrimSpace(req.CustomCreationEndDate) != "" {
+			parsed := parseFlexibleDate(req.CustomCreationEndDate, tz, endDate)
+			customCreationEnd = &parsed
+		}
+	}
+
 	_, err = tx.Exec(`
 		UPDATE contests SET
 			name = ?,
 			description = ?,
+			wiki_dbname = ?,
+			wiki_url = ?,
+			wiki_lang = ?,
+			is_umbrella = ?,
 			start_date = ?,
 			end_date = ?,
 			status = ?,
@@ -1177,6 +1216,8 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 			rule_no_disambig = ?,
 			rule_mainspace_only = ?,
 			rule_created_in_window = ?,
+			custom_creation_start_date = ?,
+			custom_creation_end_date = ?,
 			min_bytes = ?,
 			min_words = ?,
 			min_refs = ?,
@@ -1187,8 +1228,10 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 			distribute_jury_queue = ?
 		WHERE id = ?
 	`,
-		req.Name, strings.TrimSpace(req.Description), startDate, endDate, status, isDraft, tz, strings.TrimSpace(req.OnwikiPageURL),
+		req.Name, strings.TrimSpace(req.Description), wikiDbName, wikiURL, wikiLang, isUmbrellaInt,
+		startDate, endDate, status, isDraft, tz, strings.TrimSpace(req.OnwikiPageURL),
 		mustBeCreator, noRedirect, noDisambig, mainspaceOnly, createdInWindow,
+		customCreationStart, customCreationEnd,
 		req.MinBytes, req.MinWords, req.MinRefs, req.MaxSubmissionsPerUser, rankByWords,
 		addTalkTemplate, strings.TrimSpace(req.TalkTemplateName), distributeJuryQueue,
 		contestID,
@@ -1197,6 +1240,27 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[UpdateContest] Update error: %v", err)
 		jsonError(w, http.StatusInternalServerError, "Failed to update contest")
 		return
+	}
+
+	// Sync child competitions when mode is umbrella or switched back to standard
+	if isUmbrellaBool {
+		if req.ExistingContestCodes != nil {
+			_, _ = tx.Exec("UPDATE contests SET parent_contest_id = NULL WHERE parent_contest_id = ?", contestID)
+			seenCodes := make(map[string]bool)
+			for _, rawCode := range req.ExistingContestCodes {
+				cCode := strings.TrimSpace(rawCode)
+				if cCode == "" || cCode == code || seenCodes[cCode] {
+					continue
+				}
+				seenCodes[cCode] = true
+				_, _ = tx.Exec(
+					"UPDATE contests SET parent_contest_id = ? WHERE code = ? AND is_umbrella = 0 AND id != ? AND status != 'deleted'",
+					contestID, cCode, contestID,
+				)
+			}
+		}
+	} else if currentIsUmbrella == 1 {
+		_, _ = tx.Exec("UPDATE contests SET parent_contest_id = NULL WHERE parent_contest_id = ?", contestID)
 	}
 
 	// Update juries if specified

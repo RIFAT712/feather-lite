@@ -9,11 +9,13 @@ import {
   fetchMe,
   updateContest,
   deleteContest,
+  AvailableContest,
   Contest,
+  UpdateContestPayload,
   UserSession,
 } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
-import { getProjectMeta, getWikiInfo } from "@/lib/wikis";
+import { getProjectMeta } from "@/lib/wikis";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -52,7 +54,11 @@ import {
 import { FloatingInput, FloatingTextarea } from "@/components/ui/floating-input";
 import { Switch } from "@/components/ui/switch";
 import { UserTagInput } from "@/components/contests/UserTagInput";
+import WikiSelector from "@/components/contests/WikiSelector";
 import TimezoneSelector from "@/components/contests/TimezoneSelector";
+import ContestModeSelector, { ContestMode } from "@/components/contests/ContestModeSelector";
+import ParticipatingCompetitionsPicker from "@/components/contests/ParticipatingCompetitionsPicker";
+import CustomCreationTimelinePanel from "@/components/contests/CustomCreationTimelinePanel";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
 import TalkQueueMonitor from "@/components/contests/TalkQueueMonitor";
@@ -110,6 +116,11 @@ export default function SettingsClient({
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editOnwikiPageUrl, setEditOnwikiPageUrl] = useState("");
+  const [editContestType, setEditContestType] = useState<ContestMode>("standard");
+  const [selectedExistingContests, setSelectedExistingContests] = useState<AvailableContest[]>([]);
+  const [editWikiDbName, setEditWikiDbName] = useState("bnwiki");
+  const [editWikiURL, setEditWikiURL] = useState("https://bn.wikipedia.org");
+  const [editWikiLang, setEditWikiLang] = useState("bn");
   const [editStatus, setEditStatus] = useState("active");
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
@@ -126,6 +137,8 @@ export default function SettingsClient({
   const [editMaxSub, setEditMaxSub] = useState<number | string>(0);
   const [editRuleCreator, setEditRuleCreator] = useState(true);
   const [editRuleWindow, setEditRuleWindow] = useState(true);
+  const [editCustomCreationStart, setEditCustomCreationStart] = useState("");
+  const [editCustomCreationEnd, setEditCustomCreationEnd] = useState("");
   const [editRuleNoRedirect, setEditRuleNoRedirect] = useState(true);
   const [editRuleNoDisambig, setEditRuleNoDisambig] = useState(true);
   const [editRuleMainspace, setEditRuleMainspace] = useState(true);
@@ -142,6 +155,19 @@ export default function SettingsClient({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeletingContest, setIsDeletingContest] = useState(false);
 
+  const handleAddExistingContest = (item: AvailableContest) => {
+    if (selectedExistingContests.some((c) => c.code === item.code)) {
+      toast.error(t("feather-campaign-already-selected", "Competition is already added"));
+      return;
+    }
+    setSelectedExistingContests((prev) => [...prev, item]);
+    toast.success(`Added ${item.name}`);
+  };
+
+  const handleRemoveExistingContest = (targetCode: string) => {
+    setSelectedExistingContests((prev) => prev.filter((c) => c.code !== targetCode));
+  };
+
   const applyDuration = (days: number) => {
     if (!editStartDate) return;
     setEditEndDate(calculateEndOfDay(editStartDate, days));
@@ -153,6 +179,24 @@ export default function SettingsClient({
       setEditName(contest.name || "");
       setEditDescription(contest.description || "");
       setEditOnwikiPageUrl(contest.onwiki_page_url || "");
+      setEditContestType(contest.is_umbrella ? "umbrella" : "standard");
+      setSelectedExistingContests(
+        (contest.sub_contests || []).map((sc) => ({
+          id: sc.id,
+          code: sc.code,
+          name: sc.name,
+          wiki_dbname: sc.wiki_dbname,
+          wiki_url: sc.wiki_url,
+          wiki_lang: sc.wiki_lang,
+          start_date: sc.start_date,
+          end_date: sc.end_date,
+          status: sc.status,
+          total_articles: sc.total_articles,
+        }))
+      );
+      setEditWikiDbName(contest.wiki_dbname || "bnwiki");
+      setEditWikiURL(contest.wiki_url || "https://bn.wikipedia.org");
+      setEditWikiLang(contest.wiki_lang || "bn");
       setEditStatus(contest.status || "active");
       setEditStartDate(formatDateForPicker(contest.start_date, contest.wiki_tz || "UTC"));
       setEditEndDate(formatDateForPicker(contest.end_date, contest.wiki_tz || "UTC"));
@@ -164,9 +208,19 @@ export default function SettingsClient({
       setHasEditMinRefs((contest.min_refs ?? 0) > 0);
       setEditMinRefs(contest.min_refs && contest.min_refs > 0 ? contest.min_refs : 1);
       setHasEditMaxSub((contest.max_submissions_per_user ?? 0) > 0);
-      setEditMaxSub(contest.max_submissions_per_user ?? 0);
+      setEditMaxSub(contest.max_submissions_per_user && contest.max_submissions_per_user > 0 ? contest.max_submissions_per_user : 1);
       setEditRuleCreator(contest.rule_must_be_creator ?? true);
       setEditRuleWindow(contest.rule_created_in_window ?? true);
+      setEditCustomCreationStart(
+        contest.custom_creation_start_date
+          ? formatDateForPicker(contest.custom_creation_start_date, contest.wiki_tz || "UTC")
+          : ""
+      );
+      setEditCustomCreationEnd(
+        contest.custom_creation_end_date
+          ? formatDateForPicker(contest.custom_creation_end_date, contest.wiki_tz || "UTC")
+          : ""
+      );
       setEditRuleNoRedirect(contest.rule_no_redirect ?? true);
       setEditRuleNoDisambig(contest.rule_no_disambig ?? true);
       setEditRuleMainspace(contest.rule_mainspace_only ?? true);
@@ -184,6 +238,19 @@ export default function SettingsClient({
       toast.error(t("feather-create-name-required"));
       return;
     }
+    const isUmbrella = editContestType === "umbrella";
+    if (isUmbrella && selectedExistingContests.length === 0) {
+      toast.error(
+        t(
+          "feather-campaign-requires-one-comp",
+          "Please select at least one existing competition for this multi-community campaign."
+        )
+      );
+      document
+        .getElementById("participating-competitions-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     if (!editStartDate || isNaN(new Date(editStartDate).getTime())) {
       toast.error("Please provide a valid start date");
       return;
@@ -197,28 +264,49 @@ export default function SettingsClient({
       return;
     }
     setIsSavingSettings(true);
-    const payload = {
+    const payload: UpdateContestPayload = {
       name: editName.trim(),
       description: editDescription.trim(),
+      wiki_dbname: isUmbrella
+        ? selectedExistingContests[0]?.wiki_dbname || editWikiDbName || "meta"
+        : editWikiDbName.trim() || "bnwiki",
+      wiki_url: isUmbrella
+        ? selectedExistingContests[0]?.wiki_url || ""
+        : editWikiURL.trim() || "https://bn.wikipedia.org",
+      wiki_lang: isUmbrella
+        ? selectedExistingContests[0]?.wiki_lang || "en"
+        : editWikiLang.trim() || "bn",
       status: editStatus,
       start_date: editStartDate,
       end_date: editEndDate,
       wiki_tz: editTZ,
+      is_umbrella: isUmbrella,
+      existing_contest_codes: isUmbrella
+        ? selectedExistingContests.map((c) => c.code)
+        : undefined,
       onwiki_page_url: editOnwikiPageUrl.trim(),
-      min_words: hasEditMinWords ? (Number(editMinWords) || 0) : 0,
-      min_bytes: hasEditMinBytes ? (Number(editMinBytes) || 0) : 0,
-      min_refs: hasEditMinRefs ? (Number(editMinRefs) || 0) : 0,
-      max_submissions_per_user: hasEditMaxSub ? (Number(editMaxSub) || 0) : 0,
-      rule_must_be_creator: editRuleCreator,
-      rule_created_in_window: editRuleWindow,
-      rule_no_redirect: editRuleNoRedirect,
-      rule_no_disambig: editRuleNoDisambig,
-      rule_mainspace_only: editRuleMainspace,
+      min_words: isUmbrella ? 0 : (hasEditMinWords ? Number(editMinWords) || 0 : 0),
+      min_bytes: isUmbrella ? 0 : (hasEditMinBytes ? Number(editMinBytes) || 0 : 0),
+      min_refs: isUmbrella ? 0 : (hasEditMinRefs ? Number(editMinRefs) || 0 : 0),
+      max_submissions_per_user: isUmbrella ? 0 : (hasEditMaxSub ? Number(editMaxSub) || 0 : 0),
+      rule_must_be_creator: isUmbrella ? false : editRuleCreator,
+      rule_created_in_window: isUmbrella ? false : editRuleWindow,
+      custom_creation_start_date:
+        !isUmbrella && !editRuleWindow && editCustomCreationStart
+          ? editCustomCreationStart
+          : undefined,
+      custom_creation_end_date:
+        !isUmbrella && !editRuleWindow && editCustomCreationEnd
+          ? editCustomCreationEnd
+          : undefined,
+      rule_no_redirect: isUmbrella ? false : editRuleNoRedirect,
+      rule_no_disambig: isUmbrella ? false : editRuleNoDisambig,
+      rule_mainspace_only: isUmbrella ? false : editRuleMainspace,
       rank_by_words: editRankByWords,
-      add_talk_template: editAddTalkTemplate,
-      talk_template_name: editTalkTemplateName.trim(),
-      distribute_jury_queue: editDistributeJuryQueue,
-      juries: editJuries,
+      add_talk_template: isUmbrella ? false : editAddTalkTemplate,
+      talk_template_name: isUmbrella ? "" : editTalkTemplateName.trim(),
+      distribute_jury_queue: isUmbrella ? false : editDistributeJuryQueue,
+      juries: isUmbrella ? [] : editJuries,
     };
     try {
       await updateContest(code, payload);
@@ -238,6 +326,7 @@ export default function SettingsClient({
       });
       await queryClient.invalidateQueries({ queryKey: ["contest", code] });
       await queryClient.invalidateQueries({ queryKey: ["contests"] });
+      await queryClient.invalidateQueries({ queryKey: ["availableContests"] });
       await queryClient.invalidateQueries({ queryKey: ["standings", code] });
       router.refresh();
     } catch (err: any) {
@@ -261,8 +350,8 @@ export default function SettingsClient({
     }
   };
 
-  const pMeta = contest ? getProjectMeta(contest.wiki_dbname) : null;
-  const pName = pMeta ? (t(`feather-project-${pMeta.id}`) || (locale === "bn" ? pMeta.nativeName : pMeta.name)) : "";
+  const pMeta = getProjectMeta(editWikiDbName || contest?.wiki_dbname || "bnwiki");
+  const pName = t(`feather-project-${pMeta.id}`) || (locale === "bn" ? pMeta.nativeName : pMeta.name);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -276,24 +365,31 @@ export default function SettingsClient({
           <span>{t("feather-contest-back-to-contest")}</span>
         </Link>
 
-        {pMeta && contest && (
+        {contest && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border border-border/70 bg-muted/30">
-              <img
-                src={pMeta.icon}
-                alt=""
-                className="h-3.5 w-3.5 object-contain shrink-0"
-                onError={(e) => {
-                  e.currentTarget.src = "/icons/projects/wikipedia.svg";
-                }}
-              />
-              <span className="font-medium text-foreground">{pName}</span>
-              {contest.wiki_lang && (
-                <span className="text-[10px] font-mono text-muted-foreground uppercase">
-                  ({contest.wiki_lang})
-                </span>
-              )}
-            </span>
+            {editContestType === "umbrella" ? (
+              <span className="text-xs text-primary flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border border-primary/30 bg-primary/10 font-medium">
+                <Layers className="h-3.5 w-3.5 shrink-0" />
+                <span>{t("feather-contest-type-umbrella")}</span>
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border border-border/70 bg-muted/30">
+                <img
+                  src={pMeta.icon}
+                  alt=""
+                  className="h-3.5 w-3.5 object-contain shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                  }}
+                />
+                <span className="font-medium text-foreground">{pName}</span>
+                {editWikiLang && (
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                    ({editWikiLang})
+                  </span>
+                )}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -420,6 +516,50 @@ export default function SettingsClient({
               </p>
             </div>
 
+            {/* Contest Mode: Single Community Contest vs Multi-Community Campaign */}
+            <ContestModeSelector
+              value={editContestType}
+              onChange={setEditContestType}
+              disabled={!isOrganizer}
+            />
+
+            {/* Mode-Specific Target: Single Wiki + Timezone OR Multi-Community Competitions Picker */}
+            <div className="pt-2 border-t border-border/60 space-y-3.5">
+              {editContestType === "standard" ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className={`md:col-span-2 ${!isOrganizer ? "pointer-events-none opacity-60" : ""}`}>
+                    <WikiSelector
+                      wikiDbName={editWikiDbName}
+                      wikiURL={editWikiURL}
+                      wikiLang={editWikiLang}
+                      onChange={(data) => {
+                        setEditWikiDbName(data.dbname);
+                        setEditWikiURL(data.url);
+                        setEditWikiLang(data.lang);
+                      }}
+                    />
+                  </div>
+                  <div className={`md:col-span-1 ${!isOrganizer ? "pointer-events-none opacity-60" : ""}`}>
+                    <TimezoneSelector
+                      value={editTZ}
+                      onChange={setEditTZ}
+                      label={t("feather-create-wiki-tz-label")}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <ParticipatingCompetitionsPicker
+                  selectedContests={selectedExistingContests}
+                  onAddContest={handleAddExistingContest}
+                  onRemoveContest={handleRemoveExistingContest}
+                  wikiTZ={editTZ}
+                  onChangeTZ={setEditTZ}
+                  excludeCode={code}
+                  disabled={!isOrganizer}
+                />
+              )}
+            </div>
+
             {/* Status Selector */}
             <div className="pt-2 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-0.5">
@@ -476,7 +616,7 @@ export default function SettingsClient({
           </CardContent>
         </Card>
 
-        {/* Section 2: Timeline, Schedule & Timezone */}
+        {/* Section 2: Timeline & Schedule */}
         <Card className="border-border shadow-2xs relative z-25 overflow-visible">
           <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
             <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
@@ -485,17 +625,6 @@ export default function SettingsClient({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-4 px-4 sm:px-6 pb-5">
-            {/* Timezone Selector Row */}
-            <div className="max-w-md">
-              <div className={!isOrganizer ? "pointer-events-none opacity-60" : ""}>
-                <TimezoneSelector
-                  value={editTZ}
-                  onChange={(tz) => setEditTZ(tz)}
-                  label={t("feather-create-wiki-tz-label")}
-                />
-              </div>
-            </div>
-
             {/* Unified Date Range Bar & Inline Duration Presets */}
             <div className="rounded-lg border border-border/80 bg-muted/20 hover:bg-muted/30 transition-colors p-2.5 sm:px-3 sm:py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
               <div className={`flex items-center gap-2 flex-wrap text-xs ${!isOrganizer ? "pointer-events-none opacity-60" : ""}`}>
@@ -556,7 +685,8 @@ export default function SettingsClient({
           </CardContent>
         </Card>
 
-        {/* Section 3: Qualification & Eligibility Rules */}
+        {/* Section 3: Qualification & Eligibility Rules (Standard only; Multi-Community uses autonomous local rules) */}
+        {editContestType === "standard" ? (
         <Card className="border-border shadow-2xs relative z-20 overflow-visible">
           <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
             <div className="flex items-center justify-between">
@@ -663,76 +793,211 @@ export default function SettingsClient({
             </div>
 
             {/* Quantitative Thresholds: Words, Bytes, References */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               {/* Min Words */}
-              <div className="p-3.5 rounded-lg border border-border/70 bg-card space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-foreground">
-                    {t("feather-contest-settings-min-words")}
-                  </span>
-                  <Switch
-                    checked={hasEditMinWords}
-                    onCheckedChange={(checked) => isOrganizer && setHasEditMinWords(checked)}
-                    disabled={!isOrganizer}
-                  />
+              <div
+                className={`p-3 rounded-lg border transition-all duration-150 ${
+                  hasEditMinWords
+                    ? "bg-card border-primary/40 shadow-2xs"
+                    : "bg-muted/15 border-border/70 hover:bg-muted/25"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <Switch
+                      checked={hasEditMinWords}
+                      onCheckedChange={(checked) => isOrganizer && setHasEditMinWords(checked)}
+                      disabled={!isOrganizer}
+                    />
+                    <span className="text-xs font-semibold text-foreground">
+                      {t("feather-create-min-words-label")}
+                    </span>
+                  </label>
+
+                  {hasEditMinWords ? (
+                    <Badge variant="secondary" className="font-mono text-[11px] px-1.5 py-0 h-5">
+                      {editMinWords} words
+                    </Badge>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                      {t("feather-create-opt-no-limit")}
+                    </span>
+                  )}
                 </div>
-                {hasEditMinWords && (
-                  <FloatingInput
-                    type="number"
-                    label={t("feather-create-min-words-label")}
-                    value={editMinWords}
-                    onChange={(e) => setEditMinWords(e.target.value)}
-                    disabled={!isOrganizer}
-                    min={0}
-                  />
+
+                {hasEditMinWords ? (
+                  <div className="space-y-2 pt-1 animate-in fade-in-0 duration-150">
+                    <FloatingInput
+                      type="number"
+                      min={1}
+                      label={t("feather-create-min-words-label")}
+                      value={editMinWords}
+                      onChange={(e) => setEditMinWords(Math.max(1, parseInt(e.target.value) || 0))}
+                      disabled={!isOrganizer}
+                      className="h-9 text-xs"
+                    />
+                    {isOrganizer && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground font-medium">Quick:</span>
+                        {[50, 150, 300, 500].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setEditMinWords(val)}
+                            className={`px-1.5 py-0.5 text-[10px] font-mono rounded border transition-colors cursor-pointer ${
+                              Number(editMinWords) === val
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted/50 border-border text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {val}w
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground leading-normal">
+                    {t("feather-create-no-words-hint")}
+                  </p>
                 )}
               </div>
 
               {/* Min Bytes */}
-              <div className="p-3.5 rounded-lg border border-border/70 bg-card space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-foreground">
-                    {t("feather-contest-settings-min-bytes")}
-                  </span>
-                  <Switch
-                    checked={hasEditMinBytes}
-                    onCheckedChange={(checked) => isOrganizer && setHasEditMinBytes(checked)}
-                    disabled={!isOrganizer}
-                  />
+              <div
+                className={`p-3 rounded-lg border transition-all duration-150 ${
+                  hasEditMinBytes
+                    ? "bg-card border-primary/40 shadow-2xs"
+                    : "bg-muted/15 border-border/70 hover:bg-muted/25"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <Switch
+                      checked={hasEditMinBytes}
+                      onCheckedChange={(checked) => isOrganizer && setHasEditMinBytes(checked)}
+                      disabled={!isOrganizer}
+                    />
+                    <span className="text-xs font-semibold text-foreground">
+                      {t("feather-create-min-bytes-label")}
+                    </span>
+                  </label>
+
+                  {hasEditMinBytes ? (
+                    <Badge variant="secondary" className="font-mono text-[11px] px-1.5 py-0 h-5">
+                      {t("feather-review-preview-bytes", Number(editMinBytes) || 0)}
+                    </Badge>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                      {t("feather-create-opt-no-limit")}
+                    </span>
+                  )}
                 </div>
-                {hasEditMinBytes && (
-                  <FloatingInput
-                    type="number"
-                    label={t("feather-create-min-bytes-label")}
-                    value={editMinBytes}
-                    onChange={(e) => setEditMinBytes(e.target.value)}
-                    disabled={!isOrganizer}
-                    min={0}
-                  />
+
+                {hasEditMinBytes ? (
+                  <div className="space-y-2 pt-1 animate-in fade-in-0 duration-150">
+                    <FloatingInput
+                      type="number"
+                      min={1}
+                      label={t("feather-create-min-bytes-label")}
+                      value={editMinBytes}
+                      onChange={(e) => setEditMinBytes(Math.max(1, parseInt(e.target.value) || 0))}
+                      disabled={!isOrganizer}
+                      className="h-9 text-xs"
+                    />
+                    {isOrganizer && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground font-medium">Quick:</span>
+                        {[300, 1000, 3000, 5000].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setEditMinBytes(val)}
+                            className={`px-1.5 py-0.5 text-[10px] font-mono rounded border transition-colors cursor-pointer ${
+                              Number(editMinBytes) === val
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted/50 border-border text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {val >= 1000 ? `${val / 1000}k` : val}b
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground leading-normal">
+                    {t("feather-create-no-bytes-hint")}
+                  </p>
                 )}
               </div>
 
               {/* Min References */}
-              <div className="p-3.5 rounded-lg border border-border/70 bg-card space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-foreground">
-                    {t("feather-contest-settings-min-refs")}
-                  </span>
-                  <Switch
-                    checked={hasEditMinRefs}
-                    onCheckedChange={(checked) => isOrganizer && setHasEditMinRefs(checked)}
-                    disabled={!isOrganizer}
-                  />
+              <div
+                className={`p-3 rounded-lg border transition-all duration-150 ${
+                  hasEditMinRefs
+                    ? "bg-card border-primary/40 shadow-2xs"
+                    : "bg-muted/15 border-border/70 hover:bg-muted/25"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <Switch
+                      checked={hasEditMinRefs}
+                      onCheckedChange={(checked) => isOrganizer && setHasEditMinRefs(checked)}
+                      disabled={!isOrganizer}
+                    />
+                    <span className="text-xs font-semibold text-foreground">
+                      {t("feather-create-min-refs-label")}
+                    </span>
+                  </label>
+
+                  {hasEditMinRefs ? (
+                    <Badge variant="secondary" className="font-mono text-[11px] px-1.5 py-0 h-5">
+                      {editMinRefs} ref{Number(editMinRefs) > 1 ? "s" : ""}
+                    </Badge>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                      {t("feather-create-opt-no-limit")}
+                    </span>
+                  )}
                 </div>
-                {hasEditMinRefs && (
-                  <FloatingInput
-                    type="number"
-                    label={t("feather-create-min-refs-label")}
-                    value={editMinRefs}
-                    onChange={(e) => setEditMinRefs(e.target.value)}
-                    disabled={!isOrganizer}
-                    min={0}
-                  />
+
+                {hasEditMinRefs ? (
+                  <div className="space-y-2 pt-1 animate-in fade-in-0 duration-150">
+                    <FloatingInput
+                      type="number"
+                      min={1}
+                      label={t("feather-create-min-refs-label")}
+                      value={editMinRefs}
+                      onChange={(e) => setEditMinRefs(Math.max(1, parseInt(e.target.value) || 0))}
+                      disabled={!isOrganizer}
+                      className="h-9 text-xs"
+                    />
+                    {isOrganizer && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground font-medium">Quick:</span>
+                        {[1, 2, 3, 5].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setEditMinRefs(val)}
+                            className={`px-1.5 py-0.5 text-[10px] font-mono rounded border transition-colors cursor-pointer ${
+                              Number(editMinRefs) === val
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted/50 border-border text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {val} ref
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground leading-normal">
+                    {t("feather-create-no-refs-hint")}
+                  </p>
                 )}
               </div>
             </div>
@@ -825,10 +1090,39 @@ export default function SettingsClient({
                 />
               </label>
             </div>
+
+            {!editRuleWindow && (
+              <CustomCreationTimelinePanel
+                customStart={editCustomCreationStart}
+                customEnd={editCustomCreationEnd}
+                onChangeStart={setEditCustomCreationStart}
+                onChangeEnd={setEditCustomCreationEnd}
+                referenceStartDate={editStartDate}
+                disabled={!isOrganizer}
+              />
+            )}
           </CardContent>
         </Card>
+        ) : (
+        <Card className="border-border/70 bg-muted/20 shadow-2xs">
+          <CardContent className="p-4 sm:p-5 flex items-start gap-3.5">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+              <CheckCircle className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold text-foreground">
+                {t("feather-campaign-rules-note-title")}
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t("feather-campaign-rules-note-desc")}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        )}
 
-        {/* Section 4: Jury Administration & Automation */}
+        {/* Section 4: Jury Administration & Automation (Standard single-wiki contests only) */}
+        {editContestType === "standard" && (
         <Card className="border-border shadow-2xs relative z-10">
           <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
             <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
@@ -842,7 +1136,7 @@ export default function SettingsClient({
               label={t("feather-create-juries-label")}
               value={editJuries}
               onChange={isOrganizer ? setEditJuries : () => {}}
-              wikiUrl={contest?.wiki_url}
+              wikiUrl={editWikiURL || contest?.wiki_url}
               disabled={!isOrganizer}
               hint={t("feather-create-juries-hint")}
             />
@@ -929,7 +1223,7 @@ export default function SettingsClient({
                   {/* Talk Page Live Rate-Limited Queue Monitor */}
                   <TalkQueueMonitor
                     contestCode={code}
-                    wikiUrl={contest?.wiki_url}
+                    wikiUrl={editWikiURL || contest?.wiki_url}
                     isOrganizer={isOrganizer}
                   />
                 </div>
@@ -937,6 +1231,7 @@ export default function SettingsClient({
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Bottom Form Action Controls */}
         <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-card shadow-xs">

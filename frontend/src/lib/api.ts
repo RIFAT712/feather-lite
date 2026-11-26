@@ -61,6 +61,8 @@ export interface Contest {
   rule_no_disambig?: boolean;
   rule_mainspace_only?: boolean;
   rule_created_in_window?: boolean;
+  custom_creation_start_date?: string | null;
+  custom_creation_end_date?: string | null;
   rank_by_words?: boolean;
   add_talk_template?: boolean;
   talk_template_name?: string;
@@ -808,15 +810,22 @@ export async function detachContestFromCampaign(
 export interface UpdateContestPayload {
   name: string;
   description: string;
+  wiki_dbname?: string;
+  wiki_url?: string;
+  wiki_lang?: string;
   start_date: string;
   end_date: string;
   status: string;
   wiki_tz?: string;
+  is_umbrella?: boolean;
+  existing_contest_codes?: string[];
   rule_must_be_creator: boolean;
   rule_no_redirect: boolean;
   rule_no_disambig: boolean;
   rule_mainspace_only: boolean;
   rule_created_in_window: boolean;
+  custom_creation_start_date?: string;
+  custom_creation_end_date?: string;
   min_bytes: number;
   min_words: number;
   min_refs: number;

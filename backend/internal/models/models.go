@@ -224,27 +224,34 @@ type AvailableContestSummary struct {
 }
 
 type UpdateContestRequest struct {
-	Name                  string   `json:"name"`
-	Description           string   `json:"description"`
-	StartDate             string   `json:"start_date"`
-	EndDate               string   `json:"end_date"`
-	Status                string   `json:"status"`
-	WikiTZ                string   `json:"wiki_tz,omitempty"`
-	RuleMustBeCreator     bool     `json:"rule_must_be_creator"`
-	RuleNoRedirect        bool     `json:"rule_no_redirect"`
-	RuleNoDisambig        bool     `json:"rule_no_disambig"`
-	RuleMainspaceOnly     bool     `json:"rule_mainspace_only"`
-	RuleCreatedInWindow   bool     `json:"rule_created_in_window"`
-	MinBytes              int      `json:"min_bytes"`
-	MinWords              int      `json:"min_words"`
-	MinRefs               int      `json:"min_refs"`
-	MaxSubmissionsPerUser int      `json:"max_submissions_per_user"`
-	RankByWords           bool     `json:"rank_by_words"`
-	AddTalkTemplate       bool     `json:"add_talk_template"`
-	TalkTemplateName      string   `json:"talk_template_name"`
-	OnwikiPageURL         string   `json:"onwiki_page_url,omitempty"`
-	DistributeJuryQueue   bool     `json:"distribute_jury_queue"`
-	Juries                []string `json:"juries"`
+	Name                    string   `json:"name"`
+	Description             string   `json:"description"`
+	WikiDbName              string   `json:"wiki_dbname,omitempty"`
+	WikiURL                 string   `json:"wiki_url,omitempty"`
+	WikiLang                string   `json:"wiki_lang,omitempty"`
+	StartDate               string   `json:"start_date"`
+	EndDate                 string   `json:"end_date"`
+	Status                  string   `json:"status"`
+	WikiTZ                  string   `json:"wiki_tz,omitempty"`
+	IsUmbrella              *bool    `json:"is_umbrella,omitempty"`
+	ExistingContestCodes    []string `json:"existing_contest_codes,omitempty"`
+	RuleMustBeCreator       bool     `json:"rule_must_be_creator"`
+	RuleNoRedirect          bool     `json:"rule_no_redirect"`
+	RuleNoDisambig          bool     `json:"rule_no_disambig"`
+	RuleMainspaceOnly       bool     `json:"rule_mainspace_only"`
+	RuleCreatedInWindow     bool     `json:"rule_created_in_window"`
+	CustomCreationStartDate string   `json:"custom_creation_start_date,omitempty"`
+	CustomCreationEndDate   string   `json:"custom_creation_end_date,omitempty"`
+	MinBytes                int      `json:"min_bytes"`
+	MinWords                int      `json:"min_words"`
+	MinRefs                 int      `json:"min_refs"`
+	MaxSubmissionsPerUser   int      `json:"max_submissions_per_user"`
+	RankByWords             bool     `json:"rank_by_words"`
+	AddTalkTemplate         bool     `json:"add_talk_template"`
+	TalkTemplateName        string   `json:"talk_template_name"`
+	OnwikiPageURL           string   `json:"onwiki_page_url,omitempty"`
+	DistributeJuryQueue     bool     `json:"distribute_jury_queue"`
+	Juries                  []string `json:"juries"`
 }
 
 type GlobalStandingEntry struct {

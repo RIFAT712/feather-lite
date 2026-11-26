@@ -851,5 +851,6 @@
     "feather-profile-chart-contests-desc": "Chart card subtitle explaining contest-level submission breakdown.",
     "feather-profile-chart-timeline-title": "Chart card title showing monthly submissions and jury reviews over time.",
     "feather-profile-chart-timeline-desc": "Chart card subtitle explaining monthly activity chart.",
-    "feather-profile-chart-reviews-label": "Chart series label for number of jury reviews conducted."
+    "feather-profile-chart-reviews-label": "Chart series label for number of jury reviews conducted.",
+    "feather-contest-mode-label": "Section label above the single-community vs multi-community campaign mode cards in contest creation and settings."
 }

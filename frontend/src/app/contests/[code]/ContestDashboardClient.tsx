@@ -42,7 +42,7 @@ import {
   FileCode, CheckCheck, XCircle, AlertCircle, Layers, Plus, Globe,
   Link2, Unlink, Settings, Save, Sliders, Sparkles, UserCheck, CheckCircle, Shield, X,
   BarChart3, ShieldAlert, Download, List, ChevronDown, ChevronRight,
-  FileSpreadsheet, TrendingUp, MessageSquare, RefreshCw
+  FileSpreadsheet, TrendingUp, MessageSquare, RefreshCw, LayoutDashboard
 } from "lucide-react";
 import { UserTagInput } from "@/components/contests/UserTagInput";
 import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
@@ -2407,268 +2407,282 @@ export default function ContestDashboardClient({
             <Card className="border-border shadow-2xs">
               <CardHeader className="border-b border-border bg-muted/20 py-3 px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="relative w-full sm:w-72">
-                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <div className="relative w-full sm:w-80">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                     <Input
-                      placeholder="Search communities or languages..."
+                      placeholder={t("feather-campaign-search-placeholder")}
                       value={communitySearch}
                       onChange={(e) => setCommunitySearch(e.target.value)}
-                      className="pl-8 text-xs h-8 bg-background"
+                      className="pl-8 pr-7 text-xs h-8 bg-background"
                     />
+                    {communitySearch && (
+                      <button
+                        type="button"
+                        onClick={() => setCommunitySearch("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
 
-                  {canManageCampaign && (
-                    <Dialog open={isAddCommunityOpen} onOpenChange={setIsAddCommunityOpen}>
-                      <DialogTrigger
-                      className={buttonVariants({
-                        variant: "default",
-                        size: "sm",
-                        className: "gap-1.5 text-xs font-medium cursor-pointer self-start sm:self-auto",
-                      })}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>{t("feather-campaign-add-community")}</span>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-xl">
-                      <DialogHeader>
-                        <DialogTitle>{t("feather-campaign-add-community")}</DialogTitle>
-                        <DialogDescription className="text-xs">
-                          {t("feather-campaign-add-community-desc")}
-                        </DialogDescription>
-                      </DialogHeader>
+                  <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-muted/60 text-foreground border border-border/70">
+                      <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span>
+                        {n(filteredSubContests.length)} {t("feather-campaign-stat-communities")}
+                      </span>
+                    </div>
 
-                      {/* Modal Mode Switcher */}
-                      <div className="flex border-b border-border/70 mt-1">
-                        <button
-                          type="button"
-                          onClick={() => setAddCommunityMode("create")}
-                          className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 cursor-pointer transition-colors ${
-                            addCommunityMode === "create"
-                              ? "border-primary text-primary font-semibold"
-                              : "border-transparent text-muted-foreground hover:text-foreground"
-                          }`}
+                    {canManageCampaign && (
+                      <Dialog open={isAddCommunityOpen} onOpenChange={setIsAddCommunityOpen}>
+                        <DialogTrigger
+                          className={buttonVariants({
+                            variant: "default",
+                            size: "sm",
+                            className: "gap-1.5 text-xs font-semibold cursor-pointer shadow-xs",
+                          })}
                         >
                           <Plus className="h-3.5 w-3.5" />
-                          <span>{t("feather-campaign-modal-tab-create")}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAddCommunityMode("link")}
-                          className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 cursor-pointer transition-colors ${
-                            addCommunityMode === "link"
-                              ? "border-primary text-primary font-semibold"
-                              : "border-transparent text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Link2 className="h-3.5 w-3.5" />
-                          <span>{t("feather-campaign-modal-tab-link")}</span>
-                        </button>
-                      </div>
+                          <span>{t("feather-campaign-add-community")}</span>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-xl">
+                          <DialogHeader>
+                            <DialogTitle>{t("feather-campaign-add-community")}</DialogTitle>
+                            <DialogDescription className="text-xs">
+                              {t("feather-campaign-add-community-desc")}
+                            </DialogDescription>
+                          </DialogHeader>
 
-                      {addCommunityMode === "create" ? (
-                        <form onSubmit={handleCreateSubContest} className="space-y-3.5 mt-2">
-                          <WikiSelector
-                            wikiDbName={newSubDbName}
-                            wikiURL={newSubURL}
-                            wikiLang={newSubLang}
-                            label="Target Wikimedia Community *"
-                            onChange={(data) => {
-                              setNewSubDbName(data.dbname);
-                              setNewSubURL(data.url);
-                              setNewSubLang(data.lang);
-                              if (!newSubName) {
-                                setNewSubName(`${contest.name} - ${data.nativeName || data.dbname}`);
-                              }
-                            }}
-                          />
-
-                          <div>
-                            <label className="text-xs font-medium text-foreground block mb-1">
-                              Local Contest Name
-                            </label>
-                            <Input
-                              placeholder={`${contest.name} - Bengali`}
-                              value={newSubName}
-                              onChange={(e) => setNewSubName(e.target.value)}
-                              className="text-xs h-8"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-xs font-medium text-foreground block mb-1">
-                              {t("feather-create-min-words")} (Local)
-                            </label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={newSubMinWords}
-                              onChange={(e) => setNewSubMinWords(Number(e.target.value) || 0)}
-                              className="text-xs h-8"
-                            />
-                          </div>
-
-                          <div className="pt-2 border-t border-border/50">
-                            <TalkTemplateBuilder
-                              value={newSubTalkTemplate}
-                              onChange={setNewSubTalkTemplate}
-                            />
-                          </div>
-
-                          <div className="pt-1">
-                            <UserTagInput
-                              label="Local Juries"
-                              value={newSubJuries}
-                              onChange={setNewSubJuries}
-                              wikiUrl={newSubURL}
-                              placeholder="Type username and press Enter..."
-                              compact
-                              labelBg="bg-background"
-                            />
-                          </div>
-
-                          <DialogFooter className="pt-2">
-                            <Button
+                          {/* Modal Mode Switcher */}
+                          <div className="flex border-b border-border/70 mt-1">
+                            <button
                               type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setIsAddCommunityOpen(false)}
-                              className="text-xs cursor-pointer"
+                              onClick={() => setAddCommunityMode("create")}
+                              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 cursor-pointer transition-colors ${
+                                addCommunityMode === "create"
+                                  ? "border-primary text-primary font-semibold"
+                                  : "border-transparent text-muted-foreground hover:text-foreground"
+                              }`}
                             >
-                              Cancel
-                            </Button>
-                            <Button
-                              type="submit"
-                              size="sm"
-                              disabled={isAddingSubContest}
-                              className="text-xs cursor-pointer gap-1.5"
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>{t("feather-campaign-modal-tab-create")}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAddCommunityMode("link")}
+                              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 cursor-pointer transition-colors ${
+                                addCommunityMode === "link"
+                                  ? "border-primary text-primary font-semibold"
+                                  : "border-transparent text-muted-foreground hover:text-foreground"
+                              }`}
                             >
-                              {isAddingSubContest && <Clock className="h-3.5 w-3.5 animate-spin" />}
-                              <span>Add Community Edition</span>
-                            </Button>
-                          </DialogFooter>
-                        </form>
-                      ) : (
-                        /* Link Existing Competition Tab */
-                        <div className="space-y-3 mt-2">
-                          <p className="text-xs text-muted-foreground">
-                            {t("feather-campaign-link-select-label")}
-                          </p>
-
-                          <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                            <Input
-                              placeholder={t("feather-campaign-link-search-placeholder")}
-                              value={existingSearchQuery}
-                              onChange={(e) => setExistingSearchQuery(e.target.value)}
-                              className="pl-8 text-xs h-8"
-                            />
+                              <Link2 className="h-3.5 w-3.5" />
+                              <span>{t("feather-campaign-modal-tab-link")}</span>
+                            </button>
                           </div>
 
-                          <div className="max-h-64 overflow-y-auto space-y-2 pr-1 divide-y divide-border/40">
-                            {isLoadingAvailable ? (
-                              <div className="py-6 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-                                <Clock className="h-4 w-4 animate-spin text-primary" />
-                                <span>Loading standalone competitions...</span>
-                              </div>
-                            ) : !availableContests || availableContests.length === 0 ? (
-                              <div className="py-8 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/20">
-                                {t("feather-campaign-no-avail-contests")}
-                              </div>
-                            ) : (
-                              availableContests.map((cCandidate) => {
-                                const pMeta = getProjectMeta(cCandidate.wiki_dbname);
-                                const wikiInfo = getWikiInfo(cCandidate.wiki_dbname);
-                                const isCurrentAttaching = attachingContestId === cCandidate.id;
-                                return (
-                                  <div
-                                    key={cCandidate.id}
-                                    className="pt-2.5 pb-2.5 first:pt-0 flex items-center justify-between gap-3"
-                                  >
-                                    <div className="space-y-1 min-w-0">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <h5 className="font-semibold text-xs text-foreground truncate">
-                                          {cCandidate.name}
-                                        </h5>
-                                        <Badge variant="outline" className="text-[10px] font-mono px-1 py-0">
-                                          {cCandidate.code}
-                                        </Badge>
-                                      </div>
+                          {addCommunityMode === "create" ? (
+                            <form onSubmit={handleCreateSubContest} className="space-y-3.5 mt-2">
+                              <WikiSelector
+                                wikiDbName={newSubDbName}
+                                wikiURL={newSubURL}
+                                wikiLang={newSubLang}
+                                label={t("feather-campaign-target-wiki-label")}
+                                onChange={(data) => {
+                                  setNewSubDbName(data.dbname);
+                                  setNewSubURL(data.url);
+                                  setNewSubLang(data.lang);
+                                  if (!newSubName) {
+                                    setNewSubName(`${contest.name} - ${data.nativeName || data.dbname}`);
+                                  }
+                                }}
+                              />
 
-                                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                        <span className="flex items-center gap-1">
-                                          <img
-                                            src={pMeta.icon}
-                                            alt=""
-                                            className="h-3 w-3 object-contain shrink-0"
-                                            onError={(e) => {
-                                              e.currentTarget.src = "/icons/projects/wikipedia.svg";
-                                            }}
-                                          />
-                                          <span>{wikiInfo?.nativeName || pMeta.name}</span>
-                                          <span className="font-mono uppercase text-[10px]">
-                                            ({cCandidate.wiki_lang})
-                                          </span>
-                                        </span>
-                                        <span>•</span>
-                                        <span>{cCandidate.total_articles} articles</span>
-                                      </div>
-                                    </div>
+                              <div>
+                                <label className="text-xs font-medium text-foreground block mb-1">
+                                  {t("feather-campaign-local-name-label")}
+                                </label>
+                                <Input
+                                  placeholder={t("feather-campaign-local-name-placeholder", contest.name)}
+                                  value={newSubName}
+                                  onChange={(e) => setNewSubName(e.target.value)}
+                                  className="text-xs h-8"
+                                />
+                              </div>
 
-                                    <Button
-                                      size="sm"
-                                      disabled={isAttaching}
-                                      onClick={() => handleAttachContest(cCandidate.id)}
-                                      className="text-xs h-7 px-2.5 gap-1.5 shrink-0 cursor-pointer shadow-none"
-                                    >
-                                      {isCurrentAttaching ? (
-                                        <Clock className="h-3.5 w-3.5 animate-spin" />
-                                      ) : (
-                                        <Link2 className="h-3.5 w-3.5" />
-                                      )}
-                                      <span>{t("feather-campaign-link-btn")}</span>
-                                    </Button>
+                              <div>
+                                <label className="text-xs font-medium text-foreground block mb-1">
+                                  {t("feather-campaign-min-words-local")}
+                                </label>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={newSubMinWords}
+                                  onChange={(e) => setNewSubMinWords(Number(e.target.value) || 0)}
+                                  className="text-xs h-8"
+                                />
+                              </div>
+
+                              <div className="pt-2 border-t border-border/50">
+                                <TalkTemplateBuilder
+                                  value={newSubTalkTemplate}
+                                  onChange={setNewSubTalkTemplate}
+                                />
+                              </div>
+
+                              <div className="pt-1">
+                                <UserTagInput
+                                  label={t("feather-campaign-local-juries-label")}
+                                  value={newSubJuries}
+                                  onChange={setNewSubJuries}
+                                  wikiUrl={newSubURL}
+                                  compact
+                                  labelBg="bg-background"
+                                />
+                              </div>
+
+                              <DialogFooter className="pt-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setIsAddCommunityOpen(false)}
+                                  className="text-xs cursor-pointer"
+                                >
+                                  {t("feather-create-cancel")}
+                                </Button>
+                                <Button
+                                  type="submit"
+                                  size="sm"
+                                  disabled={isAddingSubContest}
+                                  className="text-xs cursor-pointer gap-1.5"
+                                >
+                                  {isAddingSubContest && <Clock className="h-3.5 w-3.5 animate-spin" />}
+                                  <span>{t("feather-campaign-add-community")}</span>
+                                </Button>
+                              </DialogFooter>
+                            </form>
+                          ) : (
+                            /* Link Existing Competition Tab */
+                            <div className="space-y-3 mt-2">
+                              <p className="text-xs text-muted-foreground">
+                                {t("feather-campaign-link-select-label")}
+                              </p>
+
+                              <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                                <Input
+                                  placeholder={t("feather-campaign-link-search-placeholder")}
+                                  value={existingSearchQuery}
+                                  onChange={(e) => setExistingSearchQuery(e.target.value)}
+                                  className="pl-8 text-xs h-8"
+                                />
+                              </div>
+
+                              <div className="max-h-64 overflow-y-auto space-y-2 pr-1 divide-y divide-border/40">
+                                {isLoadingAvailable ? (
+                                  <div className="py-6 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                                    <Clock className="h-4 w-4 animate-spin text-primary" />
+                                    <span>{t("feather-campaign-loading-standalone")}</span>
                                   </div>
-                                );
-                              })
-                            )}
-                          </div>
+                                ) : !availableContests || availableContests.length === 0 ? (
+                                  <div className="py-8 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/20">
+                                    {t("feather-campaign-no-avail-contests")}
+                                  </div>
+                                ) : (
+                                  availableContests.map((cCandidate) => {
+                                    const pMeta = getProjectMeta(cCandidate.wiki_dbname);
+                                    const wikiInfo = getWikiInfo(cCandidate.wiki_dbname);
+                                    const isCurrentAttaching = attachingContestId === cCandidate.id;
+                                    return (
+                                      <div
+                                        key={cCandidate.id}
+                                        className="pt-2.5 pb-2.5 first:pt-0 flex items-center justify-between gap-3"
+                                      >
+                                        <div className="space-y-1 min-w-0">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <h5 className="font-semibold text-xs text-foreground truncate">
+                                              {cCandidate.name}
+                                            </h5>
+                                            <Badge variant="outline" className="text-[10px] font-mono px-1 py-0">
+                                              {cCandidate.code}
+                                            </Badge>
+                                          </div>
 
-                          <DialogFooter className="pt-2 border-t border-border/60">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setIsAddCommunityOpen(false)}
-                              className="text-xs cursor-pointer"
-                            >
-                              Close
-                            </Button>
-                          </DialogFooter>
-                        </div>
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                  )}
+                                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                            <span className="flex items-center gap-1">
+                                              <img
+                                                src={pMeta.icon}
+                                                alt=""
+                                                className="h-3 w-3 object-contain shrink-0"
+                                                onError={(e) => {
+                                                  e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                                                }}
+                                              />
+                                              <span>{wikiInfo?.nativeName || pMeta.name}</span>
+                                              <span className="font-mono uppercase text-[10px]">
+                                                ({cCandidate.wiki_lang})
+                                              </span>
+                                            </span>
+                                            <span>•</span>
+                                            <span>{t("feather-campaign-articles-count", String(cCandidate.total_articles))}</span>
+                                          </div>
+                                        </div>
+
+                                        <Button
+                                          size="sm"
+                                          disabled={isAttaching}
+                                          onClick={() => handleAttachContest(cCandidate.id)}
+                                          className="text-xs h-7 px-2.5 gap-1.5 shrink-0 cursor-pointer shadow-none"
+                                        >
+                                          {isCurrentAttaching ? (
+                                            <Clock className="h-3.5 w-3.5 animate-spin" />
+                                          ) : (
+                                            <Link2 className="h-3.5 w-3.5" />
+                                          )}
+                                          <span>{t("feather-campaign-link-btn")}</span>
+                                        </Button>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+
+                              <DialogFooter className="pt-2 border-t border-border/60">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setIsAddCommunityOpen(false)}
+                                  className="text-xs cursor-pointer"
+                                >
+                                  {t("feather-action-close")}
+                                </Button>
+                              </DialogFooter>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
 
               <div className="px-4 py-2.5 bg-muted/15 border-b border-border/60 text-xs text-muted-foreground flex items-center gap-2">
                 <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span>
-                  {t(
-                    "feather-campaign-communities-guide",
-                    "Each community edition runs with its own localized rules and juries. Choose your community below to view rules, participate, or submit articles."
-                  )}
+                  {t("feather-campaign-communities-guide")}
                 </span>
               </div>
 
-              <CardContent className="p-4">
+              <CardContent className="p-4 sm:p-5">
                 {filteredSubContests.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-muted-foreground">
-                    No participating communities found.
+                  <div className="p-8 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-card/40 my-2">
+                    {t("feather-campaign-no-communities-found")}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4.5">
                     {filteredSubContests.map((sub) => {
                       const pMeta = getProjectMeta(sub.wiki_dbname);
                       const isSubActive = sub.status === "active";
@@ -2679,36 +2693,44 @@ export default function ContestDashboardClient({
                       return (
                         <div
                           key={sub.code}
-                          className="rounded-xl border border-border/80 bg-card p-4 shadow-2xs hover:shadow-xs hover:border-border transition-all flex flex-col justify-between gap-4"
+                          className="rounded-xl border border-border/80 bg-card p-4 sm:p-4.5 shadow-2xs hover:shadow-xs hover:border-border transition-all flex flex-col justify-between gap-3.5 group"
                         >
-                          <div className="space-y-2.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={pMeta.icon}
-                                  alt=""
-                                  className="h-5 w-5 object-contain shrink-0"
-                                  onError={(e) => {
-                                    e.currentTarget.src = "/icons/projects/wikipedia.svg";
-                                  }}
-                                />
-                                <div>
-                                  <h4 className="font-semibold text-sm text-foreground leading-tight">
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between gap-2.5">
+                              <div className="flex items-start gap-2.5 min-w-0">
+                                <div className="h-9 w-9 rounded-lg bg-muted/60 border border-border/70 flex items-center justify-center shrink-0 p-1.5 shadow-2xs mt-0.5">
+                                  <img
+                                    src={pMeta.icon}
+                                    alt=""
+                                    className="h-full w-full object-contain"
+                                    onError={(e) => {
+                                      e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                                    }}
+                                  />
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="font-bold text-sm sm:text-base text-foreground leading-snug break-words">
                                     {subDisplayName}
                                   </h4>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">
+                                  <div className="flex items-center gap-1.5 mt-1 flex-wrap text-xs">
+                                    <span className="font-medium text-foreground/90">
+                                      {wikiInfo?.nativeName || wikiInfo?.englishName || pMeta.name}
+                                    </span>
+                                    <span className="text-muted-foreground/60">•</span>
+                                    <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0 h-4">
                                       {sub.wiki_dbname}
                                     </Badge>
-                                    <span className="text-[10px] text-muted-foreground uppercase font-mono">
-                                      ({sub.wiki_lang})
-                                    </span>
+                                    {sub.wiki_lang && (
+                                      <span className="text-[10px] text-muted-foreground uppercase font-mono">
+                                        ({sub.wiki_lang})
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1.5 shrink-0">
+                              <div className="flex items-center gap-1 shrink-0">
                                 <div
-                                  className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium border shrink-0 whitespace-nowrap ${
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0 whitespace-nowrap ${
                                     isSubActive
                                       ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25"
                                       : "bg-muted/40 text-muted-foreground border-border/60"
@@ -2728,13 +2750,13 @@ export default function ContestDashboardClient({
                                     size="sm"
                                     onClick={() => handleDetachContest(sub.id)}
                                     disabled={isDetaching === sub.id}
-                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
+                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer"
                                     title={t("feather-campaign-detach-btn")}
                                   >
                                     {isDetaching === sub.id ? (
-                                      <Clock className="h-3 w-3 animate-spin" />
+                                      <Clock className="h-3.5 w-3.5 animate-spin" />
                                     ) : (
-                                      <Unlink className="h-3 w-3" />
+                                      <Unlink className="h-3.5 w-3.5" />
                                     )}
                                   </Button>
                                 )}
@@ -2742,37 +2764,40 @@ export default function ContestDashboardClient({
                             </div>
 
                             {/* Local Rules Pills */}
-                            <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground pt-1">
+                            <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground pt-0.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/60 border border-border/70 text-[11px] font-medium text-foreground/80">
+                                <ShieldCheck className="h-3 w-3 text-primary shrink-0" />
+                                <span>{t("feather-campaign-local-rules-custom")}</span>
+                              </span>
                               {showWords && sub.min_words > 0 && (
-                                <span className="px-2 py-0.5 rounded-md bg-muted/60 border border-border/60">
-                                  Min {sub.min_words} words
+                                <span className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[11px] font-mono">
+                                  {t("feather-campaign-min-words-pill", n(sub.min_words))}
                                 </span>
                               )}
                               {showBytes && sub.min_bytes > 0 && (
-                                <span className="px-2 py-0.5 rounded-md bg-muted/60 border border-border/60">
-                                  Min {sub.min_bytes} bytes
+                                <span className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[11px] font-mono">
+                                  {t("feather-campaign-min-bytes-pill", n(sub.min_bytes))}
                                 </span>
                               )}
-                              <span className="px-2 py-0.5 rounded-md bg-muted/30 border border-border/40 text-[10px]">
-                                {t("feather-campaign-local-rules-custom")}
-                              </span>
                             </div>
 
                             {/* Stats Grid */}
                             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/50 text-center">
-                              <div className="p-1.5 rounded-md bg-muted/30">
-                                <div className="text-xs font-bold text-foreground">{sub.total_articles}</div>
-                                <div className="text-[10px] text-muted-foreground">Articles</div>
+                              <div className="p-2 rounded-lg bg-muted/30 border border-border/40">
+                                <div className="text-sm font-bold text-foreground font-mono">{n(sub.total_articles)}</div>
+                                <div className="text-[11px] text-muted-foreground font-medium">{t("feather-contest-col-article")}</div>
                               </div>
-                              <div className="p-1.5 rounded-md bg-emerald-500/5">
-                                <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                                  {sub.accepted_articles}
+                              <div className="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                                <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                                  {n(sub.accepted_articles)}
                                 </div>
-                                <div className="text-[10px] text-muted-foreground">Accepted</div>
+                                <div className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80 font-medium">
+                                  {t("feather-contest-filter-accepted")}
+                                </div>
                               </div>
-                              <div className="p-1.5 rounded-md bg-muted/30">
-                                <div className="text-xs font-bold text-foreground">{sub.total_submitters}</div>
-                                <div className="text-[10px] text-muted-foreground">Users</div>
+                              <div className="p-2 rounded-lg bg-muted/30 border border-border/40">
+                                <div className="text-sm font-bold text-foreground font-mono">{n(sub.total_submitters)}</div>
+                                <div className="text-[11px] text-muted-foreground font-medium">{t("feather-contest-participants")}</div>
                               </div>
                             </div>
                           </div>
@@ -2784,10 +2809,10 @@ export default function ContestDashboardClient({
                               className={buttonVariants({
                                 variant: "outline",
                                 size: "sm",
-                                className: "w-full h-8 text-xs font-medium cursor-pointer justify-center gap-1.5 px-2.5 shadow-2xs whitespace-nowrap",
+                                className: "w-full h-8.5 text-xs font-semibold cursor-pointer justify-center gap-1.5 px-2.5 shadow-2xs hover:bg-muted/80",
                               })}
                             >
-                              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                              <LayoutDashboard className="h-3.5 w-3.5 text-primary shrink-0" />
                               <span className="truncate">{t("feather-campaign-open-local")}</span>
                             </Link>
                             <Link
@@ -2795,7 +2820,7 @@ export default function ContestDashboardClient({
                               className={buttonVariants({
                                 variant: "default",
                                 size: "sm",
-                                className: "w-full h-8 text-xs font-medium cursor-pointer justify-center gap-1.5 px-2.5 shadow-none whitespace-nowrap",
+                                className: "w-full h-8.5 text-xs font-semibold cursor-pointer justify-center gap-1.5 px-2.5 shadow-xs",
                               })}
                             >
                               <Upload className="h-3.5 w-3.5 shrink-0" />
@@ -2805,6 +2830,27 @@ export default function ContestDashboardClient({
                         </div>
                       );
                     })}
+
+                    {/* Quick Add Community Edition Card (Organizer / Admin) */}
+                    {canManageCampaign && (
+                      <button
+                        type="button"
+                        onClick={() => setIsAddCommunityOpen(true)}
+                        className="rounded-xl border-2 border-dashed border-border/80 hover:border-primary/60 bg-muted/10 hover:bg-muted/20 p-5 transition-all flex flex-col items-center justify-center text-center gap-2.5 min-h-[220px] group cursor-pointer"
+                      >
+                        <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Plus className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
+                            {t("feather-campaign-add-subcontest-card")}
+                          </h4>
+                          <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+                            {t("feather-campaign-add-subcontest-card-desc")}
+                          </p>
+                        </div>
+                      </button>
+                    )}
                   </div>
                 )}
               </CardContent>

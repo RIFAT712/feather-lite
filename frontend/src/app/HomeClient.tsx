@@ -616,8 +616,8 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
               >
                 <div className="space-y-2">
                   {/* Meta badges & time row */}
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                       {/* Status Indicator Badge */}
                       {(() => {
                         let label = c.status;
@@ -674,11 +674,11 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
 
                       {c.is_umbrella ? (
                         <div
-                          className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5 rounded-md text-[11px] font-medium text-foreground/90 bg-muted/40 dark:bg-muted/30 border border-border/70 shrink-0 max-w-[170px] sm:max-w-none"
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5 rounded-md text-[11px] font-medium text-foreground/90 bg-muted/40 dark:bg-muted/30 border border-border/70 shrink-0"
                           title={t("feather-campaign-badge")}
                         >
                           <MetaWikiLogoIcon className="h-3.5 w-3.5 shrink-0" />
-                          <span className="font-medium truncate">{t("feather-campaign-badge")}</span>
+                          <span className="font-medium whitespace-nowrap">{t("feather-campaign-badge")}</span>
                         </div>
                       ) : (() => {
                         const pMeta = getProjectMeta(c.wiki_dbname);
@@ -735,7 +735,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       </Link>
                     </h2>
 
-                    <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed h-8">
+                    <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed min-h-[2.6rem] break-words">
                       {c.description || t("feather-contest-no-desc")}
                     </p>
                   </div>

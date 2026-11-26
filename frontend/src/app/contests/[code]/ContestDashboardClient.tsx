@@ -1531,12 +1531,12 @@ export default function ContestDashboardClient({
               </div>
 
               {/* Contest Title */}
-              <CardTitle className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground leading-tight">
+              <CardTitle className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground leading-tight break-words">
                 {contest.name}
               </CardTitle>
 
               {/* Description */}
-              <CardDescription className="text-xs sm:text-sm text-muted-foreground max-w-3xl leading-relaxed">
+              <CardDescription className="text-xs sm:text-sm text-muted-foreground max-w-3xl leading-relaxed break-words whitespace-pre-line">
                 {contest.description || "No description provided."}
               </CardDescription>
 
@@ -1590,7 +1590,7 @@ export default function ContestDashboardClient({
             {/* Action Toolbar */}
             <div className="flex flex-col sm:flex-row lg:flex-col items-stretch lg:items-end gap-2.5 shrink-0 w-full sm:w-auto">
               {/* Primary User Actions */}
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 {contest.is_umbrella ? (
                   <Button
                     onClick={() => {
@@ -1656,7 +1656,7 @@ export default function ContestDashboardClient({
 
               {/* Organizer & Jury Quick Tools */}
               {(isJuryOrOrganizer || isOrganizer) && (
-                <div className="flex items-center gap-1.5 pt-1 lg:pt-0 w-full sm:w-auto justify-start lg:justify-end border-t lg:border-t-0 border-border/50">
+                <div className="flex flex-wrap items-center gap-1.5 pt-1 lg:pt-0 w-full sm:w-auto justify-start lg:justify-end border-t lg:border-t-0 border-border/50">
                   {contest.is_umbrella && canManageCampaign && (
                     <Button
                       onClick={() => setIsAddCommunityOpen(true)}
@@ -1833,8 +1833,8 @@ export default function ContestDashboardClient({
         <CardContent className="pt-3 pb-4 sm:pb-5 px-4 sm:px-6 border-t border-border/60 bg-muted/15">
           <div className="space-y-2.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2">
-              <div className="flex items-center gap-2 font-medium">
-                <Calendar className="h-3.5 w-3.5 text-primary" />
+              <div className="flex flex-wrap items-center gap-2 font-medium">
+                <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="font-semibold text-foreground/90 font-mono">
                   {formatDateDDMMYYYY(contest.start_date)} — {formatDateDDMMYYYY(contest.end_date)}
                 </span>
@@ -1844,7 +1844,7 @@ export default function ContestDashboardClient({
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="relative flex h-2 w-2 shrink-0">
                   {!countdownInfo.isEnded && (
                     <span

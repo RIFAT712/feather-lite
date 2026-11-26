@@ -852,5 +852,10 @@
     "feather-profile-chart-timeline-title": "মাসভিত্তিক অবদান কার্যক্রম",
     "feather-profile-chart-timeline-desc": "সময় অনুযায়ী নিবন্ধ জমা এবং বিচারকার্যের ধারা।",
     "feather-profile-chart-reviews-label": "পর্যালোচনা",
-    "feather-contest-mode-label": "প্রতিযোগিতার ধরন"
+    "feather-contest-mode-label": "প্রতিযোগিতার ধরন",
+    "feather-role-organizer": "আয়োজক",
+    "feather-role-jury": "বিচারক",
+    "feather-create-organizers-label": "আয়োজকদের ব্যবহারকারীনাম",
+    "feather-create-organizers-hint": "আয়োজকরা প্রতিযোগিতার সেটিংস পরিবর্তন ও নিবন্ধ মূল্যায়ন করতে পারবেন। তবে বিচারক তালিকায় যুক্ত না থাকলে বা অন্তত একটি নিবন্ধ মূল্যায়ন না করলে তারা বিচারক হিসেবে গণ্য হবেন না।",
+    "feather-contest-organizers-label": "আয়োজকবৃন্দ"
 }

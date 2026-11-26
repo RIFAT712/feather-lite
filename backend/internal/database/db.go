@@ -148,6 +148,16 @@ func Connect(cfg *config.Config) (*DB, error) {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
 	`)
+	_, _ = db.Exec(`
+		CREATE TABLE IF NOT EXISTS contest_organizers (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			contest_id INTEGER NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			UNIQUE(contest_id, user_id)
+		);
+	`)
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_contest_organizers_contest ON contest_organizers(contest_id);")
+	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_contest_organizers_user ON contest_organizers(user_id);")
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_articles_rereview ON articles(contest_id, re_review_requested, id DESC);")
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read, id DESC);")
 	_, _ = db.Exec("CREATE INDEX IF NOT EXISTS idx_notifications_user_all ON notifications(user_id, id DESC);")

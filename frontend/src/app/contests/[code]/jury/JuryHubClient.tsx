@@ -70,6 +70,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import JuryAnalyticsCharts from "@/components/charts/JuryAnalyticsCharts";
+import UserBadge, { ContestRoleScope } from "@/components/users/UserBadge";
 
 interface JuryHubClientProps {
   code: string;
@@ -106,18 +107,22 @@ export default function JuryHubClient({
     staleTime: 30 * 1000,
   });
 
+  const contestRoles = useMemo<ContestRoleScope>(() => ({
+    organizers: contest?.organizers,
+    juries: contest?.juries,
+    createdBy: contest?.created_by_username,
+  }), [contest?.organizers, contest?.juries, contest?.created_by_username]);
+
   // Authorization Check
   const isJuryOrOwner = useMemo(() => {
     if (!me?.is_authenticated) return false;
-    if (me.role === "owner" || me.role === "jury" || me.role === "admin" || me.is_owner || me.is_admin) return true;
+    if (me.role === "owner" || me.role === "admin" || me.is_owner || me.is_admin) return true;
     if (contest?.created_by_id && me.user_id && contest.created_by_id === me.user_id) return true;
-    if (
-      contest?.created_by_username &&
-      me.wiki_username &&
-      contest.created_by_username.trim().toLowerCase() === me.wiki_username.trim().toLowerCase()
-    )
-      return true;
-    if (contest?.juries && me.wiki_username && contest.juries.includes(me.wiki_username)) return true;
+    const meLower = me.wiki_username?.trim().toLowerCase();
+    if (!meLower) return false;
+    if (contest?.created_by_username && contest.created_by_username.trim().toLowerCase() === meLower) return true;
+    if (contest?.organizers?.some((o) => o.trim().toLowerCase() === meLower)) return true;
+    if (contest?.juries?.some((j) => j.trim().toLowerCase() === meLower)) return true;
     return false;
   }, [me, contest]);
 
@@ -575,6 +580,7 @@ export default function JuryHubClient({
                             >
                               {jury.username}
                             </Link>
+                            <UserBadge username={jury.username} contestRoles={contestRoles} />
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-mono text-xs">{n(jury.assigned)}</TableCell>
@@ -666,7 +672,15 @@ export default function JuryHubClient({
                     {stats.juries.map((jury) => (
                       <TableRow key={`activity-${jury.username}`} className="transition-colors hover:bg-muted/40">
                         <TableCell className="font-semibold text-xs sm:text-sm text-foreground">
-                          {jury.username}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link
+                              href={`/contests/${code}/users/${encodeURIComponent(jury.username)}`}
+                              className="hover:text-primary hover:underline transition-colors"
+                            >
+                              {jury.username}
+                            </Link>
+                            <UserBadge username={jury.username} contestRoles={contestRoles} />
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-mono text-xs font-bold text-foreground">
                           {n(jury.judged)}

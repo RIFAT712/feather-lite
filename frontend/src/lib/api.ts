@@ -72,6 +72,7 @@ export interface Contest {
   pending_articles?: number;
   total_juries?: number;
   juries?: string[];
+  organizers?: string[];
 }
 
 export interface ArticleReview {
@@ -570,6 +571,7 @@ export interface CreateContestPayload {
   distribute_jury_queue?: boolean;
   onwiki_page_url?: string;
   juries?: string[];
+  organizers?: string[];
 }
 
 export async function createSubContest(
@@ -694,6 +696,8 @@ export interface ContestUserSubmission {
 export interface ContestUserProfile {
   username: string;
   role: string;
+  is_contest_organizer?: boolean;
+  is_contest_jury?: boolean;
   contest_code: string;
   contest_name: string;
   wiki_url: string;
@@ -836,6 +840,7 @@ export interface UpdateContestPayload {
   distribute_jury_queue?: boolean;
   onwiki_page_url?: string;
   juries?: string[];
+  organizers?: string[];
 }
 
 export async function updateContest(code: string, payload: UpdateContestPayload): Promise<any> {

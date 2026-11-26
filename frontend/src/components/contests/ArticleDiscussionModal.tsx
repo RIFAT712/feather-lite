@@ -32,7 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import UserBadge from "@/components/users/UserBadge";
+import UserBadge, { ContestRoleScope } from "@/components/users/UserBadge";
 
 interface ArticleDiscussionModalProps {
   isOpen: boolean;
@@ -41,6 +41,7 @@ interface ArticleDiscussionModalProps {
   contestCode: string;
   currentUsername?: string;
   isJuryOrOrganizer?: boolean;
+  contestRoles?: ContestRoleScope;
   onReReviewRequested?: () => void;
 }
 
@@ -51,6 +52,7 @@ export default function ArticleDiscussionModal({
   contestCode,
   currentUsername,
   isJuryOrOrganizer = false,
+  contestRoles,
   onReReviewRequested,
 }: ArticleDiscussionModalProps) {
   const { t } = useI18n();
@@ -321,10 +323,11 @@ export default function ArticleDiscussionModal({
                     isMe ? "items-end" : "items-start"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px] text-muted-foreground flex-wrap">
                     <span className="font-semibold text-foreground">
                       {msg.username}
                     </span>
+                    <UserBadge username={msg.username} contestRoles={contestRoles} />
                     {isSenderAuthor && (
                       <span className="text-[9px] bg-muted px-1.5 py-0.2 rounded font-medium">
                         Author

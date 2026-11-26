@@ -100,8 +100,9 @@ export default function NewContestPage() {
   const [customCreationEnd, setCustomCreationEnd] = useState("");
   const [rankByWords, setRankByWords] = useState(false);
 
-  // Juries
+  // Juries & Organizers
   const [juries, setJuries] = useState<string[]>([]);
+  const [organizers, setOrganizers] = useState<string[]>([]);
   const [distributeJuryQueue, setDistributeJuryQueue] = useState(false);
 
   // Automation
@@ -125,7 +126,8 @@ export default function NewContestPage() {
             Boolean(draft.name?.trim()) ||
             Boolean(draft.description?.trim()) ||
             (Array.isArray(draft.selectedExistingContests) && draft.selectedExistingContests.length > 0) ||
-            (Array.isArray(draft.juries) && draft.juries.length > 0);
+            (Array.isArray(draft.juries) && draft.juries.length > 0) ||
+            (Array.isArray(draft.organizers) && draft.organizers.length > 0);
 
           if (hasContent) {
             if (typeof draft.name === "string") setName(draft.name);
@@ -160,6 +162,7 @@ export default function NewContestPage() {
             if (typeof draft.customCreationEnd === "string") setCustomCreationEnd(draft.customCreationEnd);
             if (typeof draft.rankByWords === "boolean") setRankByWords(draft.rankByWords);
             if (Array.isArray(draft.juries)) setJuries(draft.juries);
+            if (Array.isArray(draft.organizers)) setOrganizers(draft.organizers);
             if (typeof draft.distributeJuryQueue === "boolean") setDistributeJuryQueue(draft.distributeJuryQueue);
             if (typeof draft.addTalkTemplate === "boolean") setAddTalkTemplate(draft.addTalkTemplate);
             if (typeof draft.talkTemplateName === "string") setTalkTemplateName(draft.talkTemplateName);
@@ -186,6 +189,7 @@ export default function NewContestPage() {
       description.trim().length > 0 ||
       selectedExistingContests.length > 0 ||
       juries.length > 0 ||
+      organizers.length > 0 ||
       hasMinWords ||
       hasMinBytes ||
       hasMinRefs ||
@@ -226,6 +230,7 @@ export default function NewContestPage() {
           customCreationEnd,
           rankByWords,
           juries,
+          organizers,
           distributeJuryQueue,
           addTalkTemplate,
           talkTemplateName,
@@ -270,6 +275,7 @@ export default function NewContestPage() {
     customCreationEnd,
     rankByWords,
     juries,
+    organizers,
     distributeJuryQueue,
     addTalkTemplate,
     talkTemplateName,
@@ -307,6 +313,7 @@ export default function NewContestPage() {
     setCustomCreationEnd("");
     setRankByWords(false);
     setJuries([]);
+    setOrganizers([]);
     setDistributeJuryQueue(false);
     setAddTalkTemplate(false);
     setTalkTemplateName("");
@@ -377,6 +384,7 @@ export default function NewContestPage() {
       talk_template_name: isUmbrella ? "" : (addTalkTemplate ? talkTemplateName.trim() : ""),
       distribute_jury_queue: isUmbrella ? false : distributeJuryQueue,
       juries: isUmbrella ? [] : juries.filter(Boolean),
+      organizers: organizers.filter(Boolean),
     };
 
     try {
@@ -1064,8 +1072,8 @@ export default function NewContestPage() {
         </Card>
       )}
 
-      {/* Section 3: Jury Administration & Automation (Standard single-wiki contests only) */}
-      {contestType === "standard" && (
+      {/* Section 3: Jury & Organizer Administration & Automation */}
+      {contestType === "standard" ? (
         <Card className="border-border shadow-2xs relative z-10">
           <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
             <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
@@ -1074,14 +1082,23 @@ export default function NewContestPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-4 px-4 sm:px-6 pb-5">
-            {/* Part A: Jury Usernames */}
-            <UserTagInput
-              label={t("feather-create-juries-label")}
-              value={juries}
-              onChange={setJuries}
-              wikiUrl={wikiURL}
-              hint={t("feather-create-juries-hint")}
-            />
+            {/* Part A: Jury & Organizer Usernames side-by-side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <UserTagInput
+                label={t("feather-create-juries-label")}
+                value={juries}
+                onChange={setJuries}
+                wikiUrl={wikiURL}
+                hint={t("feather-create-juries-hint")}
+              />
+              <UserTagInput
+                label={t("feather-create-organizers-label")}
+                value={organizers}
+                onChange={setOrganizers}
+                wikiUrl={wikiURL}
+                hint={t("feather-create-organizers-hint")}
+              />
+            </div>
 
             {/* Part B: Jury Review Queue Mode */}
             <div className="pt-3 border-t border-border/60 space-y-2">
@@ -1160,6 +1177,24 @@ export default function NewContestPage() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-border shadow-2xs relative z-10">
+          <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
+            <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary shrink-0" />
+              <span>{t("feather-contest-organizers-label")}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 px-4 sm:px-6 pb-5">
+            <UserTagInput
+              label={t("feather-create-organizers-label")}
+              value={organizers}
+              onChange={setOrganizers}
+              wikiUrl={wikiURL}
+              hint={t("feather-create-organizers-hint")}
+            />
           </CardContent>
         </Card>
       )}

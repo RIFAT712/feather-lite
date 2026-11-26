@@ -15,7 +15,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import UserBadge from "@/components/users/UserBadge";
+import UserBadge, { ContestRoleScope } from "@/components/users/UserBadge";
 import { getProjectMeta, getOnwikiPageLink } from "@/lib/wikis";
 import {
   ArrowLeft,
@@ -93,6 +93,12 @@ export default function ContestStatsClient({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [dragState, setDragState] = useState<{ startX: number; currentX: number } | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+  const contestRoles = useMemo<ContestRoleScope>(() => ({
+    organizers: contest?.organizers,
+    juries: contest?.juries,
+    createdBy: contest?.created_by_username,
+  }), [contest?.organizers, contest?.juries, contest?.created_by_username]);
 
   // Derived counts
   const counts = stats?.status_counts || { total: 0, accepted: 0, rejected: 0, pending: 0 };
@@ -592,8 +598,13 @@ export default function ContestStatsClient({
                     <ShieldCheck className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
                     <span>Contest creator:</span>
                   </span>
-                  <span className="font-semibold text-foreground truncate max-w-[120px]">
-                    {contest?.created_by_username || "—"}
+                  <span className="font-semibold text-foreground inline-flex items-center gap-1.5 min-w-0">
+                    <span className="truncate max-w-[120px]">
+                      {contest?.created_by_username || "—"}
+                    </span>
+                    {contest?.created_by_username && (
+                      <UserBadge username={contest.created_by_username} contestRoles={contestRoles} />
+                    )}
                   </span>
                 </div>
               </div>
@@ -1155,7 +1166,7 @@ export default function ContestStatsClient({
                         className="p-3 flex items-center justify-between gap-2 hover:bg-muted/30 transition-colors text-xs"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <UserBadge username={jury} />
+                          <UserBadge username={jury} contestRoles={contestRoles} />
                           <span className="font-semibold text-foreground truncate">
                             {jury}
                           </span>
@@ -1238,7 +1249,7 @@ export default function ContestStatsClient({
                             >
                               {p.username}
                             </Link>
-                            <UserBadge username={p.username} />
+                            <UserBadge username={p.username} contestRoles={contestRoles} />
                           </div>
                           <div className="flex items-center gap-2 text-xs font-mono shrink-0">
                             <span className="font-bold text-foreground">{n(p.total)} articles</span>
@@ -1363,7 +1374,7 @@ export default function ContestStatsClient({
                       <span>Contest creator:</span>
                       <div className="flex items-center gap-1.5 font-semibold text-foreground">
                         <span>{contest.created_by_username}</span>
-                        <UserBadge username={contest.created_by_username} />
+                        <UserBadge username={contest.created_by_username} contestRoles={contestRoles} />
                       </div>
                     </div>
                   )}
@@ -1442,8 +1453,9 @@ export default function ContestStatsClient({
                               <span className="font-semibold text-foreground truncate">
                                 {art.title}
                               </span>
-                              <span className="text-[11px] text-muted-foreground truncate">
-                                by {art.submitter}
+                              <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1 shrink-0">
+                                <span>by {art.submitter}</span>
+                                <UserBadge username={art.submitter} contestRoles={contestRoles} />
                               </span>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
@@ -1623,7 +1635,7 @@ export default function ContestStatsClient({
                           >
                             {jp.username}
                           </Link>
-                          <UserBadge username={jp.username} />
+                          <UserBadge username={jp.username} contestRoles={contestRoles} />
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums font-bold text-foreground">
@@ -1688,7 +1700,7 @@ export default function ContestStatsClient({
                       <TableCell className="text-xs font-semibold">
                         <div className="flex items-center gap-1.5">
                           <span className="font-semibold text-foreground">{jury}</span>
-                          <UserBadge username={jury} />
+                          <UserBadge username={jury} contestRoles={contestRoles} />
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums font-bold text-muted-foreground">
@@ -1811,7 +1823,7 @@ export default function ContestStatsClient({
                           >
                             {entry.username}
                           </Link>
-                          <UserBadge username={entry.username} />
+                          <UserBadge username={entry.username} contestRoles={contestRoles} />
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums font-semibold">

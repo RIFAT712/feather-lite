@@ -852,5 +852,10 @@
     "feather-profile-chart-timeline-title": "Chart card title showing monthly submissions and jury reviews over time.",
     "feather-profile-chart-timeline-desc": "Chart card subtitle explaining monthly activity chart.",
     "feather-profile-chart-reviews-label": "Chart series label for number of jury reviews conducted.",
-    "feather-contest-mode-label": "Section label above the single-community vs multi-community campaign mode cards in contest creation and settings."
+    "feather-contest-mode-label": "Section label above the single-community vs multi-community campaign mode cards in contest creation and settings.",
+    "feather-role-organizer": "Contest-specific badge label shown next to an organizer's username inside a contest.",
+    "feather-role-jury": "Contest-specific badge label shown next to a jury member's username inside a contest.",
+    "feather-create-organizers-label": "Input label for adding contest organizer Wikimedia usernames alongside jury usernames.",
+    "feather-create-organizers-hint": "Helper text explaining that organizers can edit settings and judge, but are not automatically added to the jury roster unless they judge an article or are listed as jury.",
+    "feather-contest-organizers-label": "Section label for the list of contest organizers in contest header and team panels."
 }

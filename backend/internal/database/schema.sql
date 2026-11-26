@@ -57,6 +57,13 @@ CREATE TABLE IF NOT EXISTS contest_juries (
     UNIQUE(contest_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS contest_organizers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contest_id INTEGER NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(contest_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS contest_jury_restrictions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     contest_id INTEGER NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
@@ -175,6 +182,8 @@ CREATE INDEX IF NOT EXISTS idx_chat_contest_keyset ON community_chat_messages(co
 CREATE INDEX IF NOT EXISTS idx_chat_user ON community_chat_messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_mod_user_contest ON user_chat_moderation(user_id, contest_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_chat_mod_username ON user_chat_moderation(username, contest_id);
+CREATE INDEX IF NOT EXISTS idx_contest_organizers_contest ON contest_organizers(contest_id);
+CREATE INDEX IF NOT EXISTS idx_contest_organizers_user ON contest_organizers(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_article ON reviews(article_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_id);
 CREATE INDEX IF NOT EXISTS idx_talk_jobs_status ON talk_page_jobs(status, id);

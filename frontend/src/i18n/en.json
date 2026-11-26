@@ -852,5 +852,10 @@
     "feather-profile-chart-timeline-title": "Monthly contribution activity",
     "feather-profile-chart-timeline-desc": "Article submissions and jury evaluations over time.",
     "feather-profile-chart-reviews-label": "Reviews",
-    "feather-contest-mode-label": "Contest mode"
+    "feather-contest-mode-label": "Contest mode",
+    "feather-role-organizer": "Organizer",
+    "feather-role-jury": "Jury",
+    "feather-create-organizers-label": "Organizer usernames",
+    "feather-create-organizers-hint": "Organizers can change contest settings and judge submissions, without being added to the jury roster unless listed as jury or judging at least 1 article.",
+    "feather-contest-organizers-label": "Organizers"
 }

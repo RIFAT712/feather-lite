@@ -57,6 +57,7 @@ type Contest struct {
 	PendingArticles  int      `json:"pending_articles,omitempty"`
 	TotalJuries      int      `json:"total_juries,omitempty"`
 	Juries           []string `json:"juries,omitempty"`
+	Organizers       []string `json:"organizers,omitempty"`
 }
 
 type Article struct {
@@ -252,6 +253,7 @@ type UpdateContestRequest struct {
 	OnwikiPageURL           string   `json:"onwiki_page_url,omitempty"`
 	DistributeJuryQueue     bool     `json:"distribute_jury_queue"`
 	Juries                  []string `json:"juries"`
+	Organizers              []string `json:"organizers"`
 }
 
 type GlobalStandingEntry struct {
@@ -296,6 +298,7 @@ type CreateContestRequest struct {
 	TalkTemplateName      string                `json:"talk_template_name"`
 	DistributeJuryQueue   bool                  `json:"distribute_jury_queue"`
 	Juries                []string              `json:"juries"`
+	Organizers            []string              `json:"organizers"`
 }
 
 type StandingEntry struct {
@@ -380,9 +383,11 @@ type ContestUserSubmission struct {
 }
 
 type ContestUserProfile struct {
-	Username    string                  `json:"username"`
-	Role        string                  `json:"role"`
-	ContestCode string                  `json:"contest_code"`
+	Username           string                  `json:"username"`
+	Role               string                  `json:"role"`
+	IsContestOrganizer bool                    `json:"is_contest_organizer,omitempty"`
+	IsContestJury      bool                    `json:"is_contest_jury,omitempty"`
+	ContestCode        string                  `json:"contest_code"`
 	ContestName string                  `json:"contest_name"`
 	WikiURL     string                  `json:"wiki_url"`
 	RankByWords bool                    `json:"rank_by_words"`

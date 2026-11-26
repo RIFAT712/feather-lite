@@ -26,6 +26,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import ArticleDiscussionModal from "@/components/contests/ArticleDiscussionModal";
+import UserBadge, { ContestRoleScope } from "@/components/users/UserBadge";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n/I18nContext";
@@ -508,6 +509,12 @@ export default function ReviewQueueClient({
     } catch {}
   }, []);
 
+  const contestRoles = useMemo<ContestRoleScope>(() => ({
+    organizers: contest?.organizers,
+    juries: contest?.juries,
+    createdBy: contest?.created_by_username,
+  }), [contest?.organizers, contest?.juries, contest?.created_by_username]);
+
   const myUsername = (user?.wiki_username || "").trim();
   const myUsernameLower = myUsername.toLowerCase();
   const isOwner = Boolean(
@@ -518,16 +525,19 @@ export default function ReviewQueueClient({
     (contest?.created_by_id && user?.user_id && contest.created_by_id === user.user_id) ||
     (contest?.created_by_username &&
       myUsernameLower &&
-      contest.created_by_username.trim().toLowerCase() === myUsernameLower)
+      contest.created_by_username.trim().toLowerCase() === myUsernameLower) ||
+    (contest?.organizers &&
+      myUsernameLower &&
+      contest.organizers.some(
+        (o: string) => (o || "").trim().toLowerCase() === myUsernameLower
+      ))
   );
   const isJury = Boolean(
-    user?.role === "jury" ||
-    (user as any)?.is_jury ||
-    (contest?.juries &&
-      myUsernameLower &&
-      contest.juries.some(
-        (j: string) => (j || "").trim().toLowerCase() === myUsernameLower
-      ))
+    contest?.juries &&
+    myUsernameLower &&
+    contest.juries.some(
+      (j: string) => (j || "").trim().toLowerCase() === myUsernameLower
+    )
   );
   const isAuthorized = isJury || isOwner;
 
@@ -2152,7 +2162,10 @@ ${body}
                         </button>
                       </div>
                       <div className="rq-tags">
-                        <span className="rq-tag">by {currentArticle.submitted_by}</span>
+                        <span className="rq-tag inline-flex items-center gap-1">
+                          <span>by {currentArticle.submitted_by}</span>
+                          <UserBadge username={currentArticle.submitted_by} contestRoles={contestRoles} />
+                        </span>
                         {currentArticle.wiki_creator &&
                           currentArticle.wiki_creator.toLowerCase() ===
                             currentArticle.submitted_by.toLowerCase() && (
@@ -2746,6 +2759,7 @@ ${body}
           contestCode={code}
           currentUsername={myUsername}
           isJuryOrOrganizer={true}
+          contestRoles={contestRoles}
         />
       )}
     </div>

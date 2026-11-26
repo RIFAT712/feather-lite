@@ -46,7 +46,7 @@ import {
 } from "lucide-react";
 import { UserTagInput } from "@/components/contests/UserTagInput";
 import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
-import UserBadge from "@/components/users/UserBadge";
+import UserBadge, { ContestRoleScope } from "@/components/users/UserBadge";
 import ArticleDiscussionModal from "@/components/contests/ArticleDiscussionModal";
 import CommunityChatPanel from "@/components/chat/CommunityChatPanel";
 
@@ -664,23 +664,47 @@ export default function ContestDashboardClient({
     return formatDateDDMMYYYYTz(dateStr, contest?.wiki_tz || "UTC", locale);
   }, [contest?.wiki_tz, locale]);
 
-  const isJuryOrOrganizer = useMemo(() => {
-    if (!me?.is_authenticated) return false;
-    if (me.role === "owner" || me.role === "jury" || me.role === "admin" || (me as any)?.is_owner || (me as any)?.is_admin) return true;
-    if (contest?.created_by_id && me.user_id && contest.created_by_id === me.user_id) return true;
-    if (contest?.created_by_username && me.wiki_username && contest.created_by_username.trim().toLowerCase() === me.wiki_username.trim().toLowerCase()) return true;
-    if (contest?.juries && me.wiki_username && contest.juries.includes(me.wiki_username)) return true;
-    return false;
-  }, [me, contest]);
+  const contestRoles = useMemo<ContestRoleScope>(() => ({
+    organizers: contest?.organizers,
+    juries: contest?.juries,
+    createdBy: contest?.created_by_username,
+  }), [contest?.organizers, contest?.juries, contest?.created_by_username]);
+
+  const contestOrganizersList = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    const add = (u?: string | null) => {
+      const cleaned = (u || "").trim();
+      if (!cleaned) return;
+      const lower = cleaned.toLowerCase();
+      if (seen.has(lower)) return;
+      seen.add(lower);
+      out.push(cleaned);
+    };
+    add(contest?.created_by_username);
+    (contest?.organizers || []).forEach(add);
+    return out;
+  }, [contest?.created_by_username, contest?.organizers]);
 
   const isOrganizer = useMemo(() => {
     if (!me?.is_authenticated) return false;
     if (me.role === "owner" || me.role === "admin" || (me as any)?.is_owner || (me as any)?.is_admin) return true;
     if (contest?.created_by_id && me.user_id && contest.created_by_id === me.user_id) return true;
-    if (contest?.created_by_username && me.wiki_username && contest.created_by_username.trim().toLowerCase() === me.wiki_username.trim().toLowerCase()) return true;
-    if (contest?.juries && me.wiki_username && contest.juries.includes(me.wiki_username)) return true;
+    const meLower = me.wiki_username?.trim().toLowerCase();
+    if (!meLower) return false;
+    if (contest?.created_by_username && contest.created_by_username.trim().toLowerCase() === meLower) return true;
+    if (contest?.organizers?.some((o) => o.trim().toLowerCase() === meLower)) return true;
     return false;
   }, [me, contest]);
+
+  const isJuryOrOrganizer = useMemo(() => {
+    if (isOrganizer) return true;
+    if (!me?.is_authenticated) return false;
+    const meLower = me.wiki_username?.trim().toLowerCase();
+    if (!meLower) return false;
+    if (contest?.juries?.some((j) => j.trim().toLowerCase() === meLower)) return true;
+    return false;
+  }, [isOrganizer, me, contest]);
 
   const isCreator = Boolean(contest?.created_by_id && me?.user_id && contest.created_by_id === me.user_id);
   const [isApproving, setIsApproving] = useState(false);
@@ -1519,6 +1543,32 @@ export default function ContestDashboardClient({
                 {contest.description || "No description provided."}
               </CardDescription>
 
+              {/* Contest Organizers Roster */}
+              {contestOrganizersList.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 pt-1.5 text-xs">
+                  <span className="font-semibold text-muted-foreground flex items-center gap-1.5 shrink-0">
+                    <Shield className="h-3.5 w-3.5 text-indigo-500" />
+                    <span>{t("feather-contest-organizers-label")}:</span>
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {contestOrganizersList.map((orgName) => (
+                      <Link
+                        key={orgName}
+                        href={`/contests/${code}/users/${encodeURIComponent(orgName)}`}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/15 text-foreground border border-indigo-500/30 hover:border-indigo-500/50 transition-colors font-medium text-xs group"
+                        title={orgName}
+                      >
+                        <span className="h-4 w-4 rounded-full bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-bold uppercase shrink-0">
+                          {orgName.charAt(0)}
+                        </span>
+                        <span className="font-mono text-xs">{orgName}</span>
+                        <UserBadge username={orgName} contestRoles={contestRoles} />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Jury Members Roster */}
               {contest.juries && contest.juries.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 pt-1.5 text-xs">
@@ -1538,6 +1588,7 @@ export default function ContestDashboardClient({
                           {juryName.charAt(0)}
                         </span>
                         <span className="font-mono text-xs">{juryName}</span>
+                        <UserBadge username={juryName} contestRoles={contestRoles} />
                       </Link>
                     ))}
                   </div>
@@ -2914,7 +2965,7 @@ export default function ContestDashboardClient({
                                 >
                                   {s.username}
                                 </Link>
-                                <UserBadge username={s.username} role={s.role} />
+                                <UserBadge username={s.username} role={s.role} contestRoles={contestRoles} />
                                 <a
                                   href={`${contest.wiki_url || "https://bn.wikipedia.org"}/wiki/Special:Contributions/${encodeURIComponent(
                                     s.username
@@ -2993,7 +3044,7 @@ export default function ContestDashboardClient({
                             >
                               {s.username}
                             </Link>
-                            <UserBadge username={s.username} role={s.role} />
+                            <UserBadge username={s.username} role={s.role} contestRoles={contestRoles} />
                           </div>
 
                           <div className="flex items-center gap-1.5 shrink-0">
@@ -3275,7 +3326,7 @@ export default function ContestDashboardClient({
                                       >
                                         {sub.username}
                                       </Link>
-                                      <UserBadge username={sub.username} role={sub.role} />
+                                      <UserBadge username={sub.username} role={sub.role} contestRoles={contestRoles} />
                                     </div>
                                   </TableCell>
                                   <TableCell className="text-right font-mono font-semibold text-xs text-foreground">
@@ -3422,7 +3473,7 @@ export default function ContestDashboardClient({
                             <TableCell className="text-xs text-muted-foreground">
                               <span className="inline-flex items-center gap-1.5 flex-wrap">
                                 <span>{art.submitter_username}</span>
-                                <UserBadge username={art.submitter_username} />
+                                <UserBadge username={art.submitter_username} contestRoles={contestRoles} />
                               </span>
                             </TableCell>
                             <TableCell className="text-center">
@@ -3507,7 +3558,7 @@ export default function ContestDashboardClient({
                             </a>
                             <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
                               <span>by <span className="font-medium text-foreground">{art.submitter_username}</span></span>
-                              <UserBadge username={art.submitter_username} />
+                              <UserBadge username={art.submitter_username} contestRoles={contestRoles} />
                             </div>
                           </div>
 
@@ -3848,7 +3899,7 @@ export default function ContestDashboardClient({
                                 >
                                   {j.username}
                                 </Link>
-                                <UserBadge username={j.username} />
+                                <UserBadge username={j.username} contestRoles={contestRoles} />
                               </div>
                             </TableCell>
                             <TableCell className="text-right font-bold font-mono text-xs text-foreground">
@@ -3888,6 +3939,54 @@ export default function ContestDashboardClient({
                 </div>
               )}
 
+              {contestOrganizersList.length > 0 && (
+                <div className="space-y-2 pb-3 border-b border-border/60">
+                  <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Shield className="h-3.5 w-3.5 text-indigo-500" />
+                    <span>{t("feather-contest-organizers-label")} ({n(contestOrganizersList.length)})</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {contestOrganizersList.map((orgName) => (
+                      <div
+                        key={`org-${orgName}`}
+                        className="flex items-center justify-between p-3 rounded-lg border border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10 transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-8 w-8 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                            {orgName.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Link
+                                href={`/contests/${code}/users/${encodeURIComponent(orgName)}`}
+                                className="text-xs font-semibold text-foreground hover:text-primary hover:underline transition-colors truncate"
+                              >
+                                {orgName}
+                              </Link>
+                              <UserBadge username={orgName} contestRoles={contestRoles} />
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {t("feather-role-organizer")}
+                            </div>
+                          </div>
+                        </div>
+                        <a
+                          href={`${contest.wiki_url || "https://bn.wiktionary.org"}/wiki/User:${encodeURIComponent(
+                            orgName
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-foreground cursor-pointer transition-colors p-1 shrink-0"
+                          title="View user page on wiki"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {contest.juries && contest.juries.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {contest.juries.map((juryName) => (
@@ -3907,7 +4006,7 @@ export default function ContestDashboardClient({
                             >
                               {juryName}
                             </Link>
-                            <UserBadge username={juryName} />
+                            <UserBadge username={juryName} contestRoles={contestRoles} />
                           </div>
                           <div className="text-[11px] text-muted-foreground">
                             {contest.is_umbrella ? t("feather-contest-jury-role-organizer") : t("feather-contest-jury-role-member")}
@@ -3974,6 +4073,7 @@ export default function ContestDashboardClient({
             parentContestId={contest.parent_contest_id}
             isJuryOrAdmin={isJuryOrOrganizer}
             currentUsername={me?.wiki_username}
+            contestRoles={contestRoles}
           />
         </TabsContent>
 
@@ -3987,6 +4087,7 @@ export default function ContestDashboardClient({
         contestCode={code}
         currentUsername={me?.wiki_username}
         isJuryOrOrganizer={isJuryOrOrganizer}
+        contestRoles={contestRoles}
         onReReviewRequested={() => {
           queryClient.invalidateQueries({ queryKey: ["articles", code] });
         }}

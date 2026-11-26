@@ -283,7 +283,12 @@ export default function ContestUserProfileClient({
               </p>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
                 <span>{profile.username}</span>
-                <UserBadge username={profile.username} role={profile.role} />
+                <UserBadge
+                  username={profile.username}
+                  role={profile.role}
+                  isContestOrganizer={Boolean(profile.is_contest_organizer)}
+                  isContestJury={Boolean(profile.is_contest_jury)}
+                />
               </h1>
               <div className="flex items-center gap-2.5 pt-1">
                 <a

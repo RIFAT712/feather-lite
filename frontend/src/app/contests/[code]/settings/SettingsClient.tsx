@@ -101,7 +101,9 @@ export default function SettingsClient({
     if (!me?.is_authenticated) return false;
     if (me.role === "owner" || me.role === "admin" || (me as any)?.is_owner || (me as any)?.is_admin) return true;
     if (contest?.created_by_id && me.user_id && contest.created_by_id === me.user_id) return true;
-    if (contest?.created_by_username && me.wiki_username && contest.created_by_username.trim().toLowerCase() === me.wiki_username.trim().toLowerCase()) return true;
+    const myLower = me.wiki_username?.trim().toLowerCase();
+    if (myLower && contest?.created_by_username && contest.created_by_username.trim().toLowerCase() === myLower) return true;
+    if (myLower && contest?.organizers?.some((o) => (o || "").trim().toLowerCase() === myLower)) return true;
     return false;
   }, [me, contest]);
 
@@ -149,6 +151,7 @@ export default function SettingsClient({
   const [editTalkTemplateName, setEditTalkTemplateName] = useState("");
   const [editDistributeJuryQueue, setEditDistributeJuryQueue] = useState(false);
   const [editJuries, setEditJuries] = useState<string[]>([]);
+  const [editOrganizers, setEditOrganizers] = useState<string[]>([]);
 
   // Action status states
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -229,6 +232,7 @@ export default function SettingsClient({
       setEditTalkTemplateName(contest.talk_template_name || "");
       setEditDistributeJuryQueue(contest.distribute_jury_queue ?? false);
       setEditJuries(contest.juries || []);
+      setEditOrganizers(contest.organizers || []);
     }
   }, [contest]);
 
@@ -307,6 +311,7 @@ export default function SettingsClient({
       talk_template_name: isUmbrella ? "" : editTalkTemplateName.trim(),
       distribute_jury_queue: isUmbrella ? false : editDistributeJuryQueue,
       juries: isUmbrella ? [] : editJuries,
+      organizers: editOrganizers,
     };
     try {
       await updateContest(code, payload);
@@ -1121,8 +1126,8 @@ export default function SettingsClient({
         </Card>
         )}
 
-        {/* Section 4: Jury Administration & Automation (Standard single-wiki contests only) */}
-        {editContestType === "standard" && (
+        {/* Section 4: Jury & Organizer Administration & Automation */}
+        {editContestType === "standard" ? (
         <Card className="border-border shadow-2xs relative z-10">
           <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
             <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
@@ -1131,15 +1136,25 @@ export default function SettingsClient({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-4 px-4 sm:px-6 pb-5">
-            {/* Part A: Jury Usernames */}
-            <UserTagInput
-              label={t("feather-create-juries-label")}
-              value={editJuries}
-              onChange={isOrganizer ? setEditJuries : () => {}}
-              wikiUrl={editWikiURL || contest?.wiki_url}
-              disabled={!isOrganizer}
-              hint={t("feather-create-juries-hint")}
-            />
+            {/* Part A: Jury & Organizer Usernames side-by-side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <UserTagInput
+                label={t("feather-create-juries-label")}
+                value={editJuries}
+                onChange={isOrganizer ? setEditJuries : () => {}}
+                wikiUrl={editWikiURL || contest?.wiki_url}
+                disabled={!isOrganizer}
+                hint={t("feather-create-juries-hint")}
+              />
+              <UserTagInput
+                label={t("feather-create-organizers-label")}
+                value={editOrganizers}
+                onChange={isOrganizer ? setEditOrganizers : () => {}}
+                wikiUrl={editWikiURL || contest?.wiki_url}
+                disabled={!isOrganizer}
+                hint={t("feather-create-organizers-hint")}
+              />
+            </div>
 
             {/* Part B: Jury Review Queue Mode */}
             <div className="pt-3 border-t border-border/60 space-y-2">
@@ -1229,6 +1244,25 @@ export default function SettingsClient({
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+        ) : (
+        <Card className="border-border shadow-2xs relative z-10">
+          <CardHeader className="py-3 px-4 sm:px-6 border-b border-border/50 bg-muted/20">
+            <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary shrink-0" />
+              <span>{t("feather-contest-organizers-label")}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 px-4 sm:px-6 pb-5">
+            <UserTagInput
+              label={t("feather-create-organizers-label")}
+              value={editOrganizers}
+              onChange={isOrganizer ? setEditOrganizers : () => {}}
+              wikiUrl={editWikiURL || contest?.wiki_url}
+              disabled={!isOrganizer}
+              hint={t("feather-create-organizers-hint")}
+            />
           </CardContent>
         </Card>
         )}

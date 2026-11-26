@@ -51,7 +51,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import UserBadge from "@/components/users/UserBadge";
+import UserBadge, { ContestRoleScope } from "@/components/users/UserBadge";
 import { toast } from "sonner";
 
 interface CommunityChatPanelProps {
@@ -61,6 +61,7 @@ interface CommunityChatPanelProps {
   parentContestId?: number | null;
   isJuryOrAdmin?: boolean;
   currentUsername?: string;
+  contestRoles?: ContestRoleScope;
 }
 
 export default function CommunityChatPanel({
@@ -70,6 +71,7 @@ export default function CommunityChatPanel({
   parentContestId,
   isJuryOrAdmin,
   currentUsername,
+  contestRoles,
 }: CommunityChatPanelProps) {
   const { t, formatDate } = useI18n();
   const queryClient = useQueryClient();
@@ -372,7 +374,7 @@ export default function CommunityChatPanel({
                       >
                         {msg.username}
                       </Link>
-                      <UserBadge role={msg.user_role as any} />
+                      <UserBadge username={msg.username} role={msg.user_role as any} contestRoles={contestRoles} />
 
                       {msg.is_campaign_chat && (
                         <Badge variant="outline" className="text-[9px] px-1 py-0 border-amber-500/30 text-amber-600">

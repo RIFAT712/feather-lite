@@ -669,36 +669,10 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 
 	// Build jury list - only include juries explicitly specified in req.Juries
 	if !req.IsUmbrella {
-		juryUsernames := make(map[string]bool)
-		for _, j := range req.Juries {
-			trimmed := strings.TrimSpace(j)
-			if trimmed != "" {
-				juryUsernames[trimmed] = true
-			}
-		}
-
-		for juryName := range juryUsernames {
-			var userID int64
-			err := tx.QueryRow("SELECT id FROM users WHERE wiki_username = ?", juryName).Scan(&userID)
-			if err == sql.ErrNoRows {
-				userRes, userInsErr := tx.Exec("INSERT INTO users (wiki_username, role) VALUES (?, 'jury')", juryName)
-				if userInsErr != nil {
-					log.Printf("[CreateContest] Error inserting jury user %s: %v", juryName, userInsErr)
-					continue
-				}
-				userID, _ = userRes.LastInsertId()
-			} else if err != nil {
-				log.Printf("[CreateContest] Error checking user %s: %v", juryName, err)
-				continue
-			}
-
-			var count int
-			_ = tx.QueryRow("SELECT COUNT(*) FROM contest_juries WHERE contest_id = ? AND user_id = ?", contestID, userID).Scan(&count)
-			if count == 0 {
-				_, _ = tx.Exec("INSERT INTO contest_juries (contest_id, user_id) VALUES (?, ?)", contestID, userID)
-			}
-		}
+		syncContestRoleUsers(tx, "contest_juries", contestID, req.Juries, "jury", false)
 	}
+	// Persist designated organizers without adding them to contest_juries
+	syncContestRoleUsers(tx, "contest_organizers", contestID, req.Organizers, "participant", false)
 
 	// If this is a Multi-Community Campaign, attach any selected existing contests
 	if req.IsUmbrella {
@@ -1055,6 +1029,23 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 	}
 	c.TotalJuries = len(c.Juries)
 
+	orgRows, oErr := h.db.Query(`
+		SELECT u.wiki_username
+		FROM contest_organizers co
+		JOIN users u ON co.user_id = u.id
+		WHERE co.contest_id = ?
+		ORDER BY u.wiki_username ASC
+	`, c.ID)
+	if oErr == nil {
+		defer orgRows.Close()
+		for orgRows.Next() {
+			var uName string
+			if err := orgRows.Scan(&uName); err == nil && uName != "" {
+				c.Organizers = append(c.Organizers, uName)
+			}
+		}
+	}
+
 	jsonResponse(w, http.StatusOK, c)
 }
 
@@ -1265,30 +1256,11 @@ func (h *Handler) UpdateContest(w http.ResponseWriter, r *http.Request) {
 
 	// Update juries if specified
 	if req.Juries != nil {
-		desiredJuries := make(map[string]bool)
-		for _, j := range req.Juries {
-			if t := strings.TrimSpace(j); t != "" {
-				desiredJuries[t] = true
-			}
-		}
-
-		// Clear existing juries for this contest
-		_, _ = tx.Exec("DELETE FROM contest_juries WHERE contest_id = ?", contestID)
-
-		// Re-insert desired juries
-		for jName := range desiredJuries {
-			var uID int64
-			err := tx.QueryRow("SELECT id FROM users WHERE wiki_username = ?", jName).Scan(&uID)
-			if err == sql.ErrNoRows {
-				res, insErr := tx.Exec("INSERT INTO users (wiki_username, role) VALUES (?, 'jury')", jName)
-				if insErr == nil {
-					uID, _ = res.LastInsertId()
-				}
-			}
-			if uID > 0 {
-				_, _ = tx.Exec("INSERT INTO contest_juries (contest_id, user_id) VALUES (?, ?)", contestID, uID)
-			}
-		}
+		syncContestRoleUsers(tx, "contest_juries", contestID, req.Juries, "jury", true)
+	}
+	// Update organizers if specified (organizers are not automatically added to contest_juries)
+	if req.Organizers != nil {
+		syncContestRoleUsers(tx, "contest_organizers", contestID, req.Organizers, "participant", true)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -2136,7 +2108,41 @@ func (h *Handler) isPlatformAdminOrOwner(user *auth.Claims) bool {
 	return false
 }
 
-// isUserJuryOrOrganizer verifies if a user has jury, contest creator, or platform owner rights for a contest (including via parent umbrella campaign).
+// syncContestRoleUsers links usernames into contest_juries or contest_organizers inside an open transaction.
+func syncContestRoleUsers(tx *sql.Tx, table string, contestID int64, usernames []string, defaultRole string, replaceExisting bool) {
+	if table != "contest_juries" && table != "contest_organizers" {
+		return
+	}
+	if replaceExisting {
+		_, _ = tx.Exec("DELETE FROM "+table+" WHERE contest_id = ?", contestID)
+	}
+	desired := make(map[string]bool)
+	for _, raw := range usernames {
+		if trimmed := strings.TrimSpace(raw); trimmed != "" {
+			desired[trimmed] = true
+		}
+	}
+	for uName := range desired {
+		var uID int64
+		err := tx.QueryRow("SELECT id FROM users WHERE wiki_username = ? COLLATE NOCASE", uName).Scan(&uID)
+		if err == sql.ErrNoRows {
+			res, insErr := tx.Exec("INSERT INTO users (wiki_username, role) VALUES (?, ?)", uName, defaultRole)
+			if insErr != nil {
+				log.Printf("[syncContestRoleUsers] Error inserting %s user %s: %v", table, uName, insErr)
+				continue
+			}
+			uID, _ = res.LastInsertId()
+		} else if err != nil {
+			log.Printf("[syncContestRoleUsers] Error checking user %s: %v", uName, err)
+			continue
+		}
+		if uID > 0 {
+			_, _ = tx.Exec("INSERT OR IGNORE INTO "+table+" (contest_id, user_id) VALUES (?, ?)", contestID, uID)
+		}
+	}
+}
+
+// isUserJuryOrOrganizer verifies if a user has jury, contest creator, organizer, or platform owner/admin rights for a contest (including via parent umbrella campaign).
 func (h *Handler) isUserJuryOrOrganizer(contestID int64, userID int64, role string) bool {
 	if role == "owner" || role == "admin" {
 		return true
@@ -2150,17 +2156,24 @@ func (h *Handler) isUserJuryOrOrganizer(contestID int64, userID int64, role stri
 			JOIN contests sub ON sub.parent_contest_id = parent.id
 			WHERE sub.id = ? AND parent.created_by_id = ?
 			UNION
+			SELECT 1 FROM contest_organizers WHERE contest_id = ? AND user_id = ?
+			UNION
+			SELECT 1 FROM contest_organizers co
+			JOIN contests sub ON sub.parent_contest_id = co.contest_id
+			WHERE sub.id = ? AND co.user_id = ?
+			UNION
 			SELECT 1 FROM contest_juries WHERE contest_id = ? AND user_id = ?
 			UNION
 			SELECT 1 FROM contest_juries cj
 			JOIN contests sub ON sub.parent_contest_id = cj.contest_id
 			WHERE sub.id = ? AND cj.user_id = ?
 		)
-	`, contestID, userID, contestID, userID, contestID, userID, contestID, userID).Scan(&count)
+	`, contestID, userID, contestID, userID, contestID, userID, contestID, userID, contestID, userID, contestID, userID).Scan(&count)
 	return count > 0
 }
 
-// isUserOrganizer verifies if a user has contest creator, organizer, or platform owner rights for a contest (including via parent umbrella campaign).
+// isUserOrganizer verifies if a user has contest creator, organizer, or platform owner/admin rights for a contest (including via parent umbrella campaign).
+// Plain contest juries are intentionally excluded so only organizers/creators/admins can modify contest settings.
 func (h *Handler) isUserOrganizer(contestID int64, userID int64, role string) bool {
 	if role == "owner" || role == "admin" {
 		return true
@@ -2174,11 +2187,11 @@ func (h *Handler) isUserOrganizer(contestID int64, userID int64, role string) bo
 			JOIN contests sub ON sub.parent_contest_id = parent.id
 			WHERE sub.id = ? AND parent.created_by_id = ?
 			UNION
-			SELECT 1 FROM contest_juries WHERE contest_id = ? AND user_id = ?
+			SELECT 1 FROM contest_organizers WHERE contest_id = ? AND user_id = ?
 			UNION
-			SELECT 1 FROM contest_juries cj
-			JOIN contests sub ON sub.parent_contest_id = cj.contest_id
-			WHERE sub.id = ? AND cj.user_id = ?
+			SELECT 1 FROM contest_organizers co
+			JOIN contests sub ON sub.parent_contest_id = co.contest_id
+			WHERE sub.id = ? AND co.user_id = ?
 		)
 	`, contestID, userID, contestID, userID, contestID, userID, contestID, userID).Scan(&count)
 	return count > 0
@@ -3436,6 +3449,18 @@ func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
 		_ = h.db.QueryRow(`SELECT COUNT(DISTINCT user_id) FROM contest_juries WHERE contest_id = ?`, contestID).Scan(&totalJuries)
 	}
 
+	var organizersCount int
+	_ = h.db.QueryRow(`
+		SELECT COUNT(DISTINCT uid) FROM (
+			SELECT created_by_id AS uid FROM contests WHERE id = ? AND created_by_id IS NOT NULL
+			UNION
+			SELECT user_id AS uid FROM contest_organizers WHERE contest_id = ?
+		)
+	`, contestID, contestID).Scan(&organizersCount)
+	if organizersCount == 0 {
+		organizersCount = 1
+	}
+
 	decidedCount := (statusCounts["accepted"] + statusCounts["rejected"])
 	judgeableCount := decidedCount + statusCounts["pending"]
 	progressPercent := 0
@@ -3459,7 +3484,7 @@ func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
 		ActiveJuries:         len(juryPerformance),
 		TotalJuries:          totalJuries,
 		TotalReviews:         totalReviews,
-		OrganizersCount:      1,
+		OrganizersCount:      organizersCount,
 		ProgressPercent:      progressPercent,
 		DecidedCount:         decidedCount,
 		RetentionPercent:     retentionPercent,
@@ -3744,20 +3769,22 @@ func (h *Handler) GetUserGlobalProfile(w http.ResponseWriter, r *http.Request) {
 		participated = append(participated, *contestMap[code])
 	}
 
-	// 2. Judged Contests & Reviews
+	// 2. Judged & Organized Contests & Reviews
 	judgedQuery := `
 		SELECT c.id, c.code, c.name, c.start_date, c.end_date, c.wiki_url,
 		       CASE 
 		         WHEN c.created_by_id = ? THEN 'owner'
+		         WHEN c.id IN (SELECT contest_id FROM contest_organizers WHERE user_id = ?) THEN 'organizer'
 		         ELSE 'jury'
 		       END as role_in_contest
 		FROM contests c
 		WHERE c.created_by_id = ?
+		   OR c.id IN (SELECT contest_id FROM contest_organizers WHERE user_id = ?)
 		   OR c.id IN (SELECT contest_id FROM contest_juries WHERE user_id = ?)
 		   OR c.id IN (SELECT a.contest_id FROM articles a JOIN reviews r ON a.id = r.article_id WHERE r.reviewer_id = ?)
 		ORDER BY c.id DESC
 	`
-	jRows, err := h.db.Query(judgedQuery, userID, userID, userID, userID)
+	jRows, err := h.db.Query(judgedQuery, userID, userID, userID, userID, userID, userID)
 	if err != nil {
 		log.Printf("[GetUserGlobalProfile] judged query error: %v", err)
 		jsonError(w, http.StatusInternalServerError, "Failed to query judged contests")
@@ -4003,18 +4030,40 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 		stRows.Close()
 	}
 
+	var contestOrgCount, contestJuryCount int
+	_ = h.db.QueryRow(`
+		SELECT COUNT(1) FROM (
+			SELECT 1 FROM contests WHERE id = ? AND created_by_id = ?
+			UNION
+			SELECT 1 FROM contests parent JOIN contests sub ON sub.parent_contest_id = parent.id WHERE sub.id = ? AND parent.created_by_id = ?
+			UNION
+			SELECT 1 FROM contest_organizers WHERE contest_id = ? AND user_id = ?
+			UNION
+			SELECT 1 FROM contest_organizers co JOIN contests sub ON sub.parent_contest_id = co.contest_id WHERE sub.id = ? AND co.user_id = ?
+		)
+	`, contestID, userID, contestID, userID, contestID, userID, contestID, userID).Scan(&contestOrgCount)
+	_ = h.db.QueryRow(`
+		SELECT COUNT(1) FROM (
+			SELECT 1 FROM contest_juries WHERE contest_id = ? AND user_id = ?
+			UNION
+			SELECT 1 FROM contest_juries cj JOIN contests sub ON sub.parent_contest_id = cj.contest_id WHERE sub.id = ? AND cj.user_id = ?
+		)
+	`, contestID, userID, contestID, userID).Scan(&contestJuryCount)
+
 	profile := models.ContestUserProfile{
-		Username:    dbUsername,
-		Role:        role,
-		ContestCode: code,
-		ContestName: contestName,
-		WikiURL:     wikiURL,
-		RankByWords: rankByWords == 1,
-		MinWords:    minWords,
-		MinBytes:    minBytes,
-		Standing:    standing,
-		Submissions: submissions,
-		Reviews:     reviews,
+		Username:           dbUsername,
+		Role:               role,
+		IsContestOrganizer: contestOrgCount > 0,
+		IsContestJury:      contestJuryCount > 0,
+		ContestCode:        code,
+		ContestName:        contestName,
+		WikiURL:            wikiURL,
+		RankByWords:        rankByWords == 1,
+		MinWords:           minWords,
+		MinBytes:           minBytes,
+		Standing:           standing,
+		Submissions:        submissions,
+		Reviews:            reviews,
 	}
 
 	jsonResponse(w, http.StatusOK, profile)

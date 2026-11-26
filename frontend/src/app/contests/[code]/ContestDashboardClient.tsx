@@ -14,7 +14,7 @@ import {
 } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
 import { getProjectMeta, getWikiInfo, getOnwikiPageLink } from "@/lib/wikis";
-import { formatDateDDMMYYYYTz } from "@/lib/time";
+import { formatDateDDMMYYYYTz, getTimeRemaining } from "@/lib/time";
 import { MetaWikiLogoIcon } from "@/components/icons/CodexIcons";
 import WikiSelector from "@/components/contests/WikiSelector";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -42,7 +42,7 @@ import {
   FileCode, CheckCheck, XCircle, AlertCircle, Layers, Plus, Globe,
   Link2, Unlink, Settings, Save, Sliders, Sparkles, UserCheck, CheckCircle, Shield, X,
   BarChart3, ShieldAlert, Download, List, ChevronDown, ChevronRight,
-  FileSpreadsheet, TrendingUp, MessageSquare, RefreshCw, LayoutDashboard
+  FileSpreadsheet, TrendingUp, MessageSquare, RefreshCw, LayoutDashboard, Eye
 } from "lucide-react";
 import { UserTagInput } from "@/components/contests/UserTagInput";
 import TalkTemplateBuilder from "@/components/contests/TalkTemplateBuilder";
@@ -367,6 +367,7 @@ export default function ContestDashboardClient({
 
   // Add community modal state (for campaigns)
   const [isAddCommunityOpen, setIsAddCommunityOpen] = useState(false);
+  const [isSubmitPickerOpen, setIsSubmitPickerOpen] = useState(false);
   const [addCommunityMode, setAddCommunityMode] = useState<"create" | "link">("create");
   const [isAddingSubContest, setIsAddingSubContest] = useState(false);
   const [newSubDbName, setNewSubDbName] = useState("bnwiki");
@@ -1593,16 +1594,12 @@ export default function ContestDashboardClient({
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 {contest.is_umbrella ? (
                   <Button
-                    onClick={() => {
-                      setActiveTab("communities");
-                      const el = document.getElementById("campaign-tabs");
-                      el?.scrollIntoView({ behavior: "smooth" });
-                    }}
+                    onClick={() => setIsSubmitPickerOpen(true)}
                     variant="default"
                     size="default"
                     className="flex-1 sm:flex-none gap-2 cursor-pointer font-semibold shadow-xs text-xs sm:text-sm px-4 py-2"
                   >
-                    <Send className="h-4 w-4" />
+                    <Upload className="h-4 w-4" />
                     <span>{t("feather-campaign-submit-cta")}</span>
                   </Button>
                 ) : contest.status !== "pending_approval" ? (
@@ -2401,6 +2398,117 @@ export default function ContestDashboardClient({
           </div>
         </div>
 
+        {/* Quick Community Submit Picker Dialog for Umbrella Campaigns */}
+        {contest.is_umbrella && (
+          <Dialog open={isSubmitPickerOpen} onOpenChange={setIsSubmitPickerOpen}>
+            <DialogContent className="sm:max-w-xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Globe className="h-5 w-5 text-primary shrink-0" />
+                  <span>{t("feather-campaign-submit-picker-title")}</span>
+                </DialogTitle>
+                <DialogDescription className="text-xs">
+                  {t("feather-campaign-submit-picker-desc")}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="max-h-[60vh] overflow-y-auto space-y-2.5 pr-1 mt-2">
+                {(!contest.sub_contests || contest.sub_contests.length === 0) ? (
+                  <div className="p-8 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/20">
+                    {t("feather-campaign-no-communities-found")}
+                  </div>
+                ) : (
+                  contest.sub_contests.map((sub) => {
+                    const pMeta = getProjectMeta(sub.wiki_dbname);
+                    const wikiInfo = getWikiInfo(sub.wiki_dbname);
+                    const subDisplayName = sub.name.includes("???")
+                      ? `${contest.name} (${wikiInfo?.nativeName || wikiInfo?.englishName || sub.wiki_dbname})`
+                      : sub.name;
+                    return (
+                      <div
+                        key={sub.code}
+                        className="p-3.5 rounded-xl border border-border/80 bg-card hover:bg-muted/30 hover:border-border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-10 w-10 rounded-lg bg-muted/60 border border-border/70 flex items-center justify-center shrink-0 p-1.5 shadow-2xs">
+                            <img
+                              src={pMeta.icon}
+                              alt=""
+                              className="h-full w-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.src = "/icons/projects/wikipedia.svg";
+                              }}
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-sm text-foreground truncate">
+                              {subDisplayName}
+                            </h4>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                              <span className="font-medium text-foreground/90">
+                                {wikiInfo?.nativeName || wikiInfo?.englishName || pMeta.name}
+                              </span>
+                              <span>•</span>
+                              <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0 h-4">
+                                {sub.wiki_dbname}
+                              </Badge>
+                              {sub.min_words > 0 && (
+                                <span className="text-[11px] font-mono">
+                                  {t("feather-campaign-min-words-pill", n(sub.min_words))}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                          <Link
+                            href={`/contests/${sub.code}`}
+                            onClick={() => setIsSubmitPickerOpen(false)}
+                            className={buttonVariants({
+                              variant: "outline",
+                              size: "sm",
+                              className: "h-8 text-xs font-medium cursor-pointer gap-1.5 px-2.5",
+                            })}
+                            title={t("feather-campaign-submit-picker-view")}
+                          >
+                            <BookOpen className="h-3.5 w-3.5" />
+                            <span>{t("feather-campaign-submit-picker-view")}</span>
+                          </Link>
+                          <Link
+                            href={`/contests/${sub.code}/submit`}
+                            onClick={() => setIsSubmitPickerOpen(false)}
+                            className={buttonVariants({
+                              variant: "default",
+                              size: "sm",
+                              className: "h-8 text-xs font-semibold cursor-pointer gap-1.5 px-3 shadow-xs",
+                            })}
+                          >
+                            <Upload className="h-3.5 w-3.5" />
+                            <span>{t("feather-campaign-submit-picker-btn")}</span>
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <DialogFooter className="pt-2 border-t border-border/60">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsSubmitPickerOpen(false)}
+                  className="text-xs cursor-pointer"
+                >
+                  {t("feather-action-close")}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
         {/* TAB: PARTICIPATING COMMUNITIES (CAMPAIGN DIRECTORY) */}
         {contest.is_umbrella && (
           <TabsContent value="communities" className="space-y-4 outline-hidden">
@@ -2669,11 +2777,20 @@ export default function ContestDashboardClient({
                 </div>
               </CardHeader>
 
-              <div className="px-4 py-2.5 bg-muted/15 border-b border-border/60 text-xs text-muted-foreground flex items-center gap-2">
-                <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span>
-                  {t("feather-campaign-communities-guide")}
-                </span>
+              <div className="px-4 py-3 bg-muted/20 border-b border-border/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs leading-relaxed">
+                <div className="flex items-start gap-2.5">
+                  <div className="h-7 w-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                    <Globe className="h-4 w-4" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <h4 className="font-semibold text-foreground text-xs">
+                      {t("feather-campaign-how-it-works-title")}
+                    </h4>
+                    <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
+                      {t("feather-campaign-how-it-works-desc")}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <CardContent className="p-4 sm:p-5">
@@ -2682,67 +2799,132 @@ export default function ContestDashboardClient({
                     {t("feather-campaign-no-communities-found")}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                     {filteredSubContests.map((sub) => {
                       const pMeta = getProjectMeta(sub.wiki_dbname);
-                      const isSubActive = sub.status === "active";
                       const wikiInfo = getWikiInfo(sub.wiki_dbname);
                       const subDisplayName = sub.name.includes("???")
                         ? `${contest.name} (${wikiInfo?.nativeName || wikiInfo?.englishName || sub.wiki_dbname})`
                         : sub.name;
+                      const subTime = getTimeRemaining(sub.start_date || contest.start_date, sub.end_date || contest.end_date);
+                      const isSubEnded = sub.status === "ended" || subTime.isEnded;
+                      const isSubUpcoming = !isSubEnded && sub.status === "active" && subTime.notStarted;
+                      const isSubActive = !isSubEnded && sub.status === "active" && !subTime.notStarted;
+                      const isSubPending = sub.status === "pending_approval";
+                      const isSubDraft = sub.status === "draft";
+
                       return (
                         <div
                           key={sub.code}
-                          className="rounded-xl border border-border/80 bg-card p-4 sm:p-4.5 shadow-2xs hover:shadow-xs hover:border-border transition-all flex flex-col justify-between gap-3.5 group"
+                          className="group flex flex-col justify-between rounded-xl border border-border/70 dark:border-border/60 bg-card p-4 hover:border-foreground/20 dark:hover:border-foreground/25 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 ease-out text-card-foreground gap-3 [content-visibility:auto]"
                         >
-                          <div className="space-y-3">
-                            <div className="flex items-start justify-between gap-2.5">
-                              <div className="flex items-start gap-2.5 min-w-0">
-                                <div className="h-9 w-9 rounded-lg bg-muted/60 border border-border/70 flex items-center justify-center shrink-0 p-1.5 shadow-2xs mt-0.5">
+                          <div className="space-y-2">
+                            {/* Meta badges & time row */}
+                            <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                                {/* Status Indicator Badge */}
+                                {(() => {
+                                  let label = sub.status;
+                                  if (isSubEnded) label = t("feather-contest-status-ended");
+                                  else if (isSubUpcoming) label = t("feather-contest-status-upcoming");
+                                  else if (isSubActive) label = t("feather-contest-status-active");
+                                  else if (isSubPending) label = t("feather-contest-status-pending-approval");
+                                  else if (isSubDraft) label = t("feather-contest-status-draft");
+
+                                  let badgeClass = "bg-muted/40 text-muted-foreground border-border/60";
+                                  let dotEl = <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 shrink-0" />;
+
+                                  if (isSubEnded) {
+                                    badgeClass = "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25";
+                                    dotEl = <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />;
+                                  } else if (isSubUpcoming) {
+                                    badgeClass = "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25";
+                                    dotEl = (
+                                      <span className="relative flex h-2 w-2 shrink-0">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+                                      </span>
+                                    );
+                                  } else if (isSubActive) {
+                                    badgeClass = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25";
+                                    dotEl = (
+                                      <span className="relative flex h-2 w-2 shrink-0">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                      </span>
+                                    );
+                                  } else if (isSubPending) {
+                                    badgeClass = "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25";
+                                    dotEl = (
+                                      <span className="relative flex h-2 w-2 shrink-0">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                                      </span>
+                                    );
+                                  } else if (isSubDraft) {
+                                    badgeClass = "bg-muted/60 text-muted-foreground border-border/70";
+                                    dotEl = <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground shrink-0" />;
+                                  }
+
+                                  return (
+                                    <div
+                                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border shrink-0 whitespace-nowrap h-5 ${badgeClass}`}
+                                    >
+                                      {dotEl}
+                                      <span>{label}</span>
+                                    </div>
+                                  );
+                                })()}
+
+                                {/* Wiki Project Badge */}
+                                <Badge
+                                  variant="outline"
+                                  className="text-[11px] font-medium gap-1.5 px-2 py-0.5 h-5 text-foreground/90 bg-muted/40 dark:bg-muted/30 border-border/70 shrink-0 whitespace-nowrap"
+                                  title={`${wikiInfo?.englishName || pMeta.name} (${sub.wiki_dbname})`}
+                                >
                                   <img
                                     src={pMeta.icon}
                                     alt=""
-                                    className="h-full w-full object-contain"
+                                    width={14}
+                                    height={14}
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="h-3.5 w-3.5 object-contain shrink-0"
                                     onError={(e) => {
                                       e.currentTarget.src = "/icons/projects/wikipedia.svg";
                                     }}
                                   />
-                                </div>
-                                <div className="min-w-0">
-                                  <h4 className="font-bold text-sm sm:text-base text-foreground leading-snug break-words">
-                                    {subDisplayName}
-                                  </h4>
-                                  <div className="flex items-center gap-1.5 mt-1 flex-wrap text-xs">
-                                    <span className="font-medium text-foreground/90">
-                                      {wikiInfo?.nativeName || wikiInfo?.englishName || pMeta.name}
+                                  <span className="font-medium text-foreground">{wikiInfo?.nativeName || wikiInfo?.englishName || pMeta.name}</span>
+                                  {sub.wiki_lang && (
+                                    <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                                      ({sub.wiki_lang})
                                     </span>
-                                    <span className="text-muted-foreground/60">•</span>
-                                    <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0 h-4">
-                                      {sub.wiki_dbname}
-                                    </Badge>
-                                    {sub.wiki_lang && (
-                                      <span className="text-[10px] text-muted-foreground uppercase font-mono">
-                                        ({sub.wiki_lang})
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
+                                  )}
+                                </Badge>
                               </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <div
-                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0 whitespace-nowrap ${
-                                    isSubActive
-                                      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25"
-                                      : "bg-muted/40 text-muted-foreground border-border/60"
-                                  }`}
-                                >
-                                  <span
-                                    className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                                      isSubActive ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/60"
-                                    }`}
-                                  />
-                                  <span>{isSubActive ? t("feather-contest-status-active") : sub.status}</span>
-                                </div>
+
+                              <span
+                                className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 shrink-0 whitespace-nowrap ml-auto"
+                                title={`${formatDate(sub.start_date || contest.start_date, { timeZone: sub.wiki_tz || contest.wiki_tz || "UTC" })} – ${formatDate(sub.end_date || contest.end_date, { timeZone: sub.wiki_tz || contest.wiki_tz || "UTC" })}`}
+                              >
+                                <Calendar className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                                <span>
+                                  {formatDate(sub.start_date || contest.start_date, { month: "short", day: "numeric", timeZone: sub.wiki_tz || contest.wiki_tz || "UTC" })} – {formatDate(sub.end_date || contest.end_date, { month: "short", day: "numeric", timeZone: sub.wiki_tz || contest.wiki_tz || "UTC" })}
+                                </span>
+                              </span>
+                            </div>
+
+                            {/* Title & Requirements / Description */}
+                            <div className="space-y-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <h3 className="text-sm sm:text-base font-bold tracking-tight line-clamp-1">
+                                  <Link
+                                    href={`/contests/${sub.code}`}
+                                    className="hover:underline text-foreground cursor-pointer"
+                                  >
+                                    {subDisplayName}
+                                  </Link>
+                                </h3>
                                 {canManageCampaign && (
                                   <Button
                                     type="button"
@@ -2750,107 +2932,143 @@ export default function ContestDashboardClient({
                                     size="sm"
                                     onClick={() => handleDetachContest(sub.id)}
                                     disabled={isDetaching === sub.id}
-                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer"
+                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded shrink-0 cursor-pointer"
                                     title={t("feather-campaign-detach-btn")}
                                   >
                                     {isDetaching === sub.id ? (
-                                      <Clock className="h-3.5 w-3.5 animate-spin" />
+                                      <Clock className="h-3 w-3 animate-spin" />
                                     ) : (
-                                      <Unlink className="h-3.5 w-3.5" />
+                                      <Unlink className="h-3 w-3" />
                                     )}
                                   </Button>
                                 )}
                               </div>
+
+                              {/* Rule Requirement Pills */}
+                              <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground pt-0.5">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/60 border border-border/70 text-[11px] font-medium text-foreground/80">
+                                  <ShieldCheck className="h-3 w-3 text-primary shrink-0" />
+                                  <span>{t("feather-campaign-local-rules-custom")}</span>
+                                </span>
+                                {showWords && sub.min_words > 0 && (
+                                  <span className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[11px] font-mono">
+                                    {t("feather-campaign-min-words-pill", n(sub.min_words))}
+                                  </span>
+                                )}
+                                {showBytes && sub.min_bytes > 0 && (
+                                  <span className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[11px] font-mono">
+                                    {t("feather-campaign-min-bytes-pill", n(sub.min_bytes))}
+                                  </span>
+                                )}
+                              </div>
                             </div>
 
-                            {/* Local Rules Pills */}
-                            <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground pt-0.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/60 border border-border/70 text-[11px] font-medium text-foreground/80">
-                                <ShieldCheck className="h-3 w-3 text-primary shrink-0" />
-                                <span>{t("feather-campaign-local-rules-custom")}</span>
+                            {/* Timeline Tracker */}
+                            <div className="space-y-1.5 pt-0.5">
+                              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                <span className="flex items-center gap-1.5 text-[10.5px] font-medium">
+                                  <Clock className={`h-3 w-3 shrink-0 ${isSubUpcoming ? "text-blue-500" : isSubActive ? "text-emerald-500" : "text-muted-foreground/70"}`} />
+                                  <span>
+                                    {isSubEnded
+                                      ? t("feather-contest-ended")
+                                      : subTime.notStarted
+                                      ? (subTime.diffDays <= 1
+                                          ? (subTime.hours > 0 ? t("feather-contest-starts-in-hours", subTime.hours) : t("feather-contest-starts-in-today"))
+                                          : t("feather-contest-starts-in-days", subTime.diffDays))
+                                      : subTime.diffDays <= 0
+                                      ? t("feather-contest-today-end")
+                                      : t("feather-contest-days-left", subTime.diffDays)}
+                                  </span>
+                                </span>
+                                <span className="font-mono text-[10px] text-muted-foreground/80">
+                                  {isSubUpcoming
+                                    ? formatDate(sub.start_date || contest.start_date, { month: "short", day: "numeric", timeZone: sub.wiki_tz || contest.wiki_tz || "UTC" })
+                                    : t("feather-time-elapsed", isSubEnded ? 100 : subTime.percent)}
+                                </span>
+                              </div>
+                              <div className="h-1.5 w-full bg-muted/60 dark:bg-muted/40 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-300 ${
+                                    isSubEnded
+                                      ? "bg-muted-foreground/40"
+                                      : isSubUpcoming
+                                      ? "bg-blue-500/30"
+                                      : subTime.diffDays <= 3
+                                      ? "bg-amber-500"
+                                      : "bg-primary"
+                                  }`}
+                                  style={{ width: `${isSubEnded ? 100 : isSubUpcoming ? 0 : subTime.percent}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Clean Metrics Row */}
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border/50">
+                              <span className="flex items-center gap-1.5" title={t("feather-contest-submitted")}>
+                                <FileText className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                <strong className="text-foreground font-semibold font-mono text-xs">{n(sub.total_articles)}</strong>
+                                <span className="text-[11px] text-muted-foreground">{t("feather-contest-submitted")}</span>
                               </span>
-                              {showWords && sub.min_words > 0 && (
-                                <span className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[11px] font-mono">
-                                  {t("feather-campaign-min-words-pill", n(sub.min_words))}
-                                </span>
-                              )}
-                              {showBytes && sub.min_bytes > 0 && (
-                                <span className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[11px] font-mono">
-                                  {t("feather-campaign-min-bytes-pill", n(sub.min_bytes))}
-                                </span>
-                              )}
-                            </div>
 
-                            {/* Stats Grid */}
-                            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/50 text-center">
-                              <div className="p-2 rounded-lg bg-muted/30 border border-border/40">
-                                <div className="text-sm font-bold text-foreground font-mono">{n(sub.total_articles)}</div>
-                                <div className="text-[11px] text-muted-foreground font-medium">{t("feather-contest-col-article")}</div>
-                              </div>
-                              <div className="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                                <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                                  {n(sub.accepted_articles)}
-                                </div>
-                                <div className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80 font-medium">
-                                  {t("feather-contest-filter-accepted")}
-                                </div>
-                              </div>
-                              <div className="p-2 rounded-lg bg-muted/30 border border-border/40">
-                                <div className="text-sm font-bold text-foreground font-mono">{n(sub.total_submitters)}</div>
-                                <div className="text-[11px] text-muted-foreground font-medium">{t("feather-contest-participants")}</div>
-                              </div>
+                              <span className="flex items-center gap-1.5" title={t("feather-contest-accepted")}>
+                                <CheckCircle2 className={`h-3.5 w-3.5 ${sub.accepted_articles > 0 ? "text-emerald-500" : "text-muted-foreground/60"}`} />
+                                <strong className="text-foreground font-semibold font-mono text-xs">{n(sub.accepted_articles)}</strong>
+                                <span className="text-[11px] text-muted-foreground">{t("feather-contest-accepted")}</span>
+                              </span>
+
+                              <span className="flex items-center gap-1.5 ml-auto text-muted-foreground" title={t("feather-contest-participants")}>
+                                <Users className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                <strong className="text-foreground font-semibold font-mono text-xs">{n(sub.total_submitters)}</strong>
+                                <span className="text-[11px]">{t("feather-contest-participants")}</span>
+                              </span>
                             </div>
                           </div>
 
-                          {/* Action Buttons */}
-                          <div className="grid grid-cols-2 gap-2.5 pt-3 border-t border-border/60">
+                          {/* Actions Footer */}
+                          <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-border/50">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                              <Link
+                                href={`/contests/${sub.code}`}
+                                className={buttonVariants({
+                                  variant: "default",
+                                  size: "sm",
+                                  className: "h-7 text-xs gap-1.5 font-medium cursor-pointer px-2.5 shadow-none shrink-0 rounded-md active:scale-[0.98] transition-transform",
+                                })}
+                              >
+                                <Eye className="h-3.5 w-3.5 shrink-0" />
+                                <span>{t("feather-action-view")}</span>
+                              </Link>
+
+                              <Link
+                                href={`/contests/${sub.code}/submit`}
+                                className={buttonVariants({
+                                  variant: "outline",
+                                  size: "sm",
+                                  className: "h-7 text-xs gap-1.5 font-medium cursor-pointer px-2.5 bg-background hover:bg-muted/60 border-border/70 shrink-0 rounded-md active:scale-[0.98] transition-all",
+                                })}
+                                title={t("feather-contest-action-submit")}
+                              >
+                                <Upload className="h-3.5 w-3.5 shrink-0" />
+                                <span>{t("feather-contest-action-submit")}</span>
+                              </Link>
+                            </div>
+
                             <Link
-                              href={`/contests/${sub.code}`}
+                              href={`/contests/${sub.code}#standings`}
                               className={buttonVariants({
                                 variant: "outline",
-                                size: "sm",
-                                className: "w-full h-8.5 text-xs font-semibold cursor-pointer justify-center gap-1.5 px-2.5 shadow-2xs hover:bg-muted/80",
+                                size: "icon-sm",
+                                className: "size-7 bg-background/50 hover:bg-muted text-muted-foreground hover:text-foreground border-border/60 hover:border-border rounded-md active:scale-[0.96] transition-all cursor-pointer shrink-0 flex items-center justify-center",
                               })}
+                              title={t("feather-contest-action-standings")}
+                              aria-label={t("feather-contest-action-standings")}
                             >
-                              <LayoutDashboard className="h-3.5 w-3.5 text-primary shrink-0" />
-                              <span className="truncate">{t("feather-campaign-open-local")}</span>
-                            </Link>
-                            <Link
-                              href={`/contests/${sub.code}/submit`}
-                              className={buttonVariants({
-                                variant: "default",
-                                size: "sm",
-                                className: "w-full h-8.5 text-xs font-semibold cursor-pointer justify-center gap-1.5 px-2.5 shadow-xs",
-                              })}
-                            >
-                              <Upload className="h-3.5 w-3.5 shrink-0" />
-                              <span className="truncate">{t("feather-campaign-submit-local")}</span>
+                              <Trophy className="h-3.5 w-3.5 text-amber-500/80" />
                             </Link>
                           </div>
                         </div>
                       );
                     })}
-
-                    {/* Quick Add Community Edition Card (Organizer / Admin) */}
-                    {canManageCampaign && (
-                      <button
-                        type="button"
-                        onClick={() => setIsAddCommunityOpen(true)}
-                        className="rounded-xl border-2 border-dashed border-border/80 hover:border-primary/60 bg-muted/10 hover:bg-muted/20 p-5 transition-all flex flex-col items-center justify-center text-center gap-2.5 min-h-[220px] group cursor-pointer"
-                      >
-                        <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Plus className="h-5 w-5" />
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
-                            {t("feather-campaign-add-subcontest-card")}
-                          </h4>
-                          <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
-                            {t("feather-campaign-add-subcontest-card-desc")}
-                          </p>
-                        </div>
-                      </button>
-                    )}
                   </div>
                 )}
               </CardContent>

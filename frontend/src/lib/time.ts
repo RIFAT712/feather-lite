@@ -216,4 +216,60 @@ export function formatDateDDMMYYYYTz(dateStr: string, tz: string = "UTC", locale
   }
 }
 
+export interface TimeRemainingResult {
+  percent: number;
+  diffDays: number;
+  hours: number;
+  diffMs: number;
+  isEnded: boolean;
+  notStarted: boolean;
+}
+
+/**
+ * Calculates live progress percentage, days/hours remaining, and status
+ * for contest countdown timelines.
+ */
+export function getTimeRemaining(startDateStr: string, endDateStr: string): TimeRemainingResult {
+  const now = Date.now();
+  const start = new Date(startDateStr).getTime();
+  const end = new Date(endDateStr).getTime();
+  const total = Math.max(1, end - start);
+  const isEnded = now >= end;
+  const notStarted = now < start;
+
+  if (notStarted) {
+    const diffMs = Math.max(0, start - now);
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+    return {
+      percent: 0,
+      diffDays,
+      hours,
+      diffMs,
+      isEnded: false,
+      notStarted: true,
+    };
+  }
+
+  if (isEnded) {
+    return {
+      percent: 100,
+      diffDays: 0,
+      hours: 0,
+      diffMs: 0,
+      isEnded: true,
+      notStarted: false,
+    };
+  }
+
+  const elapsed = Math.min(total, Math.max(0, now - start));
+  const percent = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
+  const diffMs = Math.max(0, end - now);
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+
+  return { percent, diffDays, hours, diffMs, isEnded: false, notStarted: false };
+}
+
+
 

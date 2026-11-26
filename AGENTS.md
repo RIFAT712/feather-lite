@@ -250,10 +250,18 @@ All agents modifying code in this repository must uphold the following rules:
   * **No Rigid Height Truncation:** Never combine a rigid fixed height (e.g. `h-8` = 32px) with multiline line clamping (`line-clamp-2` with `leading-relaxed` = 39px+). Doing so forcefully chops off the lower half of text glyphs. Always use fluid `min-h-[...]` or flex/grid containers.
   * **Wrap On Narrow Viewports:** All metadata rows, badges, action toolbars, and date ranges MUST use `flex-wrap` and `break-words` to prevent horizontal clipping on narrow mobile viewports (<390px).
 * **Multi-Community Campaign Directory & Card Standards:**
-  * **Balanced Grid & Action Card:** Use responsive grid `grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4.5`. For organizers and platform admins, render a dashed interactive "+ Attach another community" card that naturally fills empty columns when only 1 or 2 community editions exist.
-  * **Human-Readable Wikimedia Identity:** Never display raw database codes (e.g., `bnwiki`) in isolation. Always display the full localized wiki name (e.g., `বাংলা উইকিপিডিয়া`, `wikiInfo.nativeName || wikiInfo.englishName`) alongside the database badge (`aswiki (AS)`), with a clean Wikipedia/Wikimedia logo container.
-  * **Zero Hardcoding & Clean Localization:** All directory badges, headers, filter inputs, rule pills, and stats (`Articles`, `Accepted`, `Users`) must use Translatewiki i18n keys (`t(...)`) and localized numerals (`n(...)`). Never include parenthetical English glosses in non-English translation files.
-  * **Standard Action Icons:** Use semantic icons (`LayoutDashboard` for internal local community dashboard navigation, `Upload` for submitting an article).
+  * **1:1 Unified Contest Card Pattern:** Community editions in the Participating Communities tab MUST match the canonical Contest Card design 1:1:
+    - Status badge pill (`Upcoming`, `Active`, `Ended`) with colored pulsing dot.
+    - Wikipedia project badge with project logo, native name, and language code.
+    - Localized date range (`formatDate`).
+    - Title linking to local edition contest page (`/contests/${sub.code}`).
+    - Local rules requirement pills (`min words`, `min bytes`).
+    - Live countdown and duration progress bar (`getTimeRemaining`).
+    - Clean inline metrics row (`Submitted`, `Accepted`, `Participants`).
+    - Action buttons footer: View button (`/contests/${sub.code}`), Submit button (`/contests/${sub.code}/submit`), and Leaderboard icon button (`/contests/${sub.code}#standings`).
+  * **No Dashed Cards in Participant Grids:** Do not inject dashed "Attach community" placeholder cards into the directory grid. Admin and organizer creation/linking actions belong exclusively in the header toolbars and modal dialogs.
+  * **Frictionless Quick Submit for Umbrella Campaigns:** Central umbrella dashboards provide a dedicated Community Submit Picker modal (`feather-campaign-submit-picker-title`) allowing users to pick their Wikipedia edition and jump directly to submission in one click without confusion.
+  * **Zero Hardcoding & Clean Localization:** All directory badges, headers, filter inputs, rule pills, and stats must use Translatewiki i18n keys (`t(...)`) and localized numerals (`n(...)`). Never include parenthetical English glosses in Bengali or other non-English translation files.
 
 ### I. Modern Web Guidance (Google Chrome Platform Standards)
 * Native primitives over heavy polyfills: `<dialog>` for modals, HTML `popover` for popovers, CSS Anchor Positioning, and View Transitions API.

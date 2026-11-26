@@ -1809,6 +1809,16 @@ func (h *Handler) GetUserCreatedArticles(w http.ResponseWriter, r *http.Request)
 		creations = []mwclient.UserCreation{}
 	}
 
+	var cleanCreations []mwclient.UserCreation
+	for _, c := range creations {
+		if !mwclient.IsDisambigTitle(c.Title) {
+			cleanCreations = append(cleanCreations, c)
+		}
+	}
+	if cleanCreations == nil {
+		cleanCreations = []mwclient.UserCreation{}
+	}
+
 	rows, err := h.db.Query(`
 		SELECT a.title FROM articles a
 		JOIN users u ON a.submitter_id = u.id
@@ -1827,7 +1837,7 @@ func (h *Handler) GetUserCreatedArticles(w http.ResponseWriter, r *http.Request)
 
 	jsonResponse(w, http.StatusOK, map[string]any{
 		"username":          username,
-		"articles":          creations,
+		"articles":          cleanCreations,
 		"already_submitted": alreadySubmitted,
 	})
 }

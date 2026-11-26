@@ -687,7 +687,7 @@ func FetchUserCreatedArticles(wikiURL, username, startTS, endTS string) ([]UserC
 		}
 
 		for _, c := range res.Query.Usercontribs {
-			if !seen[c.Title] {
+			if !seen[c.Title] && !IsDisambigTitle(c.Title) {
 				seen[c.Title] = true
 				out = append(out, UserCreation{
 					Title:     c.Title,
@@ -720,10 +720,39 @@ func FetchUserCreatedArticles(wikiURL, username, startTS, endTS string) ([]UserC
 // IsDisambigTitle checks common disambiguation title patterns across Wikimedia languages
 func IsDisambigTitle(title string) bool {
 	tLower := strings.ToLower(strings.TrimSpace(title))
-	return strings.HasSuffix(tLower, " (disambiguation)") ||
-		strings.HasSuffix(tLower, " (দ্ব্যর্থতা নিরসন)") ||
-		strings.Contains(tLower, "(দ্ব্যর্থতা নিরসন)") ||
-		strings.Contains(tLower, "(disambiguation)")
+	if tLower == "" {
+		return false
+	}
+	disambigPatterns := []string{
+		"(disambiguation)",
+		"(দ্ব্যর্থতা নিরসন)",
+		"(দ্ব্যর্থতা প্রকাশ)",
+		"(দ্ব্যৰ্থতা দূৰীকৰণ)",
+		"(দ্ব্যৰ্থতা স্পষ্টকৰণ)",
+		"(বহুৱিকল্পী)",
+		"(बहुविकल्पी)",
+		"(स्पष्टता)",
+		"(توضيح)",
+		"(ابهام‌زدایی)",
+		"(ابهام زدایی)",
+		"(توضیح)",
+		"(homonymie)",
+		"(begriffsklärung)",
+		"(desambiguación)",
+		"(desambiguacion)",
+		"(desambiguação)",
+		"(desambiguacao)",
+		"(disambigua)",
+		"(значения)",
+		"(значення)",
+		"(একটি দ্ব্যর্থতা নিরসন পাতা)",
+	}
+	for _, p := range disambigPatterns {
+		if strings.Contains(tLower, p) {
+			return true
+		}
+	}
+	return false
 }
 
 // FilterDisambigsAndRedirects queries MediaWiki in chunks of 50 to strip redirects, disambiguation pages, and deleted entries.
@@ -758,24 +787,14 @@ func FilterDisambigsAndRedirects(wikiURL string, creations []UserCreation) ([]Us
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", apiEndpoint, params.Encode()), nil)
 		if err != nil {
-			for _, c := range chunk {
-				if !IsDisambigTitle(c.Title) {
-					filtered = append(filtered, c)
-				}
-			}
-			continue
+			return nil, err
 		}
 		req.Header.Set("User-Agent", DefaultUserAgent)
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
 			log.Printf("[FilterDisambigsAndRedirects] request error for chunk: %v", err)
-			for _, c := range chunk {
-				if !IsDisambigTitle(c.Title) {
-					filtered = append(filtered, c)
-				}
-			}
-			continue
+			return nil, fmt.Errorf("mediaWiki query failed: %w", err)
 		}
 
 		var res struct {
@@ -784,6 +803,10 @@ func FilterDisambigsAndRedirects(wikiURL string, creations []UserCreation) ([]Us
 					From string `json:"from"`
 					To   string `json:"to"`
 				} `json:"normalized"`
+				Redirects []struct {
+					From string `json:"from"`
+					To   string `json:"to"`
+				} `json:"redirects"`
 				Pages []struct {
 					Title     string         `json:"title"`
 					Missing   bool           `json:"missing"`
@@ -796,6 +819,7 @@ func FilterDisambigsAndRedirects(wikiURL string, creations []UserCreation) ([]Us
 		decodeErr := json.NewDecoder(resp.Body).Decode(&res)
 		resp.Body.Close()
 		if decodeErr != nil {
+			log.Printf("[FilterDisambigsAndRedirects] JSON decode error: %v", decodeErr)
 			for _, c := range chunk {
 				if !IsDisambigTitle(c.Title) {
 					filtered = append(filtered, c)
@@ -805,10 +829,22 @@ func FilterDisambigsAndRedirects(wikiURL string, creations []UserCreation) ([]Us
 		}
 
 		invalidSet := make(map[string]bool)
+		addInvalid := func(t string) {
+			clean := strings.ToLower(strings.TrimSpace(t))
+			if clean != "" {
+				invalidSet[clean] = true
+				invalidSet[strings.ReplaceAll(clean, " ", "_")] = true
+				invalidSet[strings.ReplaceAll(clean, "_", " ")] = true
+			}
+		}
+
 		for _, p := range res.Query.Pages {
 			isDisambig := false
 			if p.PageProps != nil {
 				if _, ok := p.PageProps["disambiguation"]; ok {
+					isDisambig = true
+				}
+				if _, ok := p.PageProps["disambig"]; ok {
 					isDisambig = true
 				}
 			}
@@ -816,19 +852,30 @@ func FilterDisambigsAndRedirects(wikiURL string, creations []UserCreation) ([]Us
 				isDisambig = true
 			}
 			if p.Missing || p.Redirect || isDisambig {
-				invalidSet[strings.ToLower(p.Title)] = true
+				addInvalid(p.Title)
 			}
 		}
 
+		for _, red := range res.Query.Redirects {
+			addInvalid(red.From)
+			addInvalid(red.To)
+		}
+
 		for _, norm := range res.Query.Normalized {
-			if invalidSet[strings.ToLower(norm.To)] {
-				invalidSet[strings.ToLower(norm.From)] = true
+			normTo := strings.ToLower(strings.TrimSpace(norm.To))
+			if invalidSet[normTo] || invalidSet[strings.ReplaceAll(normTo, " ", "_")] {
+				addInvalid(norm.From)
 			}
 		}
 
 		for _, c := range chunk {
-			cLower := strings.ToLower(c.Title)
-			if !invalidSet[cLower] && !IsDisambigTitle(c.Title) {
+			cClean := strings.ToLower(strings.TrimSpace(c.Title))
+			isInvalid := invalidSet[cClean] ||
+				invalidSet[strings.ReplaceAll(cClean, " ", "_")] ||
+				invalidSet[strings.ReplaceAll(cClean, "_", " ")] ||
+				IsDisambigTitle(c.Title)
+
+			if !isInvalid {
 				filtered = append(filtered, c)
 			}
 		}

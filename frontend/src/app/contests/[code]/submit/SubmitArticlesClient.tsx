@@ -49,12 +49,32 @@ import { UserAutocompleteInput } from "@/components/contests/UserAutocompleteInp
 
 function isDisambigTitle(title: string): boolean {
   const tLower = title.toLowerCase().trim();
-  return (
-    tLower.endsWith(" (disambiguation)") ||
-    tLower.endsWith(" (দ্ব্যর্থতা নিরসন)") ||
-    tLower.includes("(দ্ব্যর্থতা নিরসন)") ||
-    tLower.includes("(disambiguation)")
-  );
+  if (!tLower) return false;
+  const disambigPatterns = [
+    "(disambiguation)",
+    "(দ্ব্যর্থতা নিরসন)",
+    "(দ্ব্যর্থতা প্রকাশ)",
+    "(দ্ব্যৰ্থতা দূৰীকৰণ)",
+    "(দ্ব্যৰ্থতা স্পষ্টকৰণ)",
+    "(বহুৱিকল্পী)",
+    "(बहुविकल्पी)",
+    "(स्पष्टता)",
+    "(توضيح)",
+    "(ابهام‌زدایی)",
+    "(ابهام زدایی)",
+    "(توضیح)",
+    "(homonymie)",
+    "(begriffsklärung)",
+    "(desambiguación)",
+    "(desambiguacion)",
+    "(desambiguação)",
+    "(desambiguacao)",
+    "(disambigua)",
+    "(значения)",
+    "(значення)",
+    "(একটি দ্ব্যর্থতা নিরসন পাতা)",
+  ];
+  return disambigPatterns.some((p) => tLower.includes(p));
 }
 
 interface SubmitArticlesClientProps {
@@ -204,36 +224,59 @@ export default function SubmitArticlesClient({
         const chunkSize = 50;
         for (let i = 0; i < list.length; i += chunkSize) {
           const chunk = list.slice(i, i + chunkSize);
-          const titlesParam = chunk.map((c) => encodeURIComponent(c.title)).join("|");
+          const titlesParam = chunk.map((c) => encodeURIComponent(c.title)).join("%7C");
           try {
             const checkUrl = `${wikiEndpoint}/w/api.php?action=query&prop=info|pageprops&ppprop=disambiguation&format=json&formatversion=2&origin=*&titles=${titlesParam}`;
             const checkResp = await fetch(checkUrl);
             const checkJson = await checkResp.json();
             const invalidTitles = new Set<string>();
 
+            const addInvalid = (t: string) => {
+              const clean = t.toLowerCase().trim();
+              if (clean) {
+                invalidTitles.add(clean);
+                invalidTitles.add(clean.replace(/ /g, "_"));
+                invalidTitles.add(clean.replace(/_/g, " "));
+              }
+            };
+
             if (checkJson.query?.pages) {
               for (const p of checkJson.query.pages) {
-                const titleLower = p.title.toLowerCase();
                 const isDisambig =
-                  p.pageprops?.disambiguation !== undefined || isDisambigTitle(p.title);
+                  Boolean(p.pageprops && (p.pageprops.disambiguation !== undefined || p.pageprops.disambig !== undefined)) ||
+                  isDisambigTitle(p.title);
 
                 if (p.missing || p.redirect || isDisambig) {
-                  invalidTitles.add(titleLower);
+                  addInvalid(p.title);
                 }
+              }
+            }
+
+            if (checkJson.query?.redirects) {
+              for (const red of checkJson.query.redirects) {
+                addInvalid(red.from);
+                addInvalid(red.to);
               }
             }
 
             if (checkJson.query?.normalized) {
               for (const norm of checkJson.query.normalized) {
-                if (invalidTitles.has(norm.to.toLowerCase())) {
-                  invalidTitles.add(norm.from.toLowerCase());
+                const normToLower = norm.to.toLowerCase().trim();
+                if (invalidTitles.has(normToLower) || invalidTitles.has(normToLower.replace(/ /g, "_"))) {
+                  addInvalid(norm.from);
                 }
               }
             }
 
             for (const item of chunk) {
-              const itemLower = item.title.toLowerCase();
-              if (!invalidTitles.has(itemLower) && !isDisambigTitle(item.title)) {
+              const itemLower = item.title.toLowerCase().trim();
+              const isInvalid =
+                invalidTitles.has(itemLower) ||
+                invalidTitles.has(itemLower.replace(/ /g, "_")) ||
+                invalidTitles.has(itemLower.replace(/_/g, " ")) ||
+                isDisambigTitle(item.title);
+
+              if (!isInvalid) {
                 filteredList.push(item);
               }
             }

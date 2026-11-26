@@ -667,24 +667,21 @@ export default function ContestDashboardClient({
   const contestRoles = useMemo<ContestRoleScope>(() => ({
     organizers: contest?.organizers,
     juries: contest?.juries,
-    createdBy: contest?.created_by_username,
-  }), [contest?.organizers, contest?.juries, contest?.created_by_username]);
+  }), [contest?.organizers, contest?.juries]);
 
   const contestOrganizersList = useMemo(() => {
     const seen = new Set<string>();
     const out: string[] = [];
-    const add = (u?: string | null) => {
+    (contest?.organizers || []).forEach((u) => {
       const cleaned = (u || "").trim();
       if (!cleaned) return;
       const lower = cleaned.toLowerCase();
       if (seen.has(lower)) return;
       seen.add(lower);
       out.push(cleaned);
-    };
-    add(contest?.created_by_username);
-    (contest?.organizers || []).forEach(add);
+    });
     return out;
-  }, [contest?.created_by_username, contest?.organizers]);
+  }, [contest?.organizers]);
 
   const isOrganizer = useMemo(() => {
     if (!me?.is_authenticated) return false;

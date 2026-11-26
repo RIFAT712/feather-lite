@@ -110,8 +110,7 @@ export default function JuryHubClient({
   const contestRoles = useMemo<ContestRoleScope>(() => ({
     organizers: contest?.organizers,
     juries: contest?.juries,
-    createdBy: contest?.created_by_username,
-  }), [contest?.organizers, contest?.juries, contest?.created_by_username]);
+  }), [contest?.organizers, contest?.juries]);
 
   // Authorization Check
   const isJuryOrOwner = useMemo(() => {

@@ -3450,15 +3450,13 @@ func (h *Handler) GetContestStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var organizersCount int
-	_ = h.db.QueryRow(`
-		SELECT COUNT(DISTINCT uid) FROM (
-			SELECT created_by_id AS uid FROM contests WHERE id = ? AND created_by_id IS NOT NULL
-			UNION
-			SELECT user_id AS uid FROM contest_organizers WHERE contest_id = ?
-		)
-	`, contestID, contestID).Scan(&organizersCount)
-	if organizersCount == 0 {
-		organizersCount = 1
+	if isUmbrella == 1 {
+		_ = h.db.QueryRow(`
+			SELECT COUNT(DISTINCT user_id) FROM contest_organizers
+			WHERE contest_id = ? OR contest_id IN (SELECT id FROM contests WHERE parent_contest_id = ? AND status != 'deleted')
+		`, contestID, contestID).Scan(&organizersCount)
+	} else {
+		_ = h.db.QueryRow(`SELECT COUNT(DISTINCT user_id) FROM contest_organizers WHERE contest_id = ?`, contestID).Scan(&organizersCount)
 	}
 
 	decidedCount := (statusCounts["accepted"] + statusCounts["rejected"])
@@ -4033,15 +4031,11 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 	var contestOrgCount, contestJuryCount int
 	_ = h.db.QueryRow(`
 		SELECT COUNT(1) FROM (
-			SELECT 1 FROM contests WHERE id = ? AND created_by_id = ?
-			UNION
-			SELECT 1 FROM contests parent JOIN contests sub ON sub.parent_contest_id = parent.id WHERE sub.id = ? AND parent.created_by_id = ?
-			UNION
 			SELECT 1 FROM contest_organizers WHERE contest_id = ? AND user_id = ?
 			UNION
 			SELECT 1 FROM contest_organizers co JOIN contests sub ON sub.parent_contest_id = co.contest_id WHERE sub.id = ? AND co.user_id = ?
 		)
-	`, contestID, userID, contestID, userID, contestID, userID, contestID, userID).Scan(&contestOrgCount)
+	`, contestID, userID, contestID, userID).Scan(&contestOrgCount)
 	_ = h.db.QueryRow(`
 		SELECT COUNT(1) FROM (
 			SELECT 1 FROM contest_juries WHERE contest_id = ? AND user_id = ?

@@ -18,7 +18,10 @@ import (
 )
 
 func withChiParam(r *http.Request, key, val string) *http.Request {
-	rctx := chi.NewRouteContext()
+	rctx := chi.RouteContext(r.Context())
+	if rctx == nil {
+		rctx = chi.NewRouteContext()
+	}
 	rctx.URLParams.Add(key, val)
 	return r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 }
@@ -351,5 +354,30 @@ func TestOrganizerRoles_SettingsJudgeAndStats(t *testing.T) {
 	h.UpdateContest(orgUpdRec, orgUpdReq)
 	if orgUpdRec.Code != http.StatusOK {
 		t.Errorf("Expected 200 OK for CoOrganizer UpdateContest, got %d: %s", orgUpdRec.Code, orgUpdRec.Body.String())
+	}
+
+	// 7. Verify creator/owner is NOT automatically tagged as Organizer unless listed in organizers
+	checkOrgFlag := func(username string) bool {
+		pReq := httptest.NewRequest(http.MethodGet, "/api/contests/"+createResp.Code+"/users/"+username, nil)
+		pReq = withChiParam(pReq, "code", createResp.Code)
+		pReq = withChiParam(pReq, "username", username)
+		pRec := httptest.NewRecorder()
+		h.GetContestUserProfile(pRec, pReq)
+		if pRec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 from GetContestUserProfile(%s), got %d", username, pRec.Code)
+		}
+		var profile struct {
+			IsContestOrganizer bool `json:"is_contest_organizer"`
+		}
+		if err := json.Unmarshal(pRec.Body.Bytes(), &profile); err != nil {
+			t.Fatalf("Failed to decode ContestUserProfile(%s): %v", username, err)
+		}
+		return profile.IsContestOrganizer
+	}
+	if checkOrgFlag("CreatorUser") {
+		t.Errorf("Expected CreatorUser NOT to have IsContestOrganizer=true unless listed in organizers")
+	}
+	if !checkOrgFlag("CoOrganizer") {
+		t.Errorf("Expected CoOrganizer to have IsContestOrganizer=true")
 	}
 }

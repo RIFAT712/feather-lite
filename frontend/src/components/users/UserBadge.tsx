@@ -8,7 +8,6 @@ import { useI18n } from "@/i18n/I18nContext";
 export interface ContestRoleScope {
   organizers?: string[];
   juries?: string[];
-  createdBy?: string | null;
 }
 
 interface UserBadgeProps {
@@ -18,11 +17,6 @@ interface UserBadgeProps {
   isContestOrganizer?: boolean;
   isContestJury?: boolean;
   className?: string;
-}
-
-function matchesUsername(target: string | null | undefined, username: string | null | undefined): boolean {
-  if (!target || !username) return false;
-  return target.trim().toLowerCase() === username.trim().toLowerCase();
 }
 
 function listContainsUsername(list: string[] | undefined, username: string | null | undefined): boolean {
@@ -78,9 +72,7 @@ export default function UserBadge({
 
   const hasOrganizerTag = Boolean(
     isContestOrganizer ||
-      (contestRoles &&
-        (matchesUsername(contestRoles.createdBy, username) ||
-          listContainsUsername(contestRoles.organizers, username)))
+      (contestRoles && listContainsUsername(contestRoles.organizers, username))
   );
   const hasJuryTag = Boolean(
     isContestJury || (contestRoles && listContainsUsername(contestRoles.juries, username))

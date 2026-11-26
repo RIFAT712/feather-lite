@@ -512,8 +512,7 @@ export default function ReviewQueueClient({
   const contestRoles = useMemo<ContestRoleScope>(() => ({
     organizers: contest?.organizers,
     juries: contest?.juries,
-    createdBy: contest?.created_by_username,
-  }), [contest?.organizers, contest?.juries, contest?.created_by_username]);
+  }), [contest?.organizers, contest?.juries]);
 
   const myUsername = (user?.wiki_username || "").trim();
   const myUsernameLower = myUsername.toLowerCase();

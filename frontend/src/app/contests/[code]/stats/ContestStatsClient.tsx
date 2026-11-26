@@ -97,8 +97,7 @@ export default function ContestStatsClient({
   const contestRoles = useMemo<ContestRoleScope>(() => ({
     organizers: contest?.organizers,
     juries: contest?.juries,
-    createdBy: contest?.created_by_username,
-  }), [contest?.organizers, contest?.juries, contest?.created_by_username]);
+  }), [contest?.organizers, contest?.juries]);
 
   // Derived counts
   const counts = stats?.status_counts || { total: 0, accepted: 0, rejected: 0, pending: 0 };

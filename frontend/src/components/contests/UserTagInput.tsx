@@ -3,10 +3,11 @@
 import * as React from "react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
-import { UserCheck, User, X, Loader2, Plus } from "lucide-react";
+import { UserCheck, User, X, Loader2, Plus, AlertCircle } from "lucide-react";
 import { suggestUsers } from "@/lib/api";
 
 export interface UserTagInputProps {
+  id?: string;
   label?: string;
   value: string[];
   onChange: (users: string[]) => void;
@@ -18,9 +19,11 @@ export interface UserTagInputProps {
   hint?: string;
   compact?: boolean;
   className?: string;
+  required?: boolean;
 }
 
 export function UserTagInput({
+  id,
   label,
   value = [],
   onChange,
@@ -32,6 +35,7 @@ export function UserTagInput({
   hint,
   compact = false,
   className,
+  required = false,
 }: UserTagInputProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -159,7 +163,7 @@ export function UserTagInput({
   };
 
   return (
-    <div className="w-full" ref={containerRef}>
+    <div className="w-full" ref={containerRef} id={id}>
       {/* Selected Tags Listed on Top */}
       {value.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
@@ -206,10 +210,13 @@ export function UserTagInput({
         <div
           onClick={() => inputRef.current?.focus()}
           className={cn(
-            "peer relative flex items-center w-full rounded-md border border-input/90 bg-transparent text-foreground transition-all duration-150 cursor-text",
+            "peer relative flex items-center w-full rounded-md border bg-transparent text-foreground transition-all duration-150 cursor-text",
             compact ? "h-9 px-2.5 text-xs" : "h-11 px-3 text-xs sm:text-sm",
-            isFocused && "border-primary ring-1 ring-primary",
-            error && "border-destructive focus-within:border-destructive focus-within:ring-destructive",
+            error
+              ? "border-destructive ring-1 ring-destructive/60 focus-within:border-destructive focus-within:ring-destructive"
+              : isFocused
+              ? "border-primary ring-1 ring-primary"
+              : "border-input/90 hover:border-border",
             disabled && "cursor-not-allowed opacity-50 bg-muted/30",
             className
           )}
@@ -245,13 +252,17 @@ export function UserTagInput({
           <label
             onClick={() => inputRef.current?.focus()}
             className={cn(
-              "pointer-events-none absolute left-2.5 top-0 -translate-y-1/2 px-1.5 py-0 text-xs font-medium leading-none select-none rounded-xs z-10 transition-colors",
+              "pointer-events-none absolute left-2.5 top-0 -translate-y-1/2 px-1.5 py-0 text-xs font-medium leading-none select-none rounded-xs z-10 transition-colors flex items-center gap-0.5",
               labelBg,
-              isFocused ? "text-primary font-semibold" : "text-muted-foreground",
-              error && "text-destructive"
+              error
+                ? "text-destructive font-semibold"
+                : isFocused
+                ? "text-primary font-semibold"
+                : "text-muted-foreground"
             )}
           >
-            {label}
+            <span>{label}</span>
+            {required && <span className="text-destructive font-bold ml-0.5">*</span>}
           </label>
         )}
 
@@ -299,7 +310,10 @@ export function UserTagInput({
 
       {/* Helper text or error */}
       {error ? (
-        <p className="mt-1 text-[11px] text-destructive">{error}</p>
+        <p className="mt-1.5 text-[11px] text-destructive font-medium flex items-center gap-1.5 animate-in fade-in-0 duration-150">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          <span>{error}</span>
+        </p>
       ) : hint ? (
         <p className="mt-1 text-[11px] text-muted-foreground pl-0.5">{hint}</p>
       ) : null}

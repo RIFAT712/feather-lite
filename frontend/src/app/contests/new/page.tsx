@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -36,12 +36,14 @@ export default function NewContestPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 
   const { data: me } = useQuery({
     queryKey: ["me"],
     queryFn: fetchMe,
   });
   const isOwner = me?.role === "owner" || Boolean((me as any)?.is_owner);
+  const hasAutoAddedOrganizerRef = React.useRef(false);
 
   // Form State (NO custom code/slug input - automatically 4 random characters)
   const [name, setName] = useState("");
@@ -179,6 +181,28 @@ export default function NewContestPage() {
       setIsLoadedFromDraft(true);
     }
   }, [t]);
+
+  // Auto-populate organizer with current user if empty and no draft loaded
+  useEffect(() => {
+    if (isLoadedFromDraft && me?.wiki_username && organizers.length === 0 && !hasDraft && !hasAutoAddedOrganizerRef.current) {
+      setOrganizers([me.wiki_username]);
+      hasAutoAddedOrganizerRef.current = true;
+    }
+  }, [isLoadedFromDraft, me?.wiki_username, hasDraft, organizers.length]);
+
+  const isUmbrella = contestType === "umbrella";
+
+  const nameError = hasAttemptedSubmit && !name.trim()
+    ? t("feather-create-name-required")
+    : null;
+
+  const juryError = !isUmbrella && hasAttemptedSubmit && juries.length === 0
+    ? t("feather-create-jury-required", "At least one jury member is required to evaluate submitted articles.")
+    : null;
+
+  const organizerError = hasAttemptedSubmit && organizers.length === 0
+    ? t("feather-create-organizer-required", "At least one contest organizer is required to manage this competition.")
+    : null;
 
   // 2. Autosave draft on form input changes (debounced 400ms)
   useEffect(() => {
@@ -328,6 +352,8 @@ export default function NewContestPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setHasAttemptedSubmit(true);
+
     if (!name.trim()) {
       const msg = t("feather-create-name-required");
       setError(msg);
@@ -337,12 +363,19 @@ export default function NewContestPage() {
       return;
     }
 
-    const isUmbrella = contestType === "umbrella";
-    if (isUmbrella && selectedExistingContests.length === 0) {
-      const msg = t("feather-campaign-requires-one-comp", "Please select at least one existing competition for this multi-community campaign.");
+    if (!isUmbrella && juries.length === 0) {
+      const msg = t("feather-create-jury-required", "At least one jury member is required to evaluate submitted articles.");
       setError(msg);
       toast.error(msg);
-      document.getElementById("participating-competitions-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("juries-tag-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    if (organizers.length === 0) {
+      const msg = t("feather-create-organizer-required", "At least one contest organizer is required to manage this competition.");
+      setError(msg);
+      toast.error(msg);
+      document.getElementById("organizers-tag-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -353,7 +386,7 @@ export default function NewContestPage() {
       name: name.trim(),
       description: description.trim(),
       wiki_dbname: isUmbrella ? (selectedExistingContests[0]?.wiki_dbname || "meta") : (wikiDbName.trim() || "bnwiki"),
-      wiki_url: isUmbrella ? (selectedExistingContests[0]?.wiki_url || "") : (wikiURL.trim() || "https://bn.wikipedia.org"),
+      wiki_url: isUmbrella ? (selectedExistingContests[0]?.wiki_url || "https://meta.wikimedia.org") : (wikiURL.trim() || "https://bn.wikipedia.org"),
       wiki_lang: isUmbrella ? (selectedExistingContests[0]?.wiki_lang || "en") : (wikiLang.trim() || "bn"),
       wiki_tz: wikiTZ.trim() || "UTC",
       onwiki_page_url: onwikiPageUrl.trim() || undefined,
@@ -494,6 +527,7 @@ export default function NewContestPage() {
                 if (error) setError(null);
               }}
               required
+              error={nameError || undefined}
             />
 
             {/* Description & Rules */}
@@ -1085,18 +1119,30 @@ export default function NewContestPage() {
             {/* Part A: Jury & Organizer Usernames side-by-side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <UserTagInput
+                id="juries-tag-input"
                 label={t("feather-create-juries-label")}
                 value={juries}
-                onChange={setJuries}
+                onChange={(val) => {
+                  setJuries(val);
+                  if (error) setError(null);
+                }}
                 wikiUrl={wikiURL}
                 hint={t("feather-create-juries-hint")}
+                required
+                error={juryError || undefined}
               />
               <UserTagInput
+                id="organizers-tag-input"
                 label={t("feather-create-organizers-label")}
                 value={organizers}
-                onChange={setOrganizers}
+                onChange={(val) => {
+                  setOrganizers(val);
+                  if (error) setError(null);
+                }}
                 wikiUrl={wikiURL}
                 hint={t("feather-create-organizers-hint")}
+                required
+                error={organizerError || undefined}
               />
             </div>
 
@@ -1189,11 +1235,17 @@ export default function NewContestPage() {
           </CardHeader>
           <CardContent className="pt-4 px-4 sm:px-6 pb-5">
             <UserTagInput
+              id="organizers-tag-input"
               label={t("feather-create-organizers-label")}
               value={organizers}
-              onChange={setOrganizers}
-              wikiUrl={wikiURL}
+              onChange={(val) => {
+                setOrganizers(val);
+                if (error) setError(null);
+              }}
+              wikiUrl="https://meta.wikimedia.org"
               hint={t("feather-create-organizers-hint")}
+              required
+              error={organizerError || undefined}
             />
           </CardContent>
         </Card>

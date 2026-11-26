@@ -823,7 +823,7 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                       })}
                     >
                       <Eye className="h-3.5 w-3.5 shrink-0" />
-                      <span>{t("feather-action-view")}</span>
+                      <span>{c.is_umbrella ? t("feather-campaign-view-campaign") : t("feather-action-view")}</span>
                     </Link>
 
                     {c.is_umbrella ? (
@@ -837,8 +837,8 @@ export default function HomeClient({ initialContests, initialOverview }: HomeCli
                         title={t("feather-campaign-tab-communities")}
                       >
                         <Globe className="h-3.5 w-3.5 shrink-0 text-primary" />
-                        <span className="capitalize">
-                          {t("feather-campaign-stat-communities")}
+                        <span>
+                          {c.sub_contest_count || c.sub_contests?.length || 0} {t("feather-campaign-stat-communities")}
                         </span>
                       </Link>
                     ) : (

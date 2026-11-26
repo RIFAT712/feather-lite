@@ -424,8 +424,11 @@ export default function ParticipatingCompetitionsPicker({
         </div>
 
         {selectedContests.length === 0 ? (
-          <div className="text-center py-6 px-4 text-xs text-muted-foreground border border-dashed rounded-lg bg-card/40">
-            {t("feather-campaign-no-comps-selected")}
+          <div className="text-center py-6 px-4 text-xs text-muted-foreground border border-dashed rounded-lg bg-card/40 space-y-1.5">
+            <p className="font-medium text-foreground">{t("feather-campaign-no-comps-selected")}</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed max-w-lg mx-auto">
+              {t("feather-campaign-create-zero-allowed-hint")}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">

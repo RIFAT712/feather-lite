@@ -93,6 +93,29 @@ export default function ContestModeSelector({
           </div>
         </button>
       </div>
+
+      {/* Mode Guidance Explainer Banner */}
+      {value === "umbrella" ? (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs flex items-start gap-2.5 animate-in fade-in-0 duration-150">
+          <Layers className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <div className="text-muted-foreground leading-relaxed">
+            <strong className="font-semibold text-foreground block mb-0.5">
+              {t("feather-campaign-how-it-works-title")}
+            </strong>
+            {t("feather-campaign-how-it-works-desc")}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border/70 bg-muted/20 p-3 text-xs flex items-start gap-2.5 animate-in fade-in-0 duration-150">
+          <BookOpen className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <div className="text-muted-foreground leading-relaxed">
+            <strong className="font-semibold text-foreground block mb-0.5">
+              {t("feather-contest-type-standard")}
+            </strong>
+            {t("feather-contest-type-desc-standard")}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

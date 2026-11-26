@@ -672,7 +672,11 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 		syncContestRoleUsers(tx, "contest_juries", contestID, req.Juries, "jury", false)
 	}
 	// Persist designated organizers without adding them to contest_juries
-	syncContestRoleUsers(tx, "contest_organizers", contestID, req.Organizers, "participant", false)
+	organizerList := req.Organizers
+	if len(organizerList) == 0 && currentUser != nil && strings.TrimSpace(currentUser.WikiUsername) != "" {
+		organizerList = []string{strings.TrimSpace(currentUser.WikiUsername)}
+	}
+	syncContestRoleUsers(tx, "contest_organizers", contestID, organizerList, "participant", false)
 
 	// If this is a Multi-Community Campaign, attach any selected existing contests
 	if req.IsUmbrella {

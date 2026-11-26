@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { 
-  Trophy, FileText, CheckCircle2, Clock, Upload, 
+  Trophy, FileText, CheckCircle2, Clock, Upload, Send,
   ExternalLink, Calendar, BookOpen, Medal, ArrowLeft, ArrowRight,
   Users, ShieldCheck, Share2, Copy, Check, Search, 
   FileCode, CheckCheck, XCircle, AlertCircle, Layers, Plus, Globe,
@@ -1602,8 +1602,8 @@ export default function ContestDashboardClient({
                     size="default"
                     className="flex-1 sm:flex-none gap-2 cursor-pointer font-semibold shadow-xs text-xs sm:text-sm px-4 py-2"
                   >
-                    <Layers className="h-4 w-4" />
-                    <span>{t("feather-campaign-tab-communities")}</span>
+                    <Send className="h-4 w-4" />
+                    <span>{t("feather-campaign-submit-cta")}</span>
                   </Button>
                 ) : contest.status !== "pending_approval" ? (
                   <Link
@@ -2177,6 +2177,37 @@ export default function ContestDashboardClient({
         </Card>
       )}
 
+      {/* Multi-Community Campaign Guidance Callout */}
+      {contest.is_umbrella && (
+        <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 shadow-2xs">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
+              <Layers className="h-5 w-5" />
+            </div>
+            <div className="space-y-0.5 min-w-0">
+              <h3 className="text-xs sm:text-sm font-semibold text-foreground">
+                {t("feather-campaign-how-it-works-title")}
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t("feather-campaign-how-it-works-desc")}
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            onClick={() => {
+              setActiveTab("communities");
+              document.getElementById("campaign-tabs")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            size="sm"
+            className="shrink-0 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer self-stretch sm:self-auto"
+          >
+            <span>{t("feather-campaign-choose-community")}</span>
+            <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+          </Button>
+        </div>
+      )}
+
       {/* 3. Multi-Tab Workspace */}
       <Tabs id="campaign-tabs" value={activeTab || (contest.is_umbrella ? "communities" : "standings")} onValueChange={setActiveTab} className="w-full space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 pb-2">
@@ -2620,6 +2651,16 @@ export default function ContestDashboardClient({
                   )}
                 </div>
               </CardHeader>
+
+              <div className="px-4 py-2.5 bg-muted/15 border-b border-border/60 text-xs text-muted-foreground flex items-center gap-2">
+                <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>
+                  {t(
+                    "feather-campaign-communities-guide",
+                    "Each community edition runs with its own localized rules and juries. Choose your community below to view rules, participate, or submit articles."
+                  )}
+                </span>
+              </div>
 
               <CardContent className="p-4">
                 {filteredSubContests.length === 0 ? (

@@ -50,6 +50,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import AdminAnalyticsCharts from "@/components/charts/AdminAnalyticsCharts";
 
 export default function AdminPage() {
   const { t, n } = useI18n();
@@ -364,6 +365,9 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Platform Analytics Graphs */}
+      {contests && contests.length > 0 && <AdminAnalyticsCharts contests={contests} />}
 
       {/* Main Tabs: Pending Approvals & All Contests */}
       <Tabs defaultValue="pending" className="w-full space-y-4">

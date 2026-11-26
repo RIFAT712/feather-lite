@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatUtcToTz } from "@/lib/time";
 import UserBadge from "@/components/users/UserBadge";
+import UserProfileCharts from "@/components/charts/UserProfileCharts";
 
 interface UserGlobalProfileClientProps {
   username: string;
@@ -203,6 +204,9 @@ export default function UserGlobalProfileClient({
           </div>
         </div>
       </div>
+
+      {/* User Activity & Contribution Graphs */}
+      <UserProfileCharts profile={profile} />
 
       {/* Section 1: Participated Contests (Article History) */}
       <Card className="border-border shadow-xs overflow-hidden">

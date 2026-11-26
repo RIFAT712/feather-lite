@@ -69,6 +69,7 @@ import {
   ChevronRight,
   TrendingUp,
 } from "lucide-react";
+import JuryAnalyticsCharts from "@/components/charts/JuryAnalyticsCharts";
 
 interface JuryHubClientProps {
   code: string;
@@ -501,6 +502,11 @@ export default function JuryHubClient({
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Jury Analytics Graphs */}
+      {stats?.juries && stats.juries.length > 0 && (
+        <JuryAnalyticsCharts juries={stats.juries} />
       )}
 
       {/* 4. Tabbed Workspace: Workload, Decisions, and Wikitable */}

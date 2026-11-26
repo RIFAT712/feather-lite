@@ -84,7 +84,7 @@ export default function UserBadge({
     <span className={`inline-flex items-center gap-1 shrink-0 ${className}`}>
       {effectiveRole === "owner" && (
         <span
-          className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold border border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-400 shrink-0 whitespace-nowrap shadow-2xs select-none"
+          className="inline-flex items-center px-1.5 py-0.2 rounded-sm text-[10px] font-bold border border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-400 shrink-0 whitespace-nowrap shadow-2xs select-none"
           title={`${username || "User"} is Platform Owner`}
         >
           <span>{t("feather-role-owner")}</span>
@@ -93,7 +93,7 @@ export default function UserBadge({
 
       {effectiveRole === "steward" && (
         <span
-          className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold border border-purple-500/35 bg-purple-500/10 text-purple-700 dark:text-purple-400 shrink-0 whitespace-nowrap shadow-2xs select-none"
+          className="inline-flex items-center px-1.5 py-0.2 rounded-sm text-[10px] font-bold border border-purple-500/35 bg-purple-500/10 text-purple-700 dark:text-purple-400 shrink-0 whitespace-nowrap shadow-2xs select-none"
           title={`${username || "User"} is Wikimedia Global Steward`}
         >
           <span>{t("feather-role-steward") || t("feather-role-admin")}</span>
@@ -102,7 +102,7 @@ export default function UserBadge({
 
       {effectiveRole === "admin" && (
         <span
-          className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold border border-blue-500/35 bg-blue-500/10 text-blue-700 dark:text-blue-400 shrink-0 whitespace-nowrap shadow-2xs select-none"
+          className="inline-flex items-center px-1.5 py-0.2 rounded-sm text-[10px] font-bold border border-blue-500/35 bg-blue-500/10 text-blue-700 dark:text-blue-400 shrink-0 whitespace-nowrap shadow-2xs select-none"
           title={`${username || "User"} is Wikimedia Admin / Steward`}
         >
           <span>{t("feather-role-admin")}</span>
@@ -111,7 +111,7 @@ export default function UserBadge({
 
       {hasOrganizerTag && (
         <span
-          className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold border border-indigo-500/35 bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shrink-0 whitespace-nowrap shadow-2xs select-none"
+          className="inline-flex items-center px-1.5 py-0.2 rounded-sm text-[10px] font-bold border border-indigo-500/35 bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shrink-0 whitespace-nowrap shadow-2xs select-none"
           title={`${username || "User"} is an Organizer of this contest`}
         >
           <span>{t("feather-role-organizer")}</span>
@@ -120,7 +120,7 @@ export default function UserBadge({
 
       {hasJuryTag && (
         <span
-          className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold border border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shrink-0 whitespace-nowrap shadow-2xs select-none"
+          className="inline-flex items-center px-1.5 py-0.2 rounded-sm text-[10px] font-bold border border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shrink-0 whitespace-nowrap shadow-2xs select-none"
           title={`${username || "User"} is a Jury member of this contest`}
         >
           <span>{t("feather-role-jury")}</span>

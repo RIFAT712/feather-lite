@@ -1555,9 +1555,6 @@ export default function ContestDashboardClient({
                         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-500/10 hover:bg-indigo-500/15 text-foreground border border-indigo-500/30 hover:border-indigo-500/50 transition-colors font-medium text-xs group"
                         title={orgName}
                       >
-                        <span className="h-4 w-4 rounded-full bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-bold uppercase shrink-0">
-                          {orgName.charAt(0)}
-                        </span>
                         <span className="font-mono text-xs">{orgName}</span>
                         <UserBadge username={orgName} contestRoles={contestRoles} />
                       </Link>
@@ -1581,9 +1578,6 @@ export default function ContestDashboardClient({
                         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted/60 hover:bg-muted text-foreground border border-border/70 hover:border-border transition-colors font-medium text-xs group"
                         title={juryName}
                       >
-                        <span className="h-4 w-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold uppercase shrink-0">
-                          {juryName.charAt(0)}
-                        </span>
                         <span className="font-mono text-xs">{juryName}</span>
                         <UserBadge username={juryName} contestRoles={contestRoles} />
                       </Link>

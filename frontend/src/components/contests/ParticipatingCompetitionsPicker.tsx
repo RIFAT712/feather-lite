@@ -344,7 +344,7 @@ export default function ParticipatingCompetitionsPicker({
                     setCompSearch("");
                   }}
                   className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-                  title="Reset filters"
+                  title={t("feather-campaign-reset-filters")}
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
@@ -356,7 +356,7 @@ export default function ParticipatingCompetitionsPicker({
           <div className="max-h-56 overflow-y-auto divide-y divide-border/40 rounded-md border border-border/60 bg-background/50">
             {filteredAvailableContests.length === 0 ? (
               <div className="py-5 text-center text-xs text-muted-foreground">
-                {t("feather-campaign-no-avail-contests", "No standalone ongoing competitions found.")}
+                {t("feather-campaign-no-avail-contests")}
               </div>
             ) : (
               filteredAvailableContests.map((c) => {
@@ -368,7 +368,7 @@ export default function ParticipatingCompetitionsPicker({
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title="Ongoing" />
+                        <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title={t("feather-contest-status-active")} />
                         <span className="font-semibold text-foreground truncate">{c.name}</span>
                         <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0 h-4">
                           {c.code}
@@ -382,7 +382,7 @@ export default function ParticipatingCompetitionsPicker({
                         </span>
                         {c.total_articles > 0 && (
                           <span className="text-[10px] text-primary/80 font-medium">
-                            {c.total_articles} articles
+                            {t("feather-campaign-articles-count", String(c.total_articles))}
                           </span>
                         )}
                       </div>
@@ -406,7 +406,7 @@ export default function ParticipatingCompetitionsPicker({
                           {t("feather-campaign-already-added", "Added")}
                         </span>
                       ) : (
-                        <span>+ {t("feather-campaign-link-btn", "Add")}</span>
+                        <span>+ {t("feather-campaign-link-btn")}</span>
                       )}
                     </Button>
                   </div>
@@ -420,7 +420,7 @@ export default function ParticipatingCompetitionsPicker({
       {/* Selected Competitions List */}
       <div className="space-y-2 pt-1">
         <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Selected Competitions ({selectedContests.length}):
+          {t("feather-campaign-selected-comps", String(selectedContests.length))}
         </div>
 
         {selectedContests.length === 0 ? (
@@ -464,7 +464,7 @@ export default function ParticipatingCompetitionsPicker({
                     <div className="text-[11px] text-muted-foreground mt-0.5">
                       {new Date(c.start_date).toLocaleDateString()} –{" "}
                       {new Date(c.end_date).toLocaleDateString()}
-                      {c.total_articles > 0 && ` • ${c.total_articles} articles`}
+                      {c.total_articles > 0 && ` • ${t("feather-campaign-articles-count", String(c.total_articles))}`}
                     </div>
                   </div>
                 </div>
@@ -476,7 +476,7 @@ export default function ParticipatingCompetitionsPicker({
                     size="sm"
                     className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer shrink-0"
                     onClick={() => onRemoveContest(c.code)}
-                    title="Remove competition"
+                    title={t("feather-campaign-remove-comp")}
                   >
                     <X className="h-4 w-4" />
                   </Button>

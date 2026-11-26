@@ -1537,7 +1537,7 @@ export default function ContestDashboardClient({
 
               {/* Description */}
               <CardDescription className="text-xs sm:text-sm text-muted-foreground max-w-3xl leading-relaxed break-words whitespace-pre-line">
-                {contest.description || "No description provided."}
+                {contest.description || t("feather-contest-no-desc")}
               </CardDescription>
 
               {/* Contest Organizers Roster */}
@@ -3475,7 +3475,7 @@ export default function ContestDashboardClient({
                           {showWords && <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-words")}</TableHead>}
                           {showBytes && <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-bytes")}</TableHead>}
                           <TableHead className="text-right text-xs whitespace-nowrap">{t("feather-contest-col-date")}</TableHead>
-                          <TableHead className="text-center text-xs whitespace-nowrap">Discussion</TableHead>
+                          <TableHead className="text-center text-xs whitespace-nowrap">{t("feather-discussion-btn-empty")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -3557,11 +3557,11 @@ export default function ContestDashboardClient({
                                     ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-semibold"
                                     : "text-muted-foreground hover:text-foreground"
                                 }`}
-                                title="Open article discussion & jury criteria"
+                                title={t("feather-discussion-title")}
                               >
                                 <MessageSquare className="h-3.5 w-3.5 text-primary" />
                                 <span className="text-[11px] hidden md:inline">
-                                  {art.re_review_requested ? "Re-review" : "Discussion"}
+                                  {art.re_review_requested ? t("feather-review-tab-rereview") : t("feather-discussion-btn-empty")}
                                 </span>
                               </Button>
                             </TableCell>
@@ -3589,7 +3589,7 @@ export default function ContestDashboardClient({
                               <ExternalLink className="h-2.5 w-2.5 opacity-40 shrink-0" />
                             </a>
                             <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
-                              <span>by <span className="font-medium text-foreground">{art.submitter_username}</span></span>
+                              <span>{t("feather-contest-by-user", art.submitter_username)}</span>
                               <UserBadge username={art.submitter_username} contestRoles={contestRoles} />
                             </div>
                           </div>

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "cn";
+import { useI18n } from "@/i18n/I18nContext";
 import { Badge } from "@/components/ui/badge";
 import { UserCheck, User, X, Loader2, Plus, AlertCircle } from "lucide-react";
 import { suggestUsers } from "@/lib/api";
@@ -28,7 +29,7 @@ export function UserTagInput({
   value = [],
   onChange,
   wikiUrl,
-  placeholder = "Type username and press Enter...",
+  placeholder,
   disabled = false,
   error,
   labelBg = "bg-card",
@@ -37,6 +38,8 @@ export function UserTagInput({
   className,
   required = false,
 }: UserTagInputProps) {
+  const { t } = useI18n();
+  const effectivePlaceholder = placeholder || t("feather-usertag-placeholder");
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -186,7 +189,7 @@ export function UserTagInput({
                     removeTag(user);
                   }}
                   className="text-muted-foreground hover:text-foreground cursor-pointer -mr-0.5 p-0.5 rounded-xs transition-colors"
-                  title={`Remove ${user}`}
+                  title={t("feather-usertag-remove", user)}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -199,7 +202,7 @@ export function UserTagInput({
               onClick={() => onChange([])}
               className="text-[11px] text-muted-foreground hover:text-destructive cursor-pointer transition-colors px-1"
             >
-              Clear all
+              {t("feather-usertag-clear-all")}
             </button>
           )}
         </div>
@@ -235,7 +238,7 @@ export function UserTagInput({
               onBlur={() => setIsFocused(false)}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder={placeholder}
+              placeholder={effectivePlaceholder}
               className={cn(
                 "w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground/60",
                 compact ? "text-xs" : "text-xs sm:text-sm"
@@ -273,8 +276,8 @@ export function UserTagInput({
             className="absolute left-0 right-0 top-full mt-1 z-50 bg-card text-card-foreground border border-border rounded-xl shadow-xl overflow-hidden py-1 max-h-56 overflow-y-auto animate-in fade-in zoom-in-95 duration-100"
           >
             <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/60 flex items-center justify-between">
-              <span>Wikimedia Suggestions</span>
-              <span>Press Enter to select</span>
+              <span>{t("feather-usertag-suggestions")}</span>
+              <span>{t("feather-usertag-press-enter")}</span>
             </div>
 
             <div className="divide-y divide-border/30">

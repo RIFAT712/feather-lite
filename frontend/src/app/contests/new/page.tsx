@@ -58,11 +58,11 @@ export default function NewContestPage() {
 
   const handleAddExistingContest = (contest: AvailableContest) => {
     if (selectedExistingContests.some((c) => c.code === contest.code)) {
-      toast.error(t("feather-campaign-already-selected", "Competition is already added"));
+      toast.error(t("feather-campaign-already-selected"));
       return;
     }
     setSelectedExistingContests((prev) => [...prev, contest]);
-    toast.success(`Added ${contest.name}`);
+    toast.success(t("feather-campaign-added-toast", contest.name));
   };
 
   const handleRemoveExistingContest = (code: string) => {
@@ -197,11 +197,11 @@ export default function NewContestPage() {
     : null;
 
   const juryError = !isUmbrella && hasAttemptedSubmit && juries.length === 0
-    ? t("feather-create-jury-required", "At least one jury member is required to evaluate submitted articles.")
+    ? t("feather-create-jury-required")
     : null;
 
   const organizerError = hasAttemptedSubmit && organizers.length === 0
-    ? t("feather-create-organizer-required", "At least one contest organizer is required to manage this competition.")
+    ? t("feather-create-organizer-required")
     : null;
 
   // 2. Autosave draft on form input changes (debounced 400ms)
@@ -364,7 +364,7 @@ export default function NewContestPage() {
     }
 
     if (!isUmbrella && juries.length === 0) {
-      const msg = t("feather-create-jury-required", "At least one jury member is required to evaluate submitted articles.");
+      const msg = t("feather-create-jury-required");
       setError(msg);
       toast.error(msg);
       document.getElementById("juries-tag-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -372,7 +372,7 @@ export default function NewContestPage() {
     }
 
     if (organizers.length === 0) {
-      const msg = t("feather-create-organizer-required", "At least one contest organizer is required to manage this competition.");
+      const msg = t("feather-create-organizer-required");
       setError(msg);
       toast.error(msg);
       document.getElementById("organizers-tag-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -433,7 +433,7 @@ export default function NewContestPage() {
       }
       router.push(`/contests/${res.code}`);
     } catch (err: any) {
-      const msg = err.message || "Failed to create contest";
+      const msg = err.message || t("feather-create-failed");
       setError(msg);
       toast.error(msg);
       setIsSubmitting(false);

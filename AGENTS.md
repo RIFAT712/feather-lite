@@ -187,12 +187,18 @@ All agents modifying code in this repository must uphold the following rules:
 * **Bulk Review & Bulk Delete API:** Go backend endpoints `POST /api/articles/bulk-review` and `POST /api/articles/bulk-delete` handle batched operations returning `succeeded` and `failed` lists.
 
 ### E. Translatewiki-Compliant i18n & `l10n` Branch Synchronization
-* **No hardcoded text** in UI components.
-* All user-facing strings must be localized using keys in `frontend/src/i18n/`:
-  * `bn.json` — Bengali (idiomatic, natural, formal/polite).
-  * `en.json` — English (canonical base messages).
-  * `qqq.json` — Parameter descriptions and translator notes for Translatewiki.
-* When adding a new key, update all three files synchronously with proper numeric placeholders (`$1`, `$2`) documented in `qqq.json`.
+* **Absolute Zero Hardcoding Invariant:**
+  * **NO hardcoded strings** in UI components, modals, inputs, placeholders, tooltips, buttons, badges, table headers, toasts, or error messages.
+  * Every user-facing text snippet MUST be retrieved via `t("key", ...)` from the centralized i18n dictionary. Never leave inline English fallbacks or raw template literals in JSX.
+* **Zero Parenthetical English Glosses:**
+  * **NEVER include English terms in parentheses or brackets** in localized files (e.g., do NOT write `সমন্বয়কারী (Organizer)`, `বিচারক (Jury)`, or `ফিদার (Feather)`).
+  * Translatewiki is a professional Wikimedia localization platform; translations in target languages (Bengali, Arabic, Persian, etc.) must be written natively and cleanly in that language without auxiliary English glosses in parentheses.
+* **Synchronous 3-File Maintenance:**
+  * All strings must be maintained across:
+    * `frontend/src/i18n/bn.json` — Bengali (idiomatic, natural, formal/polite).
+    * `frontend/src/i18n/en.json` — English (canonical base messages).
+    * `frontend/src/i18n/qqq.json` — Parameter descriptions and translator notes for Translatewiki.
+  * When adding or updating a key, update all three files synchronously with proper numeric placeholders (`$1`, `$2`) documented in `qqq.json`.
 * **Mandatory `l10n` Branch Sync Invariant:**
   * The repository uses a pull-request localization workflow with Translatewiki.net (`Source branch: main`, `Push branch: l10n`).
   * Whenever any commit is pushed to `main` that touches i18n files, UI text, or source code, the `l10n` branch MUST be immediately synchronized with `main`:
@@ -236,6 +242,13 @@ All agents modifying code in this repository must uphold the following rules:
 * **Virtualization:** Table rows for contests with many submissions must use `@tanstack/react-virtual` to avoid rendering large numbers of DOM nodes.
 * **Button Primitives:** Button primitives in this repo use `@base-ui/react/button` and do not support Radix `asChild`. Use `buttonVariants({ variant, size })` on links.
 * **Modern Switch Toggles:** Option, threshold, and rule toggles across forms (Contest Settings, Contest Creation Wizard, Submit on Behalf) MUST use the accessible animated `<Switch />` primitive (`frontend/src/components/ui/switch.tsx`) built on `@base-ui/react/switch`. Never use raw native checkbox ticks for settings/rule toggles (multi-select batch lists such as Review Queue bulk selection retain standard item checkboxes).
+* **Contest Creation Form & Role Validation Invariant:**
+  * **Standard Single-Wiki Contest:** Requires ≥1 contest organizer AND ≥1 jury member.
+  * **Multi-Community Campaign (Umbrella):** Requires ≥1 contest organizer; 0 jury members are permitted on creation because juries are assigned per local community edition.
+  * **Validation Error Visual Standard:** When validation fails on submission, the invalid field container MUST be immediately scrolled into view and styled with a high-contrast red outline (`border-destructive ring-1 ring-destructive/60 focus-within:border-destructive focus-within:ring-destructive`), a red label with required asterisk (`*`), and an informative `<AlertCircle />` error message underneath detailing what is required.
+* **Mobile Responsiveness & Zero Slicing Invariant:**
+  * **No Rigid Height Truncation:** Never combine a rigid fixed height (e.g. `h-8` = 32px) with multiline line clamping (`line-clamp-2` with `leading-relaxed` = 39px+). Doing so forcefully chops off the lower half of text glyphs. Always use fluid `min-h-[...]` or flex/grid containers.
+  * **Wrap On Narrow Viewports:** All metadata rows, badges, action toolbars, and date ranges MUST use `flex-wrap` and `break-words` to prevent horizontal clipping on narrow mobile viewports (<390px).
 
 ### I. Modern Web Guidance (Google Chrome Platform Standards)
 * Native primitives over heavy polyfills: `<dialog>` for modals, HTML `popover` for popovers, CSS Anchor Positioning, and View Transitions API.

@@ -52,12 +52,24 @@ function isDisambigTitle(title: string): boolean {
   if (!tLower) return false;
   const disambigPatterns = [
     "(disambiguation)",
+    "(disambig)",
+    "(dab)",
     "(দ্ব্যর্থতা নিরসন)",
     "(দ্ব্যর্থতা প্রকাশ)",
+    "(দ্ব্যর্থতা)",
+    "(দ্ব্যর্থ নিরসন)",
+    "(দ্ব্যর্থতা নিরসন পাতা)",
+    "(দ্ব্যর্থতা দূরীকরণ)",
+    "(দ্ব্যর্থতা দুরীকরণ)",
+    "(দ্ব্যর্থবোধক)",
+    "(অর্থভেদ)",
+    "(শব্দার্থ)",
     "(দ্ব্যৰ্থতা দূৰীকৰণ)",
     "(দ্ব্যৰ্থতা স্পষ্টকৰণ)",
     "(বহুৱিকল্পী)",
+    "(বহুবিকল্প)",
     "(बहुविकल्पी)",
+    "(बहुविकल्पी शब्द)",
     "(स्पष्टता)",
     "(توضيح)",
     "(ابهام‌زدایی)",
@@ -73,6 +85,17 @@ function isDisambigTitle(title: string): boolean {
     "(значения)",
     "(значення)",
     "(একটি দ্ব্যর্থতা নিরসন পাতা)",
+    "(ujednoznacznienie)",
+    "(doorverwijspagina)",
+    "(täsmennyssivu)",
+    "(fleirtyding)",
+    "(pekerside)",
+    "(rozcestník)",
+    "(egyértelműsítő lap)",
+    "(消歧义)",
+    "(消歧義)",
+    "(曖昧さ回避)",
+    "(동음이의)",
   ];
   return disambigPatterns.some((p) => tLower.includes(p));
 }
@@ -176,7 +199,7 @@ export default function SubmitArticlesClient({
     try {
       // 1. Try server-side endpoint first using effective contest code
       const data = await fetchUserCreatedArticles(effectiveCode, targetUsername);
-      const cleanArticles = (data.articles || []).filter((a) => !isDisambigTitle(a.title));
+      const cleanArticles = (data.articles || []).filter((a) => a && a.title && !isDisambigTitle(a.title));
       setFetchedArticles(cleanArticles);
       setAlreadySubmitted(data.already_submitted || []);
       setSelectedArticles([]);
@@ -184,8 +207,14 @@ export default function SubmitArticlesClient({
       // 2. Client-side fallback directly to MediaWiki Action API via CORS with pagination continuation
       try {
         const wikiEndpoint = effectiveWikiUrl;
-        const startISO = new Date(contest.start_date).toISOString();
-        const endISO = new Date(contest.end_date).toISOString();
+        const startISO =
+          contest.rule_created_in_window === false && contest.custom_creation_start_date
+            ? new Date(contest.custom_creation_start_date).toISOString()
+            : new Date(contest.start_date).toISOString();
+        const endISO =
+          contest.rule_created_in_window === false && contest.custom_creation_end_date
+            ? new Date(contest.custom_creation_end_date).toISOString()
+            : new Date(contest.end_date).toISOString();
 
         const seen = new Set<string>();
         const list: UserArticleItem[] = [];
@@ -209,7 +238,7 @@ export default function SubmitArticlesClient({
 
           if (json.query && json.query.usercontribs) {
             for (const item of json.query.usercontribs) {
-              if (!seen.has(item.title) && !isDisambigTitle(item.title)) {
+              if (item.title && !seen.has(item.title) && !isDisambigTitle(item.title)) {
                 seen.add(item.title);
                 list.push({ title: item.title, created_at: item.timestamp });
               }
@@ -219,14 +248,14 @@ export default function SubmitArticlesClient({
           uccontinue = json.continue?.uccontinue || null;
         } while (uccontinue && pages < 100);
 
-        // Filter out redirects, disambiguation pages, and deleted pages in batches of 50
+        // Filter out redirects, disambiguation pages, and deleted pages in batches of 25 to avoid URL overflow
         const filteredList: UserArticleItem[] = [];
-        const chunkSize = 50;
+        const chunkSize = 25;
         for (let i = 0; i < list.length; i += chunkSize) {
           const chunk = list.slice(i, i + chunkSize);
           const titlesParam = chunk.map((c) => encodeURIComponent(c.title)).join("%7C");
           try {
-            const checkUrl = `${wikiEndpoint}/w/api.php?action=query&prop=info|pageprops&ppprop=disambiguation&format=json&formatversion=2&origin=*&titles=${titlesParam}`;
+            const checkUrl = `${wikiEndpoint}/w/api.php?action=query&prop=info|pageprops&format=json&formatversion=2&origin=*&titles=${titlesParam}`;
             const checkResp = await fetch(checkUrl);
             const checkJson = await checkResp.json();
             const invalidTitles = new Set<string>();
@@ -243,10 +272,28 @@ export default function SubmitArticlesClient({
             if (checkJson.query?.pages) {
               for (const p of checkJson.query.pages) {
                 const isDisambig =
-                  Boolean(p.pageprops && (p.pageprops.disambiguation !== undefined || p.pageprops.disambig !== undefined)) ||
-                  isDisambigTitle(p.title);
+                  Boolean(
+                    p.pageprops &&
+                      (p.pageprops.disambiguation !== undefined ||
+                        p.pageprops.disambig !== undefined ||
+                        p.pageprops.wikibase_item === "Q4167410" ||
+                        p.pageprops.wikibase_item === "Q22808320" ||
+                        p.pageprops.wikibase_item === "Q21128613" ||
+                        p.pageprops.wikibase_item === "Q17379835" ||
+                        (typeof p.pageprops["wikibase-shortdesc"] === "string" &&
+                          (p.pageprops["wikibase-shortdesc"].toLowerCase().includes("disambiguation") ||
+                            p.pageprops["wikibase-shortdesc"].toLowerCase().includes("দ্ব্যর্থতা") ||
+                            p.pageprops["wikibase-shortdesc"]
+                              .toLowerCase()
+                              .includes("topics referred to by the same term"))))
+                  ) || isDisambigTitle(p.title);
 
-                if (p.missing || p.redirect || isDisambig) {
+                const isRedirect =
+                  p.redirect === true ||
+                  p.redirect === "" ||
+                  (typeof p.redirect === "string" && p.redirect !== "false");
+
+                if (p.missing || isRedirect || isDisambig) {
                   addInvalid(p.title);
                 }
               }
@@ -255,14 +302,17 @@ export default function SubmitArticlesClient({
             if (checkJson.query?.redirects) {
               for (const red of checkJson.query.redirects) {
                 addInvalid(red.from);
-                addInvalid(red.to);
               }
             }
 
             if (checkJson.query?.normalized) {
               for (const norm of checkJson.query.normalized) {
                 const normToLower = norm.to.toLowerCase().trim();
-                if (invalidTitles.has(normToLower) || invalidTitles.has(normToLower.replace(/ /g, "_"))) {
+                if (
+                  invalidTitles.has(normToLower) ||
+                  invalidTitles.has(normToLower.replace(/ /g, "_")) ||
+                  invalidTitles.has(normToLower.replace(/_/g, " "))
+                ) {
                   addInvalid(norm.from);
                 }
               }
@@ -280,12 +330,9 @@ export default function SubmitArticlesClient({
                 filteredList.push(item);
               }
             }
-          } catch {
-            for (const item of chunk) {
-              if (!isDisambigTitle(item.title)) {
-                filteredList.push(item);
-              }
-            }
+          } catch (chunkErr) {
+            console.warn("[Submit] Failed to verify batch of articles against wiki API:", chunkErr);
+            // In case of query error on a chunk, do not include unverified candidates to guarantee zero redirects or disambigs
           }
         }
 
@@ -309,12 +356,16 @@ export default function SubmitArticlesClient({
   // 7. Filter & Sort Articles
   const availableArticles = useMemo(() => {
     const submittedSet = new Set(alreadySubmitted.map((s) => s.toLowerCase()));
-    return fetchedArticles.filter((a) => !submittedSet.has(a.title.toLowerCase()));
+    return fetchedArticles.filter(
+      (a) => a && a.title && !submittedSet.has(a.title.toLowerCase()) && !isDisambigTitle(a.title)
+    );
   }, [fetchedArticles, alreadySubmitted]);
 
   const submittedArticles = useMemo(() => {
     const submittedSet = new Set(alreadySubmitted.map((s) => s.toLowerCase()));
-    return fetchedArticles.filter((a) => submittedSet.has(a.title.toLowerCase()));
+    return fetchedArticles.filter(
+      (a) => a && a.title && submittedSet.has(a.title.toLowerCase()) && !isDisambigTitle(a.title)
+    );
   }, [fetchedArticles, alreadySubmitted]);
 
   const filteredAvailable = useMemo(() => {
@@ -386,12 +437,12 @@ export default function SubmitArticlesClient({
     let titlesToSubmit: string[] = [];
 
     if (activeTab === "auto") {
-      titlesToSubmit = selectedArticles;
+      titlesToSubmit = selectedArticles.filter((t) => t && !isDisambigTitle(t));
     } else {
       titlesToSubmit = manualTitles
         .split("\n")
         .map((t) => t.trim())
-        .filter(Boolean);
+        .filter((t) => t && !isDisambigTitle(t));
     }
 
     if (titlesToSubmit.length === 0) {

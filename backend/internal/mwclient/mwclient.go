@@ -414,7 +414,7 @@ type mwQueryResponse struct {
 			PageID    int            `json:"pageid"`
 			Title     string         `json:"title"`
 			Missing   bool           `json:"missing"`
-			Redirect  bool           `json:"redirect"`
+			Redirect  any            `json:"redirect"`
 			Length    int            `json:"length"`
 			Touched   string         `json:"touched"`
 			PageProps map[string]any `json:"pageprops"`
@@ -431,13 +431,58 @@ type mwQueryResponse struct {
 	} `json:"query"`
 }
 
+// isRedirectField checks whether a MediaWiki API "redirect" field represents a true redirect.
+// MediaWiki returns bool true in formatversion=2, but can return empty string "" in formatversion=1.
+func isRedirectField(val any) bool {
+	if val == nil {
+		return false
+	}
+	switch v := val.(type) {
+	case bool:
+		return v
+	case string:
+		return v != "false" && v != "0"
+	default:
+		return true
+	}
+}
+
+// isDisambigData inspects article title, MediaWiki pageprops, and Wikidata items to detect disambiguation pages.
+func isDisambigData(title string, pageProps map[string]any) bool {
+	if IsDisambigTitle(title) {
+		return true
+	}
+	if pageProps != nil {
+		if _, ok := pageProps["disambiguation"]; ok {
+			return true
+		}
+		if _, ok := pageProps["disambig"]; ok {
+			return true
+		}
+		if item, ok := pageProps["wikibase_item"].(string); ok {
+			switch strings.ToUpper(strings.TrimSpace(item)) {
+			case "Q4167410", "Q22808320", "Q21128613", "Q17379835":
+				return true
+			}
+		}
+		if desc, ok := pageProps["wikibase-shortdesc"].(string); ok {
+			descLower := strings.ToLower(desc)
+			if strings.Contains(descLower, "disambiguation") ||
+				strings.Contains(descLower, "দ্ব্যর্থতা") ||
+				strings.Contains(descLower, "topics referred to by the same term") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // FetchPageInfo queries a single page's initial creation revision and cleans wikitext.
 func FetchPageInfo(wikiURL string, title string) (*PageInfo, error) {
 	apiEndpoint := strings.TrimRight(wikiURL, "/") + "/w/api.php"
 	params := url.Values{}
 	params.Set("action", "query")
 	params.Set("prop", "info|revisions|pageprops")
-	params.Set("ppprop", "disambiguation")
 	params.Set("rvprop", "user|timestamp|size|content")
 	params.Set("rvslots", "main")
 	params.Set("rvlimit", "1")
@@ -475,6 +520,8 @@ func FetchPageInfo(wikiURL string, title string) (*PageInfo, error) {
 	var creationTime time.Time
 	wordCount := 0
 	refCount := 0
+	isRedirect := isRedirectField(page.Redirect)
+	isDisambig := isDisambigData(page.Title, page.PageProps)
 
 	if len(page.Revisions) > 0 {
 		rev := page.Revisions[0]
@@ -483,22 +530,26 @@ func FetchPageInfo(wikiURL string, title string) (*PageInfo, error) {
 		rawText := rev.Slots.Main.Content
 		wordCount = wikitext.CountWords(rawText)
 		refCount = wikitext.CountRefs(rawText)
-	}
 
-	isDisambig := false
-	if page.PageProps != nil {
-		if _, ok := page.PageProps["disambiguation"]; ok {
+		trimmed := strings.TrimSpace(rawText)
+		trimmedLower := strings.ToLower(trimmed)
+		if strings.HasPrefix(trimmedLower, "#redirect") ||
+			strings.HasPrefix(trimmed, "#পুনর্নির্দেশ") ||
+			strings.HasPrefix(trimmed, "#পুনঃনির্দেশ") ||
+			strings.HasPrefix(trimmed, "#পুনর্নিদের্শ") {
+			isRedirect = true
+		}
+		if strings.Contains(trimmedLower, "{{disambig") ||
+			strings.Contains(trimmedLower, "{{দ্ব্যর্থতা নিরসন") ||
+			strings.Contains(trimmedLower, "{{দ্ব্যর্থতা") {
 			isDisambig = true
 		}
-	}
-	if IsDisambigTitle(page.Title) {
-		isDisambig = true
 	}
 
 	return &PageInfo{
 		Title:        page.Title,
 		Exists:       true,
-		IsRedirect:   page.Redirect,
+		IsRedirect:   isRedirect,
 		IsDisambig:   isDisambig,
 		Creator:      creator,
 		CreationDate: creationTime,
@@ -709,7 +760,16 @@ func FetchUserCreatedArticles(wikiURL, username, startTS, endTS string) ([]UserC
 	// Filter out disambiguation pages, redirects, and missing/deleted pages
 	if len(out) > 0 {
 		filtered, err := FilterDisambigsAndRedirects(wikiURL, out)
-		if err == nil {
+		if err != nil {
+			log.Printf("[FetchUserCreatedArticles] FilterDisambigsAndRedirects error: %v", err)
+			var safeOut []UserCreation
+			for _, item := range out {
+				if !IsDisambigTitle(item.Title) {
+					safeOut = append(safeOut, item)
+				}
+			}
+			out = safeOut
+		} else {
 			out = filtered
 		}
 	}
@@ -725,12 +785,24 @@ func IsDisambigTitle(title string) bool {
 	}
 	disambigPatterns := []string{
 		"(disambiguation)",
+		"(disambig)",
+		"(dab)",
 		"(দ্ব্যর্থতা নিরসন)",
 		"(দ্ব্যর্থতা প্রকাশ)",
+		"(দ্ব্যর্থতা)",
+		"(দ্ব্যর্থ নিরসন)",
+		"(দ্ব্যর্থতা নিরসন পাতা)",
+		"(দ্ব্যর্থতা দূরীকরণ)",
+		"(দ্ব্যর্থতা দুরীকরণ)",
+		"(দ্ব্যর্থবোধক)",
+		"(অর্থভেদ)",
+		"(শব্দার্থ)",
 		"(দ্ব্যৰ্থতা দূৰীকৰণ)",
 		"(দ্ব্যৰ্থতা স্পষ্টকৰণ)",
 		"(বহুৱিকল্পী)",
+		"(বহুবিকল্প)",
 		"(बहुविकल्पी)",
+		"(बहुविकल्पी शब्द)",
 		"(स्पष्टता)",
 		"(توضيح)",
 		"(ابهام‌زدایی)",
@@ -746,6 +818,17 @@ func IsDisambigTitle(title string) bool {
 		"(значения)",
 		"(значення)",
 		"(একটি দ্ব্যর্থতা নিরসন পাতা)",
+		"(ujednoznacznienie)",
+		"(doorverwijspagina)",
+		"(täsmennyssivu)",
+		"(fleirtyding)",
+		"(pekerside)",
+		"(rozcestník)",
+		"(egyértelműsítő lap)",
+		"(消歧义)",
+		"(消歧義)",
+		"(曖昧さ回避)",
+		"(동음이의)",
 	}
 	for _, p := range disambigPatterns {
 		if strings.Contains(tLower, p) {
@@ -755,7 +838,7 @@ func IsDisambigTitle(title string) bool {
 	return false
 }
 
-// FilterDisambigsAndRedirects queries MediaWiki in chunks of 50 to strip redirects, disambiguation pages, and deleted entries.
+// FilterDisambigsAndRedirects queries MediaWiki in chunks of 50 using POST to strip redirects, disambiguation pages, and deleted entries.
 func FilterDisambigsAndRedirects(wikiURL string, creations []UserCreation) ([]UserCreation, error) {
 	if len(creations) == 0 {
 		return []UserCreation{}, nil
@@ -780,23 +863,11 @@ func FilterDisambigsAndRedirects(wikiURL string, creations []UserCreation) ([]Us
 		params := url.Values{}
 		params.Set("action", "query")
 		params.Set("prop", "info|pageprops")
-		params.Set("ppprop", "disambiguation")
 		params.Set("format", "json")
 		params.Set("formatversion", "2")
 		params.Set("titles", strings.Join(titleList, "|"))
 
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", apiEndpoint, params.Encode()), nil)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("User-Agent", DefaultUserAgent)
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			log.Printf("[FilterDisambigsAndRedirects] request error for chunk: %v", err)
-			return nil, fmt.Errorf("mediaWiki query failed: %w", err)
-		}
-
+		// Use HTTP POST with retry to prevent URL length overflow with large multilingual title batches
 		var res struct {
 			Query struct {
 				Normalized []struct {
@@ -810,22 +881,55 @@ func FilterDisambigsAndRedirects(wikiURL string, creations []UserCreation) ([]Us
 				Pages []struct {
 					Title     string         `json:"title"`
 					Missing   bool           `json:"missing"`
-					Redirect  bool           `json:"redirect"`
+					Redirect  any            `json:"redirect"`
 					PageProps map[string]any `json:"pageprops"`
 				} `json:"pages"`
 			} `json:"query"`
 		}
 
-		decodeErr := json.NewDecoder(resp.Body).Decode(&res)
-		resp.Body.Close()
-		if decodeErr != nil {
-			log.Printf("[FilterDisambigsAndRedirects] JSON decode error: %v", decodeErr)
-			for _, c := range chunk {
-				if !IsDisambigTitle(c.Title) {
-					filtered = append(filtered, c)
-				}
+		var querySuccess bool
+		var lastErr error
+		for attempt := 0; attempt < 3; attempt++ {
+			if attempt > 0 {
+				time.Sleep(300 * time.Millisecond)
 			}
-			continue
+
+			req, err := http.NewRequest("POST", apiEndpoint, strings.NewReader(params.Encode()))
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Set("User-Agent", DefaultUserAgent)
+
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				lastErr = err
+				log.Printf("[FilterDisambigsAndRedirects] request attempt %d failed: %v", attempt+1, err)
+				continue
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				resp.Body.Close()
+				lastErr = fmt.Errorf("HTTP %d", resp.StatusCode)
+				log.Printf("[FilterDisambigsAndRedirects] attempt %d returned HTTP %d", attempt+1, resp.StatusCode)
+				continue
+			}
+
+			decodeErr := json.NewDecoder(resp.Body).Decode(&res)
+			resp.Body.Close()
+			if decodeErr != nil {
+				lastErr = decodeErr
+				log.Printf("[FilterDisambigsAndRedirects] JSON decode error on attempt %d: %v", attempt+1, decodeErr)
+				continue
+			}
+
+			querySuccess = true
+			break
+		}
+
+		if !querySuccess {
+			return nil, fmt.Errorf("mediaWiki query failed: %w", lastErr)
 		}
 
 		invalidSet := make(map[string]bool)
@@ -839,31 +943,20 @@ func FilterDisambigsAndRedirects(wikiURL string, creations []UserCreation) ([]Us
 		}
 
 		for _, p := range res.Query.Pages {
-			isDisambig := false
-			if p.PageProps != nil {
-				if _, ok := p.PageProps["disambiguation"]; ok {
-					isDisambig = true
-				}
-				if _, ok := p.PageProps["disambig"]; ok {
-					isDisambig = true
-				}
-			}
-			if IsDisambigTitle(p.Title) {
-				isDisambig = true
-			}
-			if p.Missing || p.Redirect || isDisambig {
+			isRedirect := isRedirectField(p.Redirect)
+			isDisambig := isDisambigData(p.Title, p.PageProps)
+			if p.Missing || isRedirect || isDisambig {
 				addInvalid(p.Title)
 			}
 		}
 
 		for _, red := range res.Query.Redirects {
 			addInvalid(red.From)
-			addInvalid(red.To)
 		}
 
 		for _, norm := range res.Query.Normalized {
 			normTo := strings.ToLower(strings.TrimSpace(norm.To))
-			if invalidSet[normTo] || invalidSet[strings.ReplaceAll(normTo, " ", "_")] {
+			if invalidSet[normTo] || invalidSet[strings.ReplaceAll(normTo, " ", "_")] || invalidSet[strings.ReplaceAll(normTo, "_", " ")] {
 				addInvalid(norm.From)
 			}
 		}

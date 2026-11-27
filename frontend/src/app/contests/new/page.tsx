@@ -38,10 +38,11 @@ export default function NewContestPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 
-  const { data: me } = useQuery({
+  const { data: me, isLoading: isLoadingMe } = useQuery({
     queryKey: ["me"],
     queryFn: fetchMe,
   });
+  const isAuthenticated = Boolean(me?.is_authenticated && me?.wiki_username);
   const isOwner = me?.role === "owner" || Boolean((me as any)?.is_owner);
   const hasAutoAddedOrganizerRef = React.useRef(false);
 
@@ -354,6 +355,14 @@ export default function NewContestPage() {
     e.preventDefault();
     setHasAttemptedSubmit(true);
 
+    if (!isAuthenticated) {
+      const msg = t("feather-create-login-required", "You must be logged in to create a contest.");
+      setError(msg);
+      toast.error(msg);
+      router.push("/login?return_to=/contests/new");
+      return;
+    }
+
     if (!name.trim()) {
       const msg = t("feather-create-name-required");
       setError(msg);
@@ -363,7 +372,8 @@ export default function NewContestPage() {
       return;
     }
 
-    if (!isUmbrella && juries.length === 0) {
+    const cleanJuries = isUmbrella ? [] : juries.map((j) => j?.trim()).filter(Boolean);
+    if (!isUmbrella && cleanJuries.length === 0) {
       const msg = t("feather-create-jury-required");
       setError(msg);
       toast.error(msg);
@@ -371,7 +381,8 @@ export default function NewContestPage() {
       return;
     }
 
-    if (organizers.length === 0) {
+    const cleanOrganizers = organizers.map((o) => o?.trim()).filter(Boolean);
+    if (cleanOrganizers.length === 0) {
       const msg = t("feather-create-organizer-required");
       setError(msg);
       toast.error(msg);
@@ -439,6 +450,52 @@ export default function NewContestPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoadingMe) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 py-24 max-w-xl text-center flex flex-col items-center justify-center space-y-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-xs text-muted-foreground">{t("feather-loading", "Loading...")}</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 py-16 max-w-xl text-center">
+        <Card className="border-border shadow-md p-8 sm:p-12 space-y-6 bg-card">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <ShieldAlert className="h-8 w-8" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              {t("feather-create-login-required-title", "Authentication Required")}
+            </h1>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+              {t(
+                "feather-create-login-required-desc",
+                "You must log in with your Wikimedia account to create and organize contests on Feather."
+              )}
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href="/login?return_to=/contests/new" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full font-semibold gap-2 shadow-xs cursor-pointer">
+                <Globe className="h-4 w-4" />
+                <span>{t("feather-navbar-login", "Log In with Wikimedia")}</span>
+              </Button>
+            </Link>
+            <Link href="/" className="w-full sm:w-auto">
+              <Button variant="outline" size="lg" className="w-full cursor-pointer">
+                <ArrowLeft className="h-4 w-4 rtl:rotate-180 me-1.5" />
+                <span>{t("feather-profile-back-contests", "Back to contests")}</span>
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-8 py-8 max-w-4xl">

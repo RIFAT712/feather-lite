@@ -514,6 +514,13 @@ func generateContestCode() string {
 }
 
 func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
+	// 1. Strictly enforce authentication - user MUST be logged in
+	currentUser := auth.GetUser(r.Context())
+	if currentUser == nil || currentUser.UserID <= 0 {
+		jsonError(w, http.StatusUnauthorized, "Authentication required to create a contest")
+		return
+	}
+
 	var req models.CreateContestRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		jsonError(w, http.StatusBadRequest, "Invalid request JSON payload")
@@ -524,6 +531,35 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 	if req.Name == "" {
 		jsonError(w, http.StatusBadRequest, "Contest name is required")
 		return
+	}
+
+	// 2. Validate organizers - at least 1 organizer is required
+	cleanOrganizers := make([]string, 0)
+	for _, org := range req.Organizers {
+		if t := strings.TrimSpace(org); t != "" {
+			cleanOrganizers = append(cleanOrganizers, t)
+		}
+	}
+	if len(cleanOrganizers) == 0 && strings.TrimSpace(currentUser.WikiUsername) != "" {
+		cleanOrganizers = append(cleanOrganizers, strings.TrimSpace(currentUser.WikiUsername))
+	}
+	if len(cleanOrganizers) == 0 {
+		jsonError(w, http.StatusBadRequest, "At least one contest organizer is required")
+		return
+	}
+
+	// 3. Validate juries - for standard contests, at least 1 jury member is required
+	cleanJuries := make([]string, 0)
+	if !req.IsUmbrella {
+		for _, j := range req.Juries {
+			if t := strings.TrimSpace(j); t != "" {
+				cleanJuries = append(cleanJuries, t)
+			}
+		}
+		if len(cleanJuries) == 0 {
+			jsonError(w, http.StatusBadRequest, "At least one jury member is required")
+			return
+		}
 	}
 
 	// Always generate a random 4-character code (lowercase alphanumeric)
@@ -569,11 +605,7 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	var createdByID *int64
-	currentUser := auth.GetUser(r.Context())
-	if currentUser != nil && currentUser.UserID > 0 {
-		createdByID = &currentUser.UserID
-	}
+	createdByID := &currentUser.UserID
 
 	isUmbrellaInt := 0
 	if req.IsUmbrella {
@@ -667,16 +699,12 @@ func (h *Handler) CreateContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build jury list - only include juries explicitly specified in req.Juries
+	// Build jury list - only include juries explicitly specified in cleanJuries
 	if !req.IsUmbrella {
-		syncContestRoleUsers(tx, "contest_juries", contestID, req.Juries, "jury", false)
+		syncContestRoleUsers(tx, "contest_juries", contestID, cleanJuries, "jury", false)
 	}
 	// Persist designated organizers without adding them to contest_juries
-	organizerList := req.Organizers
-	if len(organizerList) == 0 && currentUser != nil && strings.TrimSpace(currentUser.WikiUsername) != "" {
-		organizerList = []string{strings.TrimSpace(currentUser.WikiUsername)}
-	}
-	syncContestRoleUsers(tx, "contest_organizers", contestID, organizerList, "participant", false)
+	syncContestRoleUsers(tx, "contest_organizers", contestID, cleanOrganizers, "participant", false)
 
 	// If this is a Multi-Community Campaign, attach any selected existing contests
 	if req.IsUmbrella {

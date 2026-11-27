@@ -148,17 +148,59 @@ export const LIGHT_CSS = `
   img { max-width: 100%; height: auto; }
 `;
 
-export function buildWikiPreviewSrcdoc(html: string, wikiUrl: string = "https://bn.wikipedia.org"): string {
+export const DARK_CSS = `
+  :root { color-scheme: dark; }
+  html, body {
+    background: #09090b !important;
+    color: #e4e4e7 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", "Kalpurush", "SolaimanLipi", sans-serif !important;
+    font-size: 15px;
+    line-height: 1.75;
+    margin: 0;
+    padding: 16px 20px 48px;
+    max-width: 900px;
+  }
+  a { color: #60a5fa !important; text-decoration: none; }
+  a:visited { color: #c084fc !important; }
+  a.new, a.new:visited { color: #f87171 !important; }
+  a:hover { text-decoration: underline; color: #93c5fd !important; }
+  * { box-sizing: border-box; }
+  table, .wikitable { border-collapse: collapse; background: #18181b !important; color: #e4e4e7 !important; border-radius: 8px; margin: 1em 0; border: 1px solid rgba(255, 255, 255, 0.1) !important; }
+  th, td { border: 1px solid rgba(255, 255, 255, 0.08) !important; padding: 7px 12px; color: #e4e4e7 !important; font-size: 14px; }
+  th { background: #27272a !important; color: #fafafa !important; font-weight: 600; text-align: left; }
+  tr:nth-child(even) td { background: #18181b !important; }
+  .NavFrame { border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 8px; background: #18181b !important; margin: 12px 0; overflow: hidden; }
+  .NavHead { background: #27272a !important; color: #fafafa !important; padding: 6px 12px !important; cursor: pointer !important; font-weight: 600; }
+  .NavContent { background: #18181b !important; padding: 8px 12px; }
+  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #27272a !important; color: #fafafa !important; }
+  .mw-collapsible-toggle { cursor: pointer; color: #a1a1aa !important; font-weight: 500; }
+  h1, h2, h3, h4, h5 { color: #fafafa !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; padding-bottom: 4px; margin-top: 1.2em; font-weight: 600; }
+  #toc, .toc, .infobox { background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 8px; padding: 10px; margin: 1em 0; color: #e4e4e7 !important; }
+  .mw-editsection, .mw-editsection-bracket { display: none !important; }
+  ol, ul, dl { color: #e4e4e7 !important; }
+  li, dt, dd { color: #e4e4e7 !important; }
+  .IPA, .mention, .gloss { color: #e4e4e7 !important; }
+  .mw-parser-output { color: #e4e4e7 !important; }
+  img { max-width: 100%; height: auto; }
+`;
+
+export function buildWikiPreviewSrcdoc(
+  html: string,
+  wikiUrl: string = "https://bn.wikipedia.org",
+  isDark: boolean = false,
+  lang: string = "bn"
+): string {
   const safeWikiUrl = wikiUrl.endsWith("/") ? wikiUrl : `${wikiUrl}/`;
   const baseHref = safeWikiUrl.includes("/wiki/") ? safeWikiUrl : `${safeWikiUrl}wiki/`;
   const body = html || '<p style="color:#72777d; font-style:italic;">Preview not available.</p>';
+  const css = isDark ? DARK_CSS : LIGHT_CSS;
 
   return `<!DOCTYPE html>
-<html lang="bn">
+<html lang="${lang}">
 <head>
 <meta charset="utf-8">
 <base href="${baseHref}">
-<style>${LIGHT_CSS}</style>
+<style>${css}</style>
 </head>
 <body class="mw-body mw-parser-output">
 ${body}

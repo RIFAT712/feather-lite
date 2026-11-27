@@ -64,183 +64,7 @@ import {
   UserSession,
   KeysetResponse,
 } from "@/lib/api";
-
-const COLLAPSIBLE_JS = `
-  (function() {
-    function initNavFrames() {
-      document.querySelectorAll('.NavFrame').forEach(function(frame) {
-        var head = frame.querySelector('.NavHead');
-        var content = frame.querySelector('.NavContent');
-        if (!head || !content) return;
-        content.style.display = 'none';
-        var toggle = head.querySelector('.NavToggle a');
-        if (!toggle) {
-          var wrapper = document.createElement('span');
-          wrapper.className = 'NavToggle';
-          wrapper.style.cssText = 'float:right; font-weight:normal; font-size:smaller; padding-left: 8px;';
-          toggle = document.createElement('a');
-          toggle.href = '#';
-          wrapper.appendChild(toggle);
-          head.appendChild(wrapper);
-        }
-        toggle.textContent = '▶';
-        head.style.cursor = 'pointer';
-        head.addEventListener('click', function(e) {
-          e.preventDefault();
-          var hidden = content.style.display === 'none';
-          content.style.display = hidden ? '' : 'none';
-          toggle.textContent = hidden ? '▼' : '▶';
-        });
-      });
-    }
-
-    function initVsToggles() {
-      document.querySelectorAll('.vsToggleElement').forEach(function(el) {
-        var table = el.closest('table');
-        if (!table) return;
-        var anchor = el.querySelector('.NavToggle a');
-        if (!anchor) {
-          var wrapper = document.createElement('span');
-          wrapper.className = 'NavToggle';
-          wrapper.style.cssText = 'float:right; font-weight:normal; font-size:smaller; padding-left: 8px;';
-          anchor = document.createElement('a');
-          anchor.href = '#';
-          wrapper.appendChild(anchor);
-          el.appendChild(wrapper);
-        }
-        var shows = table.querySelectorAll('.vsShow');
-        var hides = table.querySelectorAll('.vsHide');
-        shows.forEach(function(r){ r.style.display = 'none'; });
-        hides.forEach(function(r){ r.style.display = ''; });
-        anchor.textContent = '▶';
-        el.style.cursor = 'pointer';
-        el.addEventListener('click', function(e) {
-          e.preventDefault();
-          var isExpanded = anchor.textContent.includes('▼');
-          if (isExpanded) {
-            shows.forEach(function(r){ r.style.display = 'none'; });
-            hides.forEach(function(r){ r.style.display = ''; });
-            anchor.textContent = '▶';
-          } else {
-            shows.forEach(function(r){ r.style.display = ''; });
-            hides.forEach(function(r){ r.style.display = 'none'; });
-            anchor.textContent = '▼';
-          }
-        });
-      });
-    }
-
-    function initMwCollapsibles() {
-      document.querySelectorAll('.mw-collapsible, table.collapsed, table.mw-collapsed').forEach(function(el) {
-        var isTable = el.tagName === 'TABLE';
-        var head = isTable ? el.querySelector('tr') : el.firstElementChild;
-        if (!head) return;
-        var toggler = el.querySelector('.mw-collapsible-toggle');
-        if (!toggler) {
-          toggler = document.createElement('span');
-          toggler.className = 'mw-collapsible-toggle';
-          toggler.style.cssText = 'float:right; cursor:pointer; user-select:none; font-size:smaller; padding-left:8px;';
-          var th = head.querySelector('th') || head.querySelector('td') || head;
-          if(th) th.appendChild(toggler);
-        }
-        toggler.textContent = '▶';
-        if (isTable) {
-          var rows = el.querySelectorAll('tr');
-          rows.forEach(function(row, idx) { if (idx > 0) row.style.display = 'none'; });
-        } else {
-          var content = el.querySelector('.mw-collapsible-content');
-          if (content) { content.style.display = 'none'; }
-          else { Array.from(el.children).forEach(function(child, idx) { if (idx > 0) child.style.display = 'none'; }); }
-        }
-        head.style.cursor = 'pointer';
-        head.addEventListener('click', function(e) {
-          e.preventDefault();
-          var isCollapsed = toggler.textContent.includes('▶');
-          toggler.textContent = isCollapsed ? '▼' : '▶';
-          if (isTable) {
-            var rows = el.querySelectorAll('tr');
-            rows.forEach(function(row, idx) { if (idx > 0) row.style.display = isCollapsed ? '' : 'none'; });
-          } else {
-            var content = el.querySelector('.mw-collapsible-content');
-            if (content) { content.style.display = isCollapsed ? '' : 'none'; }
-            else { Array.from(el.children).forEach(function(child, idx) { if (idx > 0) child.style.display = isCollapsed ? '' : 'none'; }); }
-          }
-        });
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-      initNavFrames(); initVsToggles(); initMwCollapsibles();
-    });
-    if (document.readyState !== 'loading') {
-      initNavFrames(); initVsToggles(); initMwCollapsibles();
-    }
-  })();
-`;
-
-const LIGHT_CSS = `
-  :root { color-scheme: light; }
-  html, body {
-    background: #ffffff !important;
-    color: #18181b !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", "Kalpurush", "SolaimanLipi", sans-serif !important;
-    font-size: 15px;
-    line-height: 1.75;
-    margin: 0;
-    padding: 16px 24px 48px;
-    max-width: 900px;
-  }
-  a { color: #2563eb !important; text-decoration: none; }
-  a:visited { color: #7c3aed !important; }
-  a.new, a.new:visited { color: #dc2626 !important; }
-  a:hover { text-decoration: underline; color: #1d4ed8 !important; }
-  * { box-sizing: border-box; }
-  table, .wikitable { border-collapse: collapse; background: #ffffff !important; color: #18181b !important; border-radius: 8px; margin: 1em 0; }
-  th, td { border: 1px solid #e4e4e7 !important; padding: 7px 12px; color: #18181b !important; font-size: 14px; }
-  th { background: #f4f4f5 !important; font-weight: 600; color: #18181b !important; text-align: left; }
-  tr:nth-child(even) td { background: #fafafa !important; }
-  .NavFrame { border: 1px solid #e4e4e7 !important; border-radius: 8px; background: #ffffff !important; margin: 12px 0; overflow: hidden; }
-  .NavHead { background: #f4f4f5 !important; color: #18181b !important; padding: 6px 12px !important; cursor: pointer !important; font-weight: 600; }
-  .NavContent { background: #ffffff !important; padding: 8px 12px; }
-  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #f4f4f5 !important; color: #18181b !important; }
-  .mw-collapsible-toggle { cursor: pointer; color: #71717a !important; font-weight: 500; }
-  h1, h2, h3, h4, h5 { color: #18181b !important; border-bottom: 1px solid #e4e4e7 !important; padding-bottom: 4px; margin-top: 1.2em; font-weight: 600; }
-  #toc, .toc, .infobox { background: #f4f4f5 !important; border: 1px solid #e4e4e7 !important; border-radius: 8px; padding: 10px; margin: 1em 0; }
-  .mw-editsection, .mw-editsection-bracket { display: none !important; }
-  img { max-width: 100%; height: auto; }
-`;
-
-const DARK_CSS = `
-  :root { color-scheme: dark; }
-  html, body {
-    background: #09090b !important;
-    color: #e4e4e7 !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", "Kalpurush", "SolaimanLipi", sans-serif !important;
-    font-size: 15px;
-    line-height: 1.75;
-    margin: 0;
-    padding: 16px 24px 48px;
-    max-width: 900px;
-  }
-  a { color: #60a5fa !important; text-decoration: none; }
-  a:visited { color: #c084fc !important; }
-  a.new, a.new:visited { color: #f87171 !important; }
-  a:hover { text-decoration: underline; color: #93c5fd !important; }
-  * { box-sizing: border-box; }
-  table, .wikitable { border-collapse: collapse; background: #18181b !important; color: #e4e4e7 !important; border-radius: 8px; margin: 1em 0; border: 1px solid rgba(255, 255, 255, 0.1) !important; }
-  th, td { border: 1px solid rgba(255, 255, 255, 0.08) !important; padding: 7px 12px; color: #e4e4e7 !important; font-size: 14px; }
-  th { background: #27272a !important; color: #fafafa !important; font-weight: 600; text-align: left; }
-  tr:nth-child(even) td { background: #18181b !important; }
-  .NavFrame { border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 8px; background: #18181b !important; margin: 12px 0; overflow: hidden; }
-  .NavHead { background: #27272a !important; color: #fafafa !important; padding: 6px 12px !important; cursor: pointer !important; font-weight: 600; }
-  .NavContent { background: #18181b !important; padding: 8px 12px; }
-  .vsToggleElement[style*='background'], th[class~='vsToggleElement'] { background: #27272a !important; color: #fafafa !important; }
-  .mw-collapsible-toggle { cursor: pointer; color: #a1a1aa !important; font-weight: 500; }
-  h1, h2, h3, h4, h5 { color: #fafafa !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; padding-bottom: 4px; margin-top: 1.2em; font-weight: 600; }
-  #toc, .toc, .infobox { background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 8px; padding: 10px; margin: 1em 0; color: #e4e4e7 !important; }
-  .mw-editsection, .mw-editsection-bracket { display: none !important; }
-  img { max-width: 100%; height: auto; }
-`;
+import { buildWikiPreviewSrcdoc } from "./wikiPreviewHelper";
 
 function formatDateDayFirst(val?: string | null) {
   if (!val) return "—";
@@ -307,12 +131,6 @@ const normalizeText = (value: string) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-const DECISION_LABEL: Record<string, string> = {
-  accepted: "Accepted",
-  rejected: "Rejected",
-  skipped: "Skipped",
-};
-
 const DECISION_RANK: Record<string, number> = {
   accepted: 0,
   rejected: 1,
@@ -320,13 +138,13 @@ const DECISION_RANK: Record<string, number> = {
 };
 
 const SHORTCUT_ACTIONS = [
-  { id: "accept", label: "Accept the current article", default: "a" },
-  { id: "reject", label: "Reject the current article", default: "r" },
-  { id: "skip", label: "Skip to the next article without deciding", default: "s" },
-  { id: "comment", label: "Focus the comment box", default: "c" },
-  { id: "undo", label: "Undo the last decision", default: "u" },
-  { id: "wikitext", label: "Show or hide the raw wikitext panel", default: "w" },
-  { id: "queue", label: "Show or hide the queue drawer", default: "q" },
+  { id: "accept", i18nKey: "feather-review-shortcut-accept-desc", default: "a" },
+  { id: "reject", i18nKey: "feather-review-shortcut-reject-desc", default: "r" },
+  { id: "skip", i18nKey: "feather-review-shortcut-skip-desc", default: "s" },
+  { id: "comment", i18nKey: "feather-review-shortcut-comment-desc", default: "c" },
+  { id: "undo", i18nKey: "feather-review-shortcut-undo-desc", default: "u" },
+  { id: "wikitext", i18nKey: "feather-review-shortcut-wikitext-desc", default: "w" },
+  { id: "queue", i18nKey: "feather-review-shortcut-queue-desc", default: "q" },
 ];
 const DEFAULT_SHORTCUTS = Object.fromEntries(SHORTCUT_ACTIONS.map((a) => [a.id, a.default]));
 const RESERVED_SHORTCUT_KEYS = new Set(["escape", "tab", "/", "?"]);
@@ -683,46 +501,34 @@ export default function ReviewQueueClient({
         const res = await fetch(
           `${base}/w/api.php?action=parse&page=${encodeURIComponent(
             title
-          )}&format=json&prop=text%7Cwikitext&origin=*`
+          )}&format=json&prop=text%7Cwikitext&redirects=1&origin=*`
         );
         const data = await res.json();
         const body =
-          data.parse?.text?.["*"] ?? '<p style="color:#94a3b8">Preview not available.</p>';
+          data.parse?.text?.["*"] ?? `<p style="color:#94a3b8">${t("feather-review-wikitext-empty")}</p>`;
         if (requestId !== previewRequestIdRef.current) return;
         const wikitext = data.parse?.wikitext?.["*"] ?? "";
         setWikitextSource(wikitext);
-        const css = isDark ? DARK_CSS : LIGHT_CSS;
-        setPreviewSrcdoc(`<!DOCTYPE html>
-<html lang="bn">
-<head>
-<meta charset="utf-8">
-<base href="${base}/wiki/">
-<style>${css}</style>
-</head>
-<body class="mw-body mw-parser-output">
-${body}
-<script>${COLLAPSIBLE_JS}<\/script>
-</body>
-</html>`);
+        setPreviewSrcdoc(buildWikiPreviewSrcdoc(body, base, isDark, contest?.wiki_lang || "bn"));
       } catch (e) {
         console.error(e);
         if (requestId === previewRequestIdRef.current) {
           setPreviewSrcdoc(
-            `<!DOCTYPE html><html><body style="color:#20364d;background:#f5f8fb;padding:24px">Error loading preview.</body></html>`
+            `<!DOCTYPE html><html><body style="color:#20364d;background:#f5f8fb;padding:24px">${t("feather-review-preview-error")}</body></html>`
           );
         }
       } finally {
         if (requestId === previewRequestIdRef.current) setIsLoadingPreview(false);
       }
     },
-    [contest?.wiki_url, isDark]
+    [contest?.wiki_lang, contest?.wiki_url, isDark, t]
   );
 
   useEffect(() => {
     if (currentArticle?.title) {
       fetchPreview(currentArticle.title);
     }
-  }, [isDark]);
+  }, [fetchPreview, isDark]);
 
   const getMyLatestDecision = useCallback(
     (article: any) => {
@@ -742,6 +548,16 @@ ${body}
       return myReviews[myReviews.length - 1].comment || "";
     },
     [myUsername]
+  );
+
+  const getDecisionLabel = useCallback(
+    (heading: string) => {
+      if (heading === "accepted") return t("feather-review-block-accepted");
+      if (heading === "rejected") return t("feather-review-block-rejected");
+      if (heading === "skipped") return t("feather-review-block-skipped");
+      return heading;
+    },
+    [t]
   );
 
   // Select article
@@ -764,7 +580,11 @@ ${body}
       }
 
       setCurrentArticle(article);
-      setComment(getMyLatestComment(article));
+      const prevComment = getMyLatestComment(article);
+      const isDefaultBulk =
+        prevComment === "Bulk reviewed" ||
+        prevComment === t("feather-review-bulk-default-comment");
+      setComment(isDefaultBulk ? "" : prevComment);
       fetchPreview(article.title);
 
       if (!isOwnArticle(article) && article.status === "pending") {
@@ -926,9 +746,10 @@ ${body}
     };
   }, [articles]);
 
-  const judgeableTotal = statusStats.pending + statusStats.accepted + statusStats.rejected;
-  const judgedCount = statusStats.accepted + statusStats.rejected;
-  const judgedPercent = judgeableTotal ? Math.round((judgedCount / judgeableTotal) * 100) : 0;
+  const judgeableTotal = contest?.total_articles ?? statusStats.total;
+  const pendingCount = contest?.pending_articles ?? statusStats.pending;
+  const judgedCount = Math.max(0, judgeableTotal - pendingCount);
+  const judgedPercent = judgeableTotal > 0 ? Math.round((judgedCount / judgeableTotal) * 100) : 0;
 
   const isSingleSubmitter = useMemo(() => {
     return new Set(articles.map((a) => a.submitted_by)).size <= 1;
@@ -1009,11 +830,11 @@ ${body}
         : filteredNewArticles.length;
 
     const tabs = [
-      { id: "queue", key: "pending", label: "Queue", count: totalPendingCount, list: filteredNewArticles },
-      { id: "rereview", key: "judged", label: "Re-review", count: filteredJudgedArticles.length, list: filteredJudgedArticles },
+      { id: "queue", key: "pending", label: t("feather-review-tab-queue"), count: totalPendingCount, list: filteredNewArticles },
+      { id: "rereview", key: "judged", label: t("feather-review-tab-rereview"), count: filteredJudgedArticles.length, list: filteredJudgedArticles },
     ];
     if (otherReviewedArticles.length > 0) {
-      tabs.push({ id: "others", key: "other", label: "Other judges", count: filteredOtherArticles.length, list: filteredOtherArticles });
+      tabs.push({ id: "others", key: "other", label: t("feather-review-tab-other-judges"), count: filteredOtherArticles.length, list: filteredOtherArticles });
     }
     return tabs;
   }, [
@@ -1023,6 +844,7 @@ ${body}
     filteredOtherArticles.length,
     otherReviewedArticles.length,
     searchQuery,
+    t,
   ]);
 
   const activeTab = useMemo(() => {
@@ -1030,7 +852,7 @@ ${body}
   }, [listTab, listTabs]);
 
   const searchPlaceholder =
-    listTab === "rereview" ? "Search titles or submitter" : "Search titles";
+    listTab === "rereview" ? t("feather-review-search-titles-submitter") : t("feather-review-search-titles");
 
   const workingList = useMemo(() => {
     return listTab === "rereview" ? filteredJudgedArticles : availableNewArticles;
@@ -1310,7 +1132,7 @@ ${body}
 
   const handleRemove = async () => {
     if (!currentArticle || isSubmitting) return;
-    if (!confirm(`Remove "${currentArticle.title}" from this contest?`)) return;
+    if (!confirm(t("feather-review-remove-confirm", currentArticle.title))) return;
     setIsSubmitting(true);
     try {
       await deleteArticle(currentArticle.article_id);
@@ -1341,7 +1163,7 @@ ${body}
     setIsSubmitting(true);
     const selectedIds = [...selectedForBulk];
     const currentWasSelected = selectedIds.includes(currentArticle?.article_id);
-    const reviewComment = bulkComment.trim() || "Bulk reviewed";
+    const reviewComment = bulkComment.trim() || t("feather-review-bulk-default-comment");
 
     try {
       const { succeeded, failed } = await postBulkInChunks("/api/articles/bulk-review", selectedIds, {
@@ -1388,7 +1210,7 @@ ${body}
 
   const handleBulkRemove = async () => {
     if (isSubmitting || !selectedForBulk.length) return;
-    if (!confirm(`Remove ${selectedForBulk.length} article(s) from the contest?`)) return;
+    if (!confirm(t("feather-review-bulk-remove-confirm", n(selectedForBulk.length)))) return;
     setIsSubmitting(true);
     try {
       const selectedIds = [...selectedForBulk];
@@ -1435,7 +1257,7 @@ ${body}
   const applyCapturedKey = (rawKey: string) => {
     const key = normalizeShortcutKey(rawKey);
     if (!isBindableKey(key)) {
-      setShortcutError("Pick a single character, Enter or Space. Esc, Tab, / and ? are reserved.");
+      setShortcutError(t("feather-review-shortcut-error-reserved"));
       return;
     }
     const clash = Object.entries(shortcuts).find(
@@ -1443,7 +1265,13 @@ ${body}
     );
     if (clash) {
       const actionItem = SHORTCUT_ACTIONS.find((a) => a.id === clash[0]);
-      setShortcutError(`"${shortcutKeyLabel(key)}" is already used for: ${actionItem?.label || clash[0]}.`);
+      setShortcutError(
+        t(
+          "feather-review-shortcut-error-clash",
+          shortcutKeyLabel(key),
+          actionItem ? t(actionItem.i18nKey) : clash[0]
+        )
+      );
       return;
     }
     if (capturingAction) {
@@ -1518,6 +1346,58 @@ ${body}
       if (normalizeShortcutKey(event.key) === shortcuts.queue) {
         setSidebarCollapsed((prev) => !prev);
         event.preventDefault();
+        return;
+      }
+
+      // Keyboard queue navigation
+      if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End"].includes(event.key)) {
+        if (!rowArticles.length) return;
+        event.preventDefault();
+        const currentIndex = rowArticles.findIndex(
+          (a) => a.article_id === (focusedArticleId || currentArticle?.article_id)
+        );
+        let nextIndex = currentIndex;
+        if (event.key === "ArrowDown") {
+          nextIndex = currentIndex === -1 ? 0 : Math.min(currentIndex + 1, rowArticles.length - 1);
+        } else if (event.key === "ArrowUp") {
+          nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1;
+        } else if (event.key === "PageDown") {
+          nextIndex = Math.min(currentIndex + 10, rowArticles.length - 1);
+        } else if (event.key === "PageUp") {
+          nextIndex = Math.max(currentIndex - 10, 0);
+        } else if (event.key === "Home") {
+          nextIndex = 0;
+        } else if (event.key === "End") {
+          nextIndex = rowArticles.length - 1;
+        }
+        const targetArticle = rowArticles[nextIndex];
+        if (targetArticle) {
+          setFocusedArticleId(targetArticle.article_id);
+          if (event.shiftKey) {
+            selectBulkRange(targetArticle.article_id);
+          }
+          clearTimeout(focusOpenTimerRef.current);
+          focusOpenTimerRef.current = setTimeout(() => {
+            selectArticle(targetArticle);
+          }, 120);
+          const el = document.getElementById(`rq-row-${targetArticle.article_id}`);
+          el?.scrollIntoView({ block: "nearest" });
+        }
+        return;
+      }
+
+      if (event.key === "Enter" && focusedArticleId) {
+        const targetArticle = rowArticles.find((a) => a.article_id === focusedArticleId);
+        if (targetArticle) {
+          event.preventDefault();
+          selectArticle(targetArticle);
+        }
+        return;
+      }
+
+      if (event.key === " " && focusedArticleId && activeTab.id !== "others") {
+        event.preventDefault();
+        toggleBulkSelection(focusedArticleId);
         return;
       }
 
@@ -1753,14 +1633,14 @@ ${body}
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                <h2 className="rq-panel-title">Review Queue</h2>
+                <h2 className="rq-panel-title">{t("feather-review-queue-title")}</h2>
                 <div className="rq-titlebar-actions">
                   {isOwner && (
                     <button
                       className={`rq-icon-btn ${showQueueOptions ? "is-active" : ""}`}
                       type="button"
                       aria-expanded={showQueueOptions ? "true" : "false"}
-                      title="Queue options"
+                      title={t("feather-review-queue-options")}
                       onClick={() => setShowQueueOptions(!showQueueOptions)}
                     >
                       <Settings2 className="h-4 w-4" />
@@ -1768,7 +1648,7 @@ ${body}
                   )}
                   <button
                     className="rq-icon-btn rq-desktop-only"
-                    title="Collapse sidebar (Q)"
+                    title={t("feather-review-collapse-drawer")}
                     onClick={() => setSidebarCollapsed(true)}
                   >
                     <PanelLeftClose className="h-4 w-4" />
@@ -1780,21 +1660,21 @@ ${body}
               {showQueueOptions && isOwner && (
                 <div className="rq-queue-options">
                   <div className="rq-owner-switcher">
-                    <span className="rq-owner-switcher-label">View as</span>
+                    <span className="rq-owner-switcher-label">{t("feather-review-view-as")}</span>
                     <div className="rq-owner-mode-buttons">
                       <button
                         type="button"
                         className={ownerViewMode === "judge" ? "is-active" : ""}
                         onClick={() => setOwnerViewMode("judge")}
                       >
-                        Judge
+                        {t("feather-review-view-judge")}
                       </button>
                       <button
                         type="button"
                         className={ownerViewMode === "owner" ? "is-active" : ""}
                         onClick={() => setOwnerViewMode("owner")}
                       >
-                        Owner
+                        {t("feather-review-view-owner")}
                       </button>
                     </div>
                     {ownerViewMode === "judge" && (
@@ -1802,7 +1682,7 @@ ${body}
                         value={selectedJudge}
                         onChange={(e) => setSelectedJudge(e.target.value)}
                         className="rq-owner-judge-select"
-                        aria-label="Choose jury member"
+                        aria-label={t("feather-review-select-judge")}
                       >
                         {juryList.map((j) => (
                           <option key={j} value={j}>
@@ -1830,7 +1710,7 @@ ${body}
                   <button
                     type="button"
                     className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-sm transition-colors"
-                    aria-label="Clear input"
+                    aria-label={t("feather-review-bulk-clear")}
                     onClick={() => setSearchQuery("")}
                   >
                     <X className="h-3 w-3" />
@@ -1839,7 +1719,7 @@ ${body}
               </div>
 
               {/* Tabs */}
-              <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40 text-xs font-medium" role="tablist" aria-label="Queue lists">
+              <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40 text-xs font-medium" role="tablist" aria-label={t("feather-review-queue-title")}>
                 {listTabs.map((tab) => {
                   const isActive = activeTab.id === tab.id;
                   const isReReviewTab = tab.id === "rereview";
@@ -1862,7 +1742,7 @@ ${body}
                           className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-amber-950 dark:bg-amber-500 dark:text-amber-950 leading-none shrink-0 animate-pulse"
                           title={t("feather-rereview-badge")}
                         >
-                          {pendingReReviewCount}
+                          {n(pendingReReviewCount)}
                         </span>
                       )}
                       <span
@@ -1872,7 +1752,7 @@ ${body}
                             : "bg-muted/80 text-muted-foreground"
                         }`}
                       >
-                        {tab.count.toLocaleString()}
+                        {n(tab.count)}
                       </span>
                     </button>
                   );
@@ -1942,7 +1822,7 @@ ${body}
                       onChange={(e) => setBulkComment(e.target.value)}
                       className="rq-input rq-bulk-comment-input"
                       rows={1}
-                      placeholder={`Comment on all ${selectedForBulk.length} (optional)`}
+                      placeholder={t("feather-review-bulk-note-placeholder")}
                     />
                   </div>
                 )}
@@ -1984,8 +1864,8 @@ ${body}
                               collapsedDecisions[row.heading] ? "is-collapsed" : ""
                             }`}
                           />
-                          {DECISION_LABEL[row.heading] || row.heading}
-                          <span className="rq-decision-count">{row.count.toLocaleString()}</span>
+                          {getDecisionLabel(row.heading)}
+                          <span className="rq-decision-count">{n(row.count)}</span>
                         </button>
                       </li>
                     );
@@ -2020,7 +1900,7 @@ ${body}
                         <label className="rq-cb-wrapper" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
-                            aria-label={`Select ${article.title}`}
+                            aria-label={article.title}
                             checked={isSelected}
                             onChange={(e) => handleSelectClick(article.article_id, e as any)}
                             className="rq-cb"
@@ -2033,7 +1913,7 @@ ${body}
                           {article.re_review_requested && (
                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
                               <RefreshCw className="h-2.5 w-2.5" />
-                              <span>Re-review</span>
+                              <span>{t("feather-review-tab-rereview")}</span>
                             </span>
                           )}
                         </div>
@@ -2049,7 +1929,7 @@ ${body}
                         <CdxIcon
                           icon={cdxIconLock}
                           className="rq-icon-lock"
-                          title="Being reviewed by someone"
+                          title={t("feather-review-locked-reviewing", article.locked_by || "")}
                         />
                       )}
                     </li>
@@ -2062,20 +1942,20 @@ ${body}
                       <CdxIcon icon={cdxIconArticleCheck} className="rq-empty-icon" />
                     )}
                     {searchQuery ? (
-                      <span>Nothing here matches &ldquo;{searchQuery}&rdquo;</span>
+                      <span>{t("feather-review-empty-search", searchQuery)}</span>
                     ) : activeTab.id === "queue" ? (
-                      <span>All caught up</span>
+                      <span>{t("feather-review-empty-queue")}</span>
                     ) : activeTab.id === "rereview" ? (
-                      <span>Judge an article and it turns up here</span>
+                      <span>{t("feather-review-empty-rereview")}</span>
                     ) : (
-                      <span>No decisions by other judges yet</span>
+                      <span>{t("feather-review-empty-others")}</span>
                     )}
                   </li>
                 )}
 
                 {isBackgroundLoading && (
                   <li role="presentation" className="rq-list-loading">
-                    Loading more…
+                    {t("feather-review-loading-more")}
                   </li>
                 )}
               </ul>
@@ -2088,7 +1968,7 @@ ${body}
               className={`rq-resize-handle rq-desktop-only ${isResizing ? "is-resizing" : ""}`}
               role="separator"
               aria-orientation="vertical"
-              aria-label="Resize the queue panel"
+              aria-label={t("feather-review-resize-handle")}
               aria-valuenow={panelWidth}
               aria-valuemin={260}
               aria-valuemax={640}
@@ -2108,17 +1988,15 @@ ${body}
                   </div>
                   {availableNewArticles.length ? (
                     <>
-                      <h3>Nothing open</h3>
+                      <h3>{t("feather-review-empty-open-title")}</h3>
                       <p>
-                        {availableNewArticles.length} article
-                        {availableNewArticles.length === 1 ? "" : "s"} still waiting in your queue —
-                        pick one from the sidebar to carry on.
+                        {t("feather-review-empty-open-desc", n(availableNewArticles.length))}
                       </p>
                     </>
                   ) : (
                     <>
-                      <h3>Queue is Clear</h3>
-                      <p>You have reviewed all available articles in your queue.</p>
+                      <h3>{t("feather-review-queue-clear-title")}</h3>
+                      <p>{t("feather-review-queue-clear-desc")}</p>
                     </>
                   )}
                   <button
@@ -2126,7 +2004,7 @@ ${body}
                     onClick={() => setSidebarCollapsed(false)}
                     style={{ marginTop: "16px" }}
                   >
-                    <PanelLeftOpen className="h-4 w-4 me-1.5 inline" /> Open Sidebar
+                    <PanelLeftOpen className="h-4 w-4 me-1.5 inline" /> {t("feather-review-open-sidebar")}
                   </button>
                 </div>
               </div>
@@ -2141,14 +2019,13 @@ ${body}
                       aria-valuenow={judgedPercent}
                       aria-valuemin={0}
                       aria-valuemax={100}
-                      aria-label={`${judgedCount} of ${judgeableTotal} judged`}
+                      aria-label={t("feather-review-progress-flow", n(judgedCount), n(judgeableTotal), n(judgedPercent))}
                     >
                       <div className="rq-progress-track">
                         <div className="rq-progress-fill" style={{ width: `${judgedPercent}%` }}></div>
                       </div>
                       <span className="rq-progress-text">
-                        {judgedCount.toLocaleString()} of {judgeableTotal.toLocaleString()} judged ·{" "}
-                        {judgedPercent}%
+                        {t("feather-review-progress-flow", n(judgedCount), n(judgeableTotal), n(judgedPercent))}
                       </span>
                     </div>
                   </div>
@@ -2159,7 +2036,7 @@ ${body}
                       <button
                         className="rq-hamburger-btn rq-desktop-only"
                         onClick={() => setSidebarCollapsed(false)}
-                        title="Expand sidebar (Q)"
+                        title={`${t("feather-review-expand-sidebar")} (Q)`}
                       >
                         <PanelLeftOpen className="h-4 w-4" />
                       </button>
@@ -2168,7 +2045,7 @@ ${body}
                     <button
                       className="rq-back-btn rq-mobile-only"
                       onClick={() => setMobileTab("list")}
-                      title="Back to article queue"
+                      title={t("feather-review-back-to-queue")}
                     >
                       <ArrowLeft className="h-4 w-4" />
                     </button>
@@ -2188,10 +2065,10 @@ ${body}
                           type="button"
                           className="rq-icon-btn"
                           style={{ padding: "3px", width: "24px", height: "24px" }}
-                          title="Copy article title"
+                          title={t("feather-review-copy-title")}
                           onClick={() => {
                             navigator.clipboard.writeText(currentArticle.title);
-                            toast.success("Article title copied!");
+                            toast.success(t("feather-review-title-copied"));
                           }}
                         >
                           <CdxIcon icon={cdxIconCopy} size={14} />
@@ -2199,7 +2076,7 @@ ${body}
                       </div>
                       <div className="rq-tags">
                         <span className="rq-tag inline-flex items-center gap-1">
-                          <span>by {currentArticle.submitted_by}</span>
+                          <span>{t("feather-review-by-author", currentArticle.submitted_by)}</span>
                           <UserBadge username={currentArticle.submitted_by} contestRoles={contestRoles} />
                         </span>
                         {currentArticle.wiki_creator &&
@@ -2213,17 +2090,17 @@ ${body}
                               }}
                             >
                               <Check className="h-3 w-3 inline" />
-                              <span>Creator</span>
+                              <span>{t("feather-review-creator-badge")}</span>
                             </span>
                           )}
                         {showWords && currentArticle.word_count > 0 && (
                           <span className="rq-tag">
-                            {currentArticle.word_count.toLocaleString()} words
+                            {t("feather-review-preview-words", n(currentArticle.word_count))}
                           </span>
                         )}
                         {showBytes && currentArticle.byte_count > 0 && (
                           <span className="rq-tag">
-                            {currentArticle.byte_count.toLocaleString()} bytes
+                            {t("feather-review-preview-bytes", n(currentArticle.byte_count))}
                           </span>
                         )}
                         {currentArticle.wiki_creation_date && (
@@ -2233,7 +2110,7 @@ ${body}
                         )}
                         {currentArticle.locked_by && currentArticle.locked_by !== myUsername && (
                           <span className="rq-tag rq-tag-locked">
-                            <CdxIcon icon={cdxIconLock} /> {currentArticle.locked_by} reviewing
+                            <CdxIcon icon={cdxIconLock} /> {t("feather-review-locked-reviewing", currentArticle.locked_by)}
                           </span>
                         )}
                         {getMyLatestDecision(currentArticle) && (
@@ -2245,17 +2122,17 @@ ${body}
                             {getMyLatestDecision(currentArticle) === "accepted" ? (
                               <>
                                 <Check className="h-3 w-3 inline" />
-                                <span>Accepted</span>
+                                <span>{t("feather-review-status-accepted")}</span>
                               </>
                             ) : getMyLatestDecision(currentArticle) === "rejected" ? (
                               <>
                                 <X className="h-3 w-3 inline" />
-                                <span>Rejected</span>
+                                <span>{t("feather-review-status-rejected")}</span>
                               </>
                             ) : (
                               <>
                                 <SkipForward className="h-3 w-3 inline" />
-                                <span>Skipped</span>
+                                <span>{t("feather-review-status-skipped")}</span>
                               </>
                             )}
                           </span>
@@ -2267,16 +2144,16 @@ ${body}
                       <Link
                         href={`/contests/${code}/jury`}
                         className="rq-btn-secondary rq-desktop-only"
-                        title="Jury Hub stats and queue redistribution"
+                        title={t("feather-jury-hub-title")}
                       >
-                        Jury Hub
+                        {t("feather-jury-hub-title")}
                       </Link>
 
                       <button
                         type="button"
                         className="rq-btn-secondary"
-                        title={isDark ? "Switch to Light mode" : "Switch to Dark mode"}
-                        aria-label="Toggle theme"
+                        title={isDark ? t("feather-review-switch-light") : t("feather-review-switch-dark")}
+                        aria-label={t("feather-theme-toggle") || "Toggle theme"}
                         onClick={() => setTheme(isDark ? "light" : "dark")}
                       >
                         {isDark ? (
@@ -2291,10 +2168,10 @@ ${body}
                         className={`rq-wikitext-switch ${showWikitext ? "is-on" : ""}`}
                         role="switch"
                         aria-checked={showWikitext ? "true" : "false"}
-                        title={`Show raw wikitext (${shortcutKeyLabel(shortcuts.wikitext)})`}
+                        title={`${t("feather-review-wikitext")} (${shortcutKeyLabel(shortcuts.wikitext)})`}
                         onClick={toggleWikitext}
                       >
-                        <span className="rq-switch-label">Wikitext</span>
+                        <span className="rq-switch-label">{t("feather-review-wikitext")}</span>
                         <span className="rq-switch-track">
                           <span className="rq-switch-knob"></span>
                         </span>
@@ -2303,11 +2180,11 @@ ${body}
                       <button
                         type="button"
                         className="rq-btn-secondary inline-flex items-center gap-1.5 cursor-pointer relative"
-                        title="Open article discussion and re-review request thread"
+                        title={t("feather-review-discussion")}
                         onClick={() => setIsDiscussionOpen(true)}
                       >
                         <MessageSquare className="h-3.5 w-3.5" />
-                        <span className="rq-desktop-only">Discussion</span>
+                        <span className="rq-desktop-only">{t("feather-review-discussion")}</span>
                         {currentArticle?.re_review_requested && (
                           <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
                         )}
@@ -2316,8 +2193,8 @@ ${body}
                       <button
                         type="button"
                         className="rq-btn-secondary rq-help-btn rq-desktop-only"
-                        title="Keyboard shortcuts (/)"
-                        aria-label="Keyboard shortcuts"
+                        title={`${t("feather-review-shortcuts-title")} (/)`}
+                        aria-label={t("feather-review-shortcuts-title")}
                         onClick={() => setShowShortcutHelp(true)}
                       >
                         ?
@@ -2328,10 +2205,10 @@ ${body}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="rq-btn-secondary rq-wiki-link-btn"
-                        title="Open on Wiki"
+                        title={t("feather-review-open-wiki") || t("feather-review-wiki")}
                       >
                         <CdxIcon icon={cdxIconLinkExternal} />{" "}
-                        <span className="rq-desktop-only">Wiki</span>
+                        <span className="rq-desktop-only">{t("feather-review-wiki")}</span>
                       </a>
                     </div>
                   </header>
@@ -2394,14 +2271,14 @@ ${body}
                         className={previewPane === "visual" ? "is-active" : ""}
                         onClick={() => setPreviewPane("visual")}
                       >
-                        Visual
+                        {t("feather-review-visual")}
                       </button>
                       <button
                         type="button"
                         className={previewPane === "wikitext" ? "is-active" : ""}
                         onClick={() => setPreviewPane("wikitext")}
                       >
-                        Wikitext
+                        {t("feather-review-wikitext")}
                       </button>
                     </div>
                   )}
@@ -2416,7 +2293,7 @@ ${body}
                         {/* Floating Status Pill */}
                         <div className="absolute top-6 right-6 z-10 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card/90 border border-border shadow-md backdrop-blur-md text-xs font-medium text-foreground">
                           <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
-                          <span>Rendering Wikipedia article...</span>
+                          <span>{t("feather-review-rendering")}</span>
                         </div>
 
                         {/* Article Header Wireframe */}
@@ -2462,10 +2339,10 @@ ${body}
                         {showWikitext && (
                           <section
                             className="rq-preview-pane rq-wikitext-pane"
-                            aria-label="Raw wikitext"
+                            aria-label={t("feather-review-raw-wikitext")}
                           >
                             <header className="rq-wikitext-bar">
-                              <span className="rq-wikitext-heading">Raw wikitext</span>
+                              <span className="rq-wikitext-heading">{t("feather-review-raw-wikitext")}</span>
                               <button
                                 type="button"
                                 className="rq-wikitext-copy"
@@ -2473,14 +2350,14 @@ ${body}
                                 onClick={copyWikitext}
                               >
                                 <CdxIcon icon={cdxIconCopy} />{" "}
-                                {wikitextCopied ? "Copied" : "Copy"}
+                                {wikitextCopied ? t("feather-review-copied") : t("feather-review-copy")}
                               </button>
                             </header>
                             <div className="rq-wikitext-scroll">
                               {wikitextSource ? (
                                 <pre className="rq-wikitext-code">{wikitextSource}</pre>
                               ) : (
-                                <p className="rq-wikitext-empty">Wikitext not available.</p>
+                                <p className="rq-wikitext-empty">{t("feather-review-wikitext-empty")}</p>
                               )}
                             </div>
                           </section>
@@ -2511,10 +2388,10 @@ ${body}
                           disabled={isSubmitting || isLockedByOther || isSelfArticle}
                           placeholder={
                             isLockedByOther
-                              ? `${currentArticle.locked_by} is currently judging this article...`
+                              ? t("feather-review-placeholder-locked", currentArticle.locked_by)
                               : isSelfArticle
-                              ? "You cannot review your own article (Conflict of Interest)"
-                              : "Leave a note for the submitter (optional)... (C)"
+                              ? t("feather-review-placeholder-coi")
+                              : t("feather-review-placeholder-note", shortcutKeyLabel(shortcuts.comment))
                           }
                         />
                       </div>
@@ -2528,10 +2405,10 @@ ${body}
                             onClick={() => handleDecision("accepted")}
                             title={
                               isLockedByOther
-                                ? `${currentArticle.locked_by} is currently judging this article`
+                                ? t("feather-review-placeholder-locked", currentArticle.locked_by)
                                 : isSelfArticle
-                                ? "You cannot review your own article (Conflict of Interest)"
-                                : "Accept (A)"
+                                ? t("feather-review-placeholder-coi")
+                                : `${t("feather-review-action-accept")} (${shortcutKeyLabel(shortcuts.accept)})`
                             }
                           >
                             {isSubmitting && submittingAction === "accepted" ? (
@@ -2539,7 +2416,7 @@ ${body}
                             ) : (
                               <Check className="h-4 w-4 stroke-[2.5]" />
                             )}
-                            <span>Accept</span>
+                            <span>{t("feather-review-action-accept")}</span>
                             <kbd className="rq-kbd rq-desktop-only">
                               {shortcutKeyLabel(shortcuts.accept)}
                             </kbd>
@@ -2551,10 +2428,10 @@ ${body}
                             onClick={() => handleDecision("rejected")}
                             title={
                               isLockedByOther
-                                ? `${currentArticle.locked_by} is currently judging this article`
+                                ? t("feather-review-placeholder-locked", currentArticle.locked_by)
                                 : isSelfArticle
-                                ? "You cannot review your own article (Conflict of Interest)"
-                                : "Reject (R)"
+                                ? t("feather-review-placeholder-coi")
+                                : `${t("feather-review-action-reject")} (${shortcutKeyLabel(shortcuts.reject)})`
                             }
                           >
                             {isSubmitting && submittingAction === "rejected" ? (
@@ -2562,7 +2439,7 @@ ${body}
                             ) : (
                               <XCircle className="h-4 w-4 stroke-[2.2]" />
                             )}
-                            <span>Reject</span>
+                            <span>{t("feather-review-action-reject")}</span>
                             <kbd className="rq-kbd rq-desktop-only">
                               {shortcutKeyLabel(shortcuts.reject)}
                             </kbd>
@@ -2575,10 +2452,10 @@ ${body}
                             className="rq-btn-ghost rq-btn-skip"
                             disabled={isSubmitting}
                             onClick={skipArticle}
-                            title="Skip (S)"
+                            title={`${t("feather-review-action-skip")} (${shortcutKeyLabel(shortcuts.skip)})`}
                           >
                             <SkipForward className="h-3.5 w-3.5" />{" "}
-                            <span className="rq-desktop-only">Skip</span>
+                            <span className="rq-desktop-only">{t("feather-review-action-skip")}</span>
                             <kbd className="rq-kbd rq-desktop-only">
                               {shortcutKeyLabel(shortcuts.skip)}
                             </kbd>
@@ -2588,10 +2465,10 @@ ${body}
                             className="rq-btn-ghost rq-btn-remove"
                             disabled={isSubmitting}
                             onClick={handleRemove}
-                            title="Delete article"
+                            title={t("feather-review-action-delete")}
                           >
                             <Trash2 className="h-3.5 w-3.5" />{" "}
-                            <span className="rq-desktop-only">Delete</span>
+                            <span className="rq-desktop-only">{t("feather-review-action-delete")}</span>
                           </button>
                         </div>
                       </div>
@@ -2611,10 +2488,10 @@ ${body}
           onClick={() => setMobileTab("list")}
         >
           <CdxIcon icon={cdxIconMenu} className="rq-nav-icon" />
-          <span className="rq-nav-label">Queue</span>
+          <span className="rq-nav-label">{t("feather-review-tab-queue")}</span>
           {(contest?.pending_articles ?? newArticles.length) > 0 && (
             <span className="rq-nav-badge">
-              {(contest?.pending_articles ?? newArticles.length).toLocaleString()}
+              {n(contest?.pending_articles ?? newArticles.length)}
             </span>
           )}
         </button>
@@ -2624,7 +2501,7 @@ ${body}
           disabled={!currentArticle}
         >
           <CdxIcon icon={cdxIconArticle} className="rq-nav-icon" />
-          <span className="rq-nav-label">Review</span>
+          <span className="rq-nav-label">{t("feather-review-nav-review")}</span>
         </button>
       </nav>
 
@@ -2633,7 +2510,7 @@ ${body}
         <div key={lastDecision.seq} className="rq-undo-toast" role="status">
           <span className="rq-undo-text">
             <strong className={`rq-undo-decision rq-undo-${lastDecision.decision}`}>
-              {lastDecision.decision}
+              {getDecisionLabel(lastDecision.decision)}
             </strong>
             <span className="rq-undo-title">{lastDecision.title}</span>
           </span>
@@ -2643,13 +2520,13 @@ ${body}
             disabled={isUndoing}
             onClick={undoLastDecision}
           >
-            {isUndoing ? "Undoing…" : "Undo"}{" "}
+            {isUndoing ? t("feather-review-undoing") : t("feather-review-undo")}{" "}
             <kbd className="rq-kbd">{shortcutKeyLabel(shortcuts.undo)}</kbd>
           </button>
           <button
             type="button"
             className="rq-undo-dismiss"
-            aria-label="Dismiss"
+            aria-label={t("feather-review-undo-dismiss")}
             onClick={dismissUndo}
           >
             ×
@@ -2667,15 +2544,15 @@ ${body}
           <div
             className="rq-help-panel"
             role="dialog"
-            aria-label="Keyboard shortcuts"
+            aria-label={t("feather-review-shortcuts-title")}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="rq-help-header">
-              <h3>Keyboard shortcuts</h3>
+              <h3>{t("feather-review-shortcuts-title")}</h3>
               <button
                 type="button"
                 className="rq-help-close"
-                aria-label="Close"
+                aria-label={t("feather-review-shortcuts-close")}
                 onClick={() => setShowShortcutHelp(false)}
               >
                 ×
@@ -2690,7 +2567,7 @@ ${body}
                       className={`rq-kbd rq-kbd-editable ${
                         capturingAction === action.id ? "is-capturing" : ""
                       }`}
-                      aria-label={`Change the key for: ${action.label}`}
+                      aria-label={t("feather-review-rebind-change-key", t(action.i18nKey))}
                       onClick={() =>
                         capturingAction === action.id
                           ? cancelShortcutCapture()
@@ -2704,8 +2581,8 @@ ${body}
                   </dt>
                   <dd className={capturingAction === action.id ? "is-capturing" : ""}>
                     {capturingAction === action.id
-                      ? "Press a letter, number, Enter or Space — Esc to cancel"
-                      : action.label}
+                      ? t("feather-review-rebind-prompt")
+                      : t(action.i18nKey)}
                   </dd>
                 </div>
               ))}
@@ -2713,56 +2590,55 @@ ${body}
                 <dt>
                   <kbd className="rq-kbd">↑ ↓</kbd>
                 </dt>
-                <dd>Move through the queue list and open what you land on</dd>
+                <dd>{t("feather-review-shortcut-nav-up-down")}</dd>
               </div>
               <div className="rq-help-row">
                 <dt>
                   <kbd className="rq-kbd">PgUp PgDn</kbd>
                 </dt>
-                <dd>Jump ten rows at a time (Home / End for the ends)</dd>
+                <dd>{t("feather-review-shortcut-nav-page")}</dd>
               </div>
               <div className="rq-help-row">
                 <dt>
                   <kbd className="rq-kbd">⇧ ↑ ↓</kbd>
                 </dt>
-                <dd>Select as you move, or unselect on the way back</dd>
+                <dd>{t("feather-review-shortcut-select-move")}</dd>
               </div>
               <div className="rq-help-row">
                 <dt>
                   <kbd className="rq-kbd">Space</kbd>
                 </dt>
-                <dd>Select or unselect the row you are on</dd>
+                <dd>{t("feather-review-shortcut-select-space")}</dd>
               </div>
               <div className="rq-help-row">
                 <dt>
                   <kbd className="rq-kbd">Ctrl A</kbd>
                 </dt>
-                <dd>Select every row on screen, or clear them</dd>
+                <dd>{t("feather-review-shortcut-select-all")}</dd>
               </div>
               <div className="rq-help-row">
                 <dt>
                   <kbd className="rq-kbd">Enter</kbd>
                 </dt>
-                <dd>Open the article you are on</dd>
+                <dd>{t("feather-review-shortcut-open-enter")}</dd>
               </div>
               <div className="rq-help-row">
                 <dt>
                   <kbd className="rq-kbd">Esc</kbd>
                 </dt>
-                <dd>Leave the comment box / clear the selection / close the queue</dd>
+                <dd>{t("feather-review-shortcut-esc-desc")}</dd>
               </div>
               <div className="rq-help-row">
                 <dt>
                   <kbd className="rq-kbd">/</kbd>
                 </dt>
-                <dd>Show or hide this panel</dd>
+                <dd>{t("feather-review-shortcut-help-desc")}</dd>
               </div>
             </dl>
             {shortcutError && <p className="rq-help-error">{shortcutError}</p>}
             <div className="rq-help-footer">
               <p className="rq-help-note">
-                Click a key to rebind it. Saved for {myUsername || "this browser"} only. Shortcuts
-                are ignored while you&apos;re typing in a text field, and a held key acts once.
+                {t("feather-review-shortcuts-note", myUsername || "this browser")}
               </p>
               <a
                 className="rq-help-guide"
@@ -2770,10 +2646,10 @@ ${body}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Full jury panel guide
+                {t("feather-review-shortcuts-guide")}
               </a>
               <button type="button" className="rq-help-reset" onClick={resetShortcuts}>
-                Reset to defaults
+                {t("feather-review-shortcuts-reset")}
               </button>
             </div>
           </div>

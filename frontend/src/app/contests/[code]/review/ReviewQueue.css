@@ -595,9 +595,30 @@ button { cursor: pointer; }
 .rq-tag { font-size: 0.7rem; font-weight: 500; color: var(--rq-text-muted); background: var(--rq-surface-alt); padding: 2px 8px; border-radius: 5px; white-space: nowrap; }
 .rq-tag-locked { background: #fff1d6; color: #8a5a00; display: flex; align-items: center; gap: 4px; }
 .rq-tag-verdict { font-weight: 600; }
-.rq-tag-accepted { background: #dff6e9; color: var(--rq-success-dark); }
-.rq-tag-rejected { background: #fde4e4; color: var(--rq-danger-dark); }
-.rq-tag-skipped { background: #edf0f3; color: var(--rq-text-muted); }
+.rq-tag-accepted { background: #dff6e9; color: var(--rq-success-dark); border: 1px solid rgba(5, 150, 105, 0.2); }
+.rq-tag-rejected { background: #fde4e4; color: var(--rq-danger-dark); border: 1px solid rgba(220, 38, 38, 0.2); }
+.rq-tag-skipped { background: #edf0f3; color: var(--rq-text-muted); border: 1px solid rgba(113, 113, 122, 0.2); }
+
+.rq-app.rq-theme-dark .rq-tag-accepted {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+.rq-app.rq-theme-dark .rq-tag-rejected {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+.rq-app.rq-theme-dark .rq-tag-skipped {
+  background: rgba(161, 161, 170, 0.15) !important;
+  color: #d4d4d8 !important;
+  border: 1px solid rgba(161, 161, 170, 0.25) !important;
+}
+.rq-app.rq-theme-dark .rq-tag-locked {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
 
 .rq-lock-banner {
   display: flex;
@@ -1027,37 +1048,19 @@ button { cursor: pointer; }
   }
 }
 
+/* Compact mobile review workspace: keep the article, preview, and decision
+   controls usable without turning the screen into stacked full-height cards. */
 @media (max-width: 768px) {
   .rq-desktop-only { display: none !important; }
   .rq-mobile-only { display: flex !important; }
-  
-  .rq-app { padding-bottom: 70px; }
-  .rq-layout { display: flex; flex-direction: column; padding: 0; gap: 0; }
-  
   .mobile-hidden { display: none !important; }
-  
+
+  .rq-app { padding-bottom: 60px; }
+  .rq-layout { display: flex; flex-direction: column; padding: 0; gap: 0; }
   .rq-panel { border-radius: 0; border: none; border-bottom: 1px solid var(--rq-border); box-shadow: none; }
   .rq-queue-panel { flex: 1; transition: none; width: 100%; opacity: 1; }
-  
   .rq-review-area { flex: 1; display: flex; flex-direction: column; position: relative; gap: 0; }
-  .rq-preview-panel { flex: 1; border-bottom: none; margin-bottom: 190px; }
-  
-  .rq-decision-panel {
-    position: fixed; bottom: 70px; left: 0; right: 0;
-    border-radius: 12px 12px 0 0; border: 1px solid var(--rq-border);
-    border-bottom: none; box-shadow: 0 -8px 24px rgba(32, 54, 77, .1);
-    z-index: 40; padding-bottom: env(safe-area-inset-bottom);
-  }
-  .rq-decision-body { padding: 12px; gap: 8px; }
-  .rq-decision-form { flex-direction: column; gap: 8px; }
-  .rq-input { height: 48px; }
-  .rq-actions-wrapper { flex-direction: column; gap: 8px; }
-  .rq-primary-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 8px; }
-  .rq-secondary-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 8px; }
-  
-  .rq-mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 70px; z-index: 50; }
-  /* Clear of the fixed bottom nav. */
-  .rq-bulk-bar { bottom: 70px; }
+  .rq-preview-panel { flex: 1; border-bottom: none; margin-bottom: 95px; }
 
   .rq-pane-tabs { display: flex !important; }
   .rq-preview-container.is-split { flex-direction: column; }
@@ -1068,17 +1071,12 @@ button { cursor: pointer; }
   .rq-switch-track { width: 26px; height: 14px; }
   .rq-switch-knob { width: 10px; height: 10px; }
   .rq-wikitext-switch.is-on .rq-switch-knob { transform: translateX(12px); }
-}
 
-/* Compact mobile review workspace: keep the article, preview, and decision
-   controls usable without turning the screen into stacked full-height cards. */
-@media (max-width: 768px) {
-  .rq-app { padding-bottom: 60px; }
   .rq-panel-header { padding: 7px 10px; }
   .rq-panel-title { margin-bottom: 6px; font-size: .92rem; }
   .rq-owner-switcher { display: grid; grid-template-columns: auto 1fr; gap: 4px 6px; }
   .rq-tabs button { padding: 5px 6px; font-size: .7rem; }
-    .rq-owner-switcher-label { align-self: center; }
+  .rq-owner-switcher-label { align-self: center; }
   .rq-owner-mode-buttons { justify-self: end; }
   .rq-owner-judge-select { grid-column: 1 / -1; width: 100%; min-height: 28px; }
   .rq-list-item { min-height: 44px; padding: 8px 9px; gap: 6px; }
@@ -1087,12 +1085,11 @@ button { cursor: pointer; }
   .rq-item-title { font-size: .84rem; line-height: 1.5; }
   .rq-item-meta { font-size: .66rem; line-height: 1.5; }
   .rq-list-loading { padding: 7px 9px 9px; font-size: .68rem; }
-  .rq-preview-panel { margin-bottom: 95px; }
   .rq-article-header { min-height: 42px; padding: 5px 9px; gap: 7px; }
   .rq-article-title-link { font-size: .92rem; }
   .rq-tags { gap: 4px; }
   .rq-tag { padding: 3px 6px; font-size: .62rem; }
-  .rq-decision-panel { bottom: 60px; border-radius: 10px 10px 0 0; box-shadow: 0 -5px 20px rgba(32, 54, 77, .1); }
+  .rq-decision-panel { position: fixed; bottom: 60px; left: 0; right: 0; border-radius: 10px 10px 0 0; border: 1px solid var(--rq-border); border-bottom: none; box-shadow: 0 -5px 20px rgba(32, 54, 77, .1); z-index: 40; padding-bottom: env(safe-area-inset-bottom); }
   .rq-decision-body { padding: 7px 9px; gap: 5px; }
   .rq-decision-form { gap: 5px; }
   .rq-input, .rq-bulk-comment-input { height: 36px; min-height: 36px; padding: 6px 9px; font-size: .78rem; }
@@ -1108,7 +1105,7 @@ button { cursor: pointer; }
   .rq-actions-wrapper .rq-btn .cdx-icon, .rq-actions-wrapper .rq-btn-ghost .cdx-icon { font-size: .95rem; flex-shrink: 0; }
   .rq-actions-wrapper .rq-btn span, .rq-actions-wrapper .rq-btn-ghost span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .rq-error-msg { padding: 4px 7px; font-size: .7rem; }
-  .rq-mobile-nav { height: 60px; }
+  .rq-mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; z-index: 50; }
   .rq-bulk-bar { bottom: 60px; }
   .rq-nav-btn { gap: 2px; }
   .rq-nav-icon { font-size: 1.2rem; }

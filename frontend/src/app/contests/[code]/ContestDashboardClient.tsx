@@ -2089,7 +2089,7 @@ export default function ContestDashboardClient({
               onClick={() => setIsShareDialogOpen(false)}
               className="cursor-pointer"
             >
-              {t("feather-modal-close") || "Close"}
+              {t("feather-modal-close")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3761,7 +3761,7 @@ export default function ContestDashboardClient({
                                 {art.re_review_requested && (
                                   <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded-full shrink-0">
                                     <RefreshCw className="h-2.5 w-2.5" />
-                                    <span>{t("feather-rereview-badge", "Re-review requested")}</span>
+                                    <span>{t("feather-rereview-badge")}</span>
                                   </span>
                                 )}
                               </div>
@@ -3823,7 +3823,7 @@ export default function ContestDashboardClient({
                                   >
                                     <RefreshCw className="h-3 w-3 text-amber-600 dark:text-amber-400" />
                                     <span className="text-[11px] hidden md:inline">
-                                      {t("feather-rereview-badge", "Re-review requested")}
+                                      {t("feather-rereview-badge")}
                                     </span>
                                   </Button>
                                 ) : Boolean(
@@ -3837,11 +3837,11 @@ export default function ContestDashboardClient({
                                     size="sm"
                                     onClick={() => setDiscussionArticle(art)}
                                     className="h-7 px-2 text-xs cursor-pointer gap-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs"
-                                    title={t("feather-rereview-btn", "Request Re-review")}
+                                    title={t("feather-rereview-btn")}
                                   >
                                     <RefreshCw className="h-3 w-3" />
                                     <span className="text-[11px] hidden md:inline">
-                                      {t("feather-rereview-btn", "Request Re-review")}
+                                      {t("feather-rereview-btn")}
                                     </span>
                                   </Button>
                                 ) : (
@@ -3950,7 +3950,7 @@ export default function ContestDashboardClient({
                           {art.re_review_requested ? (
                             <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
                               <RefreshCw className="h-2.5 w-2.5" />
-                              <span>{t("feather-rereview-badge", "Re-review requested")}</span>
+                              <span>{t("feather-rereview-badge")}</span>
                             </span>
                           ) : <span />}
                           {art.status === "rejected" &&
@@ -3968,7 +3968,7 @@ export default function ContestDashboardClient({
                               className="h-6 text-[10px] gap-1 px-2 cursor-pointer bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs"
                             >
                               <RefreshCw className="h-2.5 w-2.5" />
-                              <span>{t("feather-rereview-btn", "Request Re-review")}</span>
+                              <span>{t("feather-rereview-btn")}</span>
                             </Button>
                           ) : (
                             <Button
@@ -3978,7 +3978,7 @@ export default function ContestDashboardClient({
                               className="h-6 text-[11px] gap-1 px-2 cursor-pointer"
                             >
                               <MessageSquare className="h-3 w-3 text-primary" />
-                              <span>{t("feather-discussion-btn-empty", "Discussion")}</span>
+                              <span>{t("feather-discussion-btn-empty")}</span>
                             </Button>
                           )}
                         </div>

@@ -356,7 +356,7 @@ export default function NewContestPage() {
     setHasAttemptedSubmit(true);
 
     if (!isAuthenticated) {
-      const msg = t("feather-create-login-required", "You must be logged in to create a contest.");
+      const msg = t("feather-create-login-required");
       setError(msg);
       toast.error(msg);
       router.push("/login?return_to=/contests/new");
@@ -455,7 +455,7 @@ export default function NewContestPage() {
     return (
       <div className="container mx-auto px-4 sm:px-6 py-24 max-w-xl text-center flex flex-col items-center justify-center space-y-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-xs text-muted-foreground">{t("feather-loading", "Loading...")}</p>
+        <p className="text-xs text-muted-foreground">{t("feather-loading")}</p>
       </div>
     );
   }
@@ -469,26 +469,23 @@ export default function NewContestPage() {
           </div>
           <div className="space-y-2">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              {t("feather-create-login-required-title", "Authentication Required")}
+              {t("feather-create-login-required-title")}
             </h1>
             <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              {t(
-                "feather-create-login-required-desc",
-                "You must log in with your Wikimedia account to create and organize contests on Feather."
-              )}
+              {t("feather-create-login-required-desc")}
             </p>
           </div>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/login?return_to=/contests/new" className="w-full sm:w-auto">
               <Button size="lg" className="w-full font-semibold gap-2 shadow-xs cursor-pointer">
                 <Globe className="h-4 w-4" />
-                <span>{t("feather-navbar-login", "Log In with Wikimedia")}</span>
+                <span>{t("feather-nav-login")}</span>
               </Button>
             </Link>
             <Link href="/" className="w-full sm:w-auto">
               <Button variant="outline" size="lg" className="w-full cursor-pointer">
                 <ArrowLeft className="h-4 w-4 rtl:rotate-180 me-1.5" />
-                <span>{t("feather-profile-back-contests", "Back to contests")}</span>
+                <span>{t("feather-profile-back-contests")}</span>
               </Button>
             </Link>
           </div>

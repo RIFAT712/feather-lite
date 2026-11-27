@@ -1052,7 +1052,7 @@ export default function ContestStatsClient({
                         {shownSeries.submitted && (
                           <div className="flex items-center gap-2 text-xs">
                             <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: ACCENT_COLOR }} />
-                            <span className="text-muted-foreground">{t("feather-stats-series-submitted", "Submitted")}:</span>
+                            <span className="text-muted-foreground">{t("feather-stats-series-submitted")}:</span>
                             <span className="font-bold font-mono text-foreground ms-auto">
                               {n(daily[hoverIndex].count)}
                             </span>
@@ -1061,7 +1061,7 @@ export default function ContestStatsClient({
                         {shownSeries.judged && (
                           <div className="flex items-center gap-2 text-xs">
                             <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: TEAL_COLOR }} />
-                            <span className="text-muted-foreground">{t("feather-stats-series-judged", "Judged")}:</span>
+                            <span className="text-muted-foreground">{t("feather-stats-series-judged")}:</span>
                             <span className="font-bold font-mono text-foreground ms-auto">
                               {n(daily[hoverIndex].judged)}
                             </span>

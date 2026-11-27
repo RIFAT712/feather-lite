@@ -456,7 +456,7 @@ export default function ContestUserProfileClient({
                         {showWords && <th className="py-2.5 px-3 text-right whitespace-nowrap">{t("feather-profile-th-words")}</th>}
                         {showBytes && <th className="py-2.5 px-3 text-right whitespace-nowrap">{t("feather-profile-th-bytes")}</th>}
                         <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-submitted")}</th>
-                        <th className="py-2.5 px-3 text-center whitespace-nowrap">{t("feather-profile-th-actions", "Actions")}</th>
+                        <th className="py-2.5 px-3 text-center whitespace-nowrap">{t("feather-profile-th-actions")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -575,7 +575,7 @@ export default function ContestUserProfileClient({
                                     title={t("feather-rereview-already-requested")}
                                   >
                                     <RefreshCw className="h-2.5 w-2.5 text-amber-600 dark:text-amber-400" />
-                                    <span>{t("feather-rereview-badge", "Re-review requested")}</span>
+                                    <span>{t("feather-rereview-badge")}</span>
                                   </Button>
                                 ) : isViewingSelf ? (
                                   <Button
@@ -594,10 +594,10 @@ export default function ContestUserProfileClient({
                                       })
                                     }
                                     className="h-6 text-[10px] gap-1 px-2 cursor-pointer bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs"
-                                    title={t("feather-rereview-btn", "Request Re-review")}
+                                    title={t("feather-rereview-btn")}
                                   >
                                     <RefreshCw className="h-2.5 w-2.5" />
-                                    <span>{t("feather-rereview-btn", "Request Re-review")}</span>
+                                    <span>{t("feather-rereview-btn")}</span>
                                   </Button>
                                 ) : (
                                   <Button

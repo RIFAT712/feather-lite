@@ -131,10 +131,7 @@ export default function ParticipatingCompetitionsPicker({
                 type="text"
                 value={compSearch}
                 onChange={(e) => setCompSearch(e.target.value)}
-                placeholder={t(
-                  "feather-campaign-link-search-placeholder",
-                  "Search ongoing competitions by name, code, or wiki..."
-                )}
+                placeholder={t("feather-campaign-link-search-placeholder")}
                 className="w-full h-8 pl-8 pr-7 rounded-md border border-input bg-background text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
               {compSearch ? (
@@ -403,7 +400,7 @@ export default function ParticipatingCompetitionsPicker({
                       {isAlreadyAdded ? (
                         <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                           <CheckCircle className="h-3 w-3" />
-                          {t("feather-campaign-already-added", "Added")}
+                          {t("feather-campaign-already-added")}
                         </span>
                       ) : (
                         <span>+ {t("feather-campaign-link-btn")}</span>

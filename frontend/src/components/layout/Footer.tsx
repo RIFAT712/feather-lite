@@ -118,10 +118,10 @@ export default function Footer() {
               />
               <div className="flex flex-col text-left justify-center min-w-0">
                 <span className="text-[8px] sm:text-[9px] text-muted-foreground font-normal leading-none truncate">
-                  {t("feather-footer-wikiconnect-sub", "Initiative of")}
+                  {t("feather-footer-wikiconnect-sub")}
                 </span>
                 <span className="text-[10px] sm:text-[11px] font-bold text-foreground tracking-tight leading-none mt-0.5 whitespace-nowrap truncate">
-                  {t("feather-footer-wikiconnect", "Bangla WikiConnect")}
+                  {t("feather-footer-wikiconnect")}
                 </span>
               </div>
             </a>
@@ -146,10 +146,10 @@ export default function Footer() {
               />
               <div className="flex flex-col text-left justify-center min-w-0">
                 <span className="text-[8px] sm:text-[9px] text-muted-foreground font-normal leading-none truncate">
-                  {t("feather-footer-wmcs-sub", "Powered by")}
+                  {t("feather-footer-wmcs-sub")}
                 </span>
                 <span className="text-[10px] sm:text-[11px] font-bold text-foreground tracking-tight leading-none mt-0.5 whitespace-nowrap truncate">
-                  Wikimedia Cloud Services
+                  {t("feather-footer-wmcs-name")}
                 </span>
               </div>
             </a>

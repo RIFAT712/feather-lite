@@ -319,7 +319,7 @@ export default function JuryHubClient({
             onClick={handleRedistribute}
             disabled={isRedistributing}
             className="h-8 text-xs gap-1.5 cursor-pointer shadow-2xs"
-            title="Rebalance unjudged articles fairly across jury members"
+            title={t("feather-jury-btn-rebalance-hint")}
           >
             <RotateCw className={`h-3 w-3 ${isRedistributing ? "animate-spin" : ""}`} />
             <span>{t("feather-jury-btn-rebalance")}</span>
@@ -336,11 +336,11 @@ export default function JuryHubClient({
               })}
             >
               <Download className="h-3.5 w-3.5 opacity-80" />
-              <span>{t("feather-jury-export-title", "Export Report")}</span>
+              <span>{t("feather-jury-export-title")}</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel className="text-xs text-muted-foreground">
-                {t("feather-jury-export-title", "Export Report")}
+                {t("feather-jury-export-title")}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer gap-2">
@@ -518,15 +518,15 @@ export default function JuryHubClient({
         <TabsList className="bg-muted/70 p-1 border border-border/60">
           <TabsTrigger value="workload" className="text-xs gap-1.5 cursor-pointer">
             <Users className="h-3.5 w-3.5" />
-            <span>{t("feather-jury-tab-workload", "Workload & Backlog")}</span>
+            <span>{t("feather-jury-tab-workload")}</span>
           </TabsTrigger>
           <TabsTrigger value="decisions" className="text-xs gap-1.5 cursor-pointer">
             <Award className="h-3.5 w-3.5" />
-            <span>{t("feather-jury-tab-decisions", "Decisions Breakdown")}</span>
+            <span>{t("feather-jury-tab-decisions")}</span>
           </TabsTrigger>
           <TabsTrigger value="wikitable" className="text-xs gap-1.5 cursor-pointer">
             <FileText className="h-3.5 w-3.5" />
-            <span>{t("feather-jury-tab-wikitable", "Wikitable Report")}</span>
+            <span>{t("feather-jury-tab-wikitable")}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -617,7 +617,7 @@ export default function JuryHubClient({
                               className: "text-[11px] gap-1 cursor-pointer text-primary hover:text-primary",
                             })}
                           >
-                            <span>{t("feather-jury-action-review-assigned", "Review Queue")}</span>
+                            <span>{t("feather-jury-action-review-assigned")}</span>
                             <ChevronRight className="h-3 w-3" />
                           </Link>
                         </TableCell>
@@ -724,10 +724,10 @@ export default function JuryHubClient({
               <div>
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <FileText className="h-4 w-4 text-primary" />
-                  <span>{t("feather-jury-tab-wikitable", "Wikitable Report")}</span>
+                  <span>{t("feather-jury-tab-wikitable")}</span>
                 </CardTitle>
                 <CardDescription className="text-xs mt-0.5">
-                  Pre-formatted MediaWiki wikitable ready to copy into on-wiki reporting pages.
+                  {t("feather-jury-wikitable-desc")}
                 </CardDescription>
               </div>
               <Button
@@ -741,12 +741,12 @@ export default function JuryHubClient({
                 ) : (
                   <Copy className="h-3.5 w-3.5" />
                 )}
-                <span>{copiedWikitable ? "Copied!" : t("feather-jury-btn-copy-wikitable", "Copy Wikitable")}</span>
+                <span>{copiedWikitable ? t("feather-copied") : t("feather-jury-btn-copy-wikitable")}</span>
               </Button>
             </CardHeader>
             <CardContent className="p-4">
               <pre className="font-mono text-xs bg-muted/50 p-4 rounded-lg border border-border/60 overflow-x-auto text-foreground whitespace-pre leading-relaxed select-all">
-                {wikitableContent || "No data available."}
+                {wikitableContent || t("feather-no-data")}
               </pre>
             </CardContent>
           </Card>

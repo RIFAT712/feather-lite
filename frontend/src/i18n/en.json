@@ -919,5 +919,18 @@
     "feather-role-jury": "Jury",
     "feather-create-organizers-label": "Organizer usernames",
     "feather-create-organizers-hint": "Organizers can change contest settings and judge submissions, without being added to the jury roster unless listed as jury or judging at least 1 article.",
-    "feather-contest-organizers-label": "Organizers"
+    "feather-contest-organizers-label": "Organizers",
+    "feather-loading": "Loading...",
+    "feather-navbar-login": "Log in with Wikimedia",
+    "feather-modal-close": "Close",
+    "feather-campaign-already-added": "Added",
+    "feather-copied": "Copied!",
+    "feather-no-data": "No data available.",
+    "feather-discussion-submitted-by": "Submitted by: $1",
+    "feather-discussion-author": "Author",
+    "feather-review-filter-active": "Filtered",
+    "feather-review-filter-action": "Filter",
+    "feather-notif-loading": "Loading notifications...",
+    "feather-jury-btn-rebalance-hint": "Rebalance unjudged articles fairly across jury members",
+    "feather-jury-wikitable-desc": "Pre-formatted MediaWiki wikitable ready to copy into on-wiki reporting pages."
 }

@@ -399,7 +399,7 @@ export default function ReviewQueueClient({
 }: ReviewQueueClientProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
-  const { t } = useI18n();
+  const { t, n } = useI18n();
 
   const [contest, setContest] = useState<Contest | null>(initialContest || null);
 
@@ -1202,16 +1202,11 @@ ${body}
   const handleDecision = async (decision: "accepted" | "rejected") => {
     if (!currentArticle || isSubmitting) return;
     if (isLockedByOther) {
-      toast.error(`${currentArticle.locked_by} is currently judging this article`);
+      toast.error(t("feather-review-lock-banner", currentArticle.locked_by));
       return;
     }
     if (isSelfArticle) {
-      toast.error(
-        t(
-          "feather-review-coi-banner",
-          "Conflict of Interest: You cannot review your own article (authored or submitted by you)."
-        )
-      );
+      toast.error(t("feather-review-coi-banner"));
       return;
     }
     clearInterval(lockHeartbeatTimerRef.current);
@@ -1544,28 +1539,18 @@ ${body}
             return;
           }
           if (isSelfArticle) {
-            toast.error(
-              t(
-                "feather-review-coi-banner",
-                "Conflict of Interest: You cannot review your own article (authored or submitted by you)."
-              )
-            );
+            toast.error(t("feather-review-coi-banner"));
             return;
           }
           handleDecision("accepted");
           break;
         case "reject":
           if (isLockedByOther) {
-            toast.error(`${currentArticle.locked_by} is currently judging this article`);
+            toast.error(t("feather-review-lock-banner", currentArticle.locked_by));
             return;
           }
           if (isSelfArticle) {
-            toast.error(
-              t(
-                "feather-review-coi-banner",
-                "Conflict of Interest: You cannot review your own article (authored or submitted by you)."
-              )
-            );
+            toast.error(t("feather-review-coi-banner"));
             return;
           }
           handleDecision("rejected");
@@ -1875,7 +1860,7 @@ ${body}
                       {isReReviewTab && pendingReReviewCount > 0 && (
                         <span
                           className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-amber-950 dark:bg-amber-500 dark:text-amber-950 leading-none shrink-0 animate-pulse"
-                          title={t("feather-rereview-badge", "Re-review requested")}
+                          title={t("feather-rereview-badge")}
                         >
                           {pendingReReviewCount}
                         </span>
@@ -1908,10 +1893,10 @@ ${body}
                   >
                     <span className="flex items-center gap-1.5">
                       <RefreshCw className={`h-3 w-3 ${onlyPendingReReview ? "animate-spin text-amber-600 dark:text-amber-400" : ""}`} />
-                      <span>{t("feather-filter-only-rereviews", "Pending re-reviews ($1)", pendingReReviewCount)}</span>
+                      <span>{t("feather-filter-only-rereviews", n(pendingReReviewCount))}</span>
                     </span>
                     <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300">
-                      {onlyPendingReReview ? "Filtered" : "Filter"}
+                      {onlyPendingReReview ? t("feather-review-filter-active") : t("feather-review-filter-action")}
                     </span>
                   </button>
                 </div>
@@ -1922,13 +1907,13 @@ ${body}
             {selectedForBulk.length > 0 && (
               <div className="rq-bulk-bar">
                 <div className="rq-bulk-banner">
-                  <span className="rq-bulk-count">{selectedForBulk.length} selected</span>
+                  <span className="rq-bulk-count">{t("feather-review-bulk-selected", n(selectedForBulk.length))}</span>
                   <div className="rq-bulk-actions">
                     <button
                       type="button"
                       className="rq-bbtn rq-bbtn-accept"
                       onClick={() => handleBulkDecision("accepted")}
-                      title="Bulk Accept"
+                      title={t("feather-review-bulk-accept", n(selectedForBulk.length))}
                     >
                       <Check className="h-3.5 w-3.5 stroke-[2.5]" />
                     </button>
@@ -1936,7 +1921,7 @@ ${body}
                       type="button"
                       className="rq-bbtn rq-bbtn-reject"
                       onClick={() => handleBulkDecision("rejected")}
-                      title="Bulk Reject"
+                      title={t("feather-review-bulk-reject", n(selectedForBulk.length))}
                     >
                       <XCircle className="h-3.5 w-3.5 stroke-[2.2]" />
                     </button>
@@ -1944,7 +1929,7 @@ ${body}
                       type="button"
                       className="rq-bbtn rq-bbtn-remove"
                       onClick={handleBulkRemove}
-                      title="Bulk Delete"
+                      title={t("feather-review-bulk-delete", n(selectedForBulk.length))}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -2379,10 +2364,10 @@ ${body}
                         <div className="min-w-0 space-y-0.5">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-amber-900 dark:text-amber-200">
-                              {t("feather-rereview-banner-title", "Re-review requested by author")}
+                              {t("feather-rereview-banner-title")}
                             </span>
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 font-mono">
-                              {currentArticle.word_count || 0} {t("feather-words", "words")} · {currentArticle.byte_count || 0} {t("feather-bytes", "bytes")}
+                              {t("feather-review-preview-words", n(currentArticle.word_count || 0))} · {t("feather-review-preview-bytes", n(currentArticle.byte_count || 0))}
                             </span>
                           </div>
                           <p className="italic text-[11px] text-amber-900/90 dark:text-amber-300/90 break-words line-clamp-1">
@@ -2396,7 +2381,7 @@ ${body}
                         className="px-2.5 py-1 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded cursor-pointer shrink-0 transition-colors flex items-center gap-1.5"
                       >
                         <MessageSquare className="h-3 w-3" />
-                        <span>{t("feather-open-discussion", "Open Discussion")}</span>
+                        <span>{t("feather-open-discussion")}</span>
                       </button>
                     </div>
                   )}

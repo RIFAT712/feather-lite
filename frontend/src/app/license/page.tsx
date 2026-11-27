@@ -33,7 +33,7 @@ export default function LicensePage() {
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>{t("feather-nav-back-contests", "Back to all contests")}</span>
+            <span>{t("feather-nav-back-contests")}</span>
           </Link>
         </div>
 

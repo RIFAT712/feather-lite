@@ -168,11 +168,11 @@ export default function SettingsClient({
 
   const handleAddExistingContest = (item: AvailableContest) => {
     if (selectedExistingContests.some((c) => c.code === item.code)) {
-      toast.error(t("feather-campaign-already-selected", "Competition is already added"));
+      toast.error(t("feather-campaign-already-selected"));
       return;
     }
     setSelectedExistingContests((prev) => [...prev, item]);
-    toast.success(`Added ${item.name}`);
+    toast.success(t("feather-campaign-added-toast", item.name));
   };
 
   const handleRemoveExistingContest = (targetCode: string) => {
@@ -252,12 +252,7 @@ export default function SettingsClient({
     }
     const isUmbrella = editContestType === "umbrella";
     if (isUmbrella && selectedExistingContests.length === 0) {
-      toast.error(
-        t(
-          "feather-campaign-requires-one-comp",
-          "Please select at least one existing competition for this multi-community campaign."
-        )
-      );
+      toast.error(t("feather-campaign-requires-one-comp"));
       document
         .getElementById("participating-competitions-section")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -440,7 +435,7 @@ export default function SettingsClient({
                 className: "h-8.5 px-3 text-xs cursor-pointer",
               })}
             >
-              {t("feather-submit-cancel", "Cancel")}
+              {t("feather-submit-cancel")}
             </Link>
 
             <Button
@@ -1290,7 +1285,7 @@ export default function SettingsClient({
                 className: "h-9 px-3.5 text-xs cursor-pointer",
               })}
             >
-              {t("feather-submit-cancel", "Cancel")}
+              {t("feather-submit-cancel")}
             </Link>
 
             <Button

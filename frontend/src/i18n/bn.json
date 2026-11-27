@@ -919,5 +919,18 @@
     "feather-role-jury": "বিচারক",
     "feather-create-organizers-label": "আয়োজকদের ব্যবহারকারীনাম",
     "feather-create-organizers-hint": "আয়োজকরা প্রতিযোগিতার সেটিংস পরিবর্তন ও নিবন্ধ মূল্যায়ন করতে পারবেন। তবে বিচারক তালিকায় যুক্ত না থাকলে বা অন্তত একটি নিবন্ধ মূল্যায়ন না করলে তারা বিচারক হিসেবে গণ্য হবেন না।",
-    "feather-contest-organizers-label": "আয়োজকবৃন্দ"
+    "feather-contest-organizers-label": "আয়োজকবৃন্দ",
+    "feather-loading": "লোড হচ্ছে...",
+    "feather-navbar-login": "উইকিমিডিয়া দিয়ে লগ ইন করুন",
+    "feather-modal-close": "বন্ধ করুন",
+    "feather-campaign-already-added": "সংযুক্ত",
+    "feather-copied": "অনুলিপি করা হয়েছে!",
+    "feather-no-data": "কোনো তথ্য নেই।",
+    "feather-discussion-submitted-by": "জমা দিয়েছেন: $1",
+    "feather-discussion-author": "লেখক",
+    "feather-review-filter-active": "ফিল্টারকৃত",
+    "feather-review-filter-action": "ফিল্টার",
+    "feather-notif-loading": "বিজ্ঞপ্তি লোড হচ্ছে...",
+    "feather-jury-btn-rebalance-hint": "বিচারকদের মাঝে অমূল্যায়িত নিবন্ধগুলো সমভাবে পুনর্বণ্টন করুন",
+    "feather-jury-wikitable-desc": "অন-উইকি প্রতিবেদন পাতায় ব্যবহারের উপযোগী প্রাক-বিন্যাসকৃত মিডিয়াউইকি উইকিটেবিল।"
 }

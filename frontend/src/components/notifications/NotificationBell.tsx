@@ -114,7 +114,7 @@ export default function NotificationBell() {
     const diffMs = Date.now() - new Date(timestamp).getTime();
     const diffSec = Math.floor(diffMs / 1000);
     if (diffSec < 60) {
-      return t("feather-notif-relative-just-now", "just now");
+      return t("feather-notif-relative-just-now");
     }
     const diffMin = Math.floor(diffSec / 60);
     if (diffMin < 60) {
@@ -168,18 +168,18 @@ export default function NotificationBell() {
   const renderTypeLabel = (type: string) => {
     switch (type) {
       case "contest_approved":
-        return t("feather-notif-type-contest-approved", "Contest Approved");
+        return t("feather-notif-type-contest-approved");
       case "contest_rejected":
-        return t("feather-notif-type-contest-rejected", "Contest Rejected");
+        return t("feather-notif-type-contest-rejected");
       case "article_rejected":
-        return t("feather-notif-type-rejected", "Article Rejected");
+        return t("feather-notif-type-rejected");
       case "article_accepted":
-        return t("feather-notif-type-accepted", "Article Accepted");
+        return t("feather-notif-type-accepted");
       case "re_review_requested":
-        return t("feather-notif-type-rereview", "Re-review Requested");
+        return t("feather-notif-type-rereview");
       case "article_message":
       default:
-        return t("feather-notif-type-message", "Discussion Message");
+        return t("feather-notif-type-message");
     }
   };
 
@@ -231,7 +231,7 @@ export default function NotificationBell() {
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen((prev) => !prev)}
-        aria-label={t("feather-notif-title", "Notifications")}
+        aria-label={t("feather-notif-title")}
         className="relative h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-full cursor-pointer focus-visible:ring-1 focus-visible:ring-ring"
       >
         <Bell className="h-4 w-4" />
@@ -249,7 +249,7 @@ export default function NotificationBell() {
           <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/60 bg-muted/30">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-xs sm:text-sm text-foreground">
-                {t("feather-notif-title", "Notifications")}
+                {t("feather-notif-title")}
               </span>
               {unreadCount > 0 && (
                 <Badge
@@ -266,10 +266,10 @@ export default function NotificationBell() {
                 type="button"
                 onClick={handleMarkAllRead}
                 className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground font-medium cursor-pointer transition-colors"
-                title={t("feather-notif-mark-all-read", "Mark all as read")}
+                title={t("feather-notif-mark-all-read")}
               >
                 <CheckCheck className="h-3 w-3" />
-                <span>{t("feather-notif-mark-all-read", "Mark all as read")}</span>
+                <span>{t("feather-notif-mark-all-read")}</span>
               </button>
             )}
           </div>
@@ -285,7 +285,7 @@ export default function NotificationBell() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("feather-notif-tab-all", "All")}
+              {t("feather-notif-tab-all")}
             </button>
             <button
               type="button"
@@ -296,7 +296,7 @@ export default function NotificationBell() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              <span>{t("feather-notif-tab-unread", "Unread")}</span>
+              <span>{t("feather-notif-tab-unread")}</span>
               {unreadCount > 0 && (
                 <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               )}
@@ -308,19 +308,16 @@ export default function NotificationBell() {
             {isLoading ? (
               <div className="py-12 flex flex-col items-center justify-center text-muted-foreground gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <span className="text-xs">Loading notifications...</span>
+                <span className="text-xs">{t("feather-notif-loading")}</span>
               </div>
             ) : displayedNotifications.length === 0 ? (
               <div className="py-12 px-6 flex flex-col items-center justify-center text-center text-muted-foreground">
                 <Inbox className="h-9 w-9 text-muted-foreground/40 mb-2 stroke-[1.5]" />
                 <p className="text-xs font-semibold text-foreground">
-                  {t("feather-notif-empty", "No notifications yet")}
+                  {t("feather-notif-empty")}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1 max-w-[240px] leading-relaxed">
-                  {t(
-                    "feather-notif-empty-desc",
-                    "When judges evaluate your articles or discussions start, you'll see them here."
-                  )}
+                  {t("feather-notif-empty-desc")}
                 </p>
               </div>
             ) : (

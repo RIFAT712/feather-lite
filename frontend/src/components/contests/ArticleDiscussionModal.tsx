@@ -55,7 +55,7 @@ export default function ArticleDiscussionModal({
   contestRoles,
   onReReviewRequested,
 }: ArticleDiscussionModalProps) {
-  const { t } = useI18n();
+  const { t, n } = useI18n();
   const queryClient = useQueryClient();
   const [messageText, setMessageText] = useState("");
   const [showReReviewForm, setShowReReviewForm] = useState(false);
@@ -169,7 +169,11 @@ export default function ArticleDiscussionModal({
                   }
                   className="text-[11px] capitalize shrink-0 font-medium h-5"
                 >
-                  {article.status}
+                  {article.status === "accepted"
+                    ? t("feather-contest-filter-accepted")
+                    : article.status === "rejected"
+                    ? t("feather-contest-filter-rejected")
+                    : t("feather-contest-filter-pending")}
                 </Badge>
                 {article.re_review_requested && (
                   <Badge
@@ -177,14 +181,14 @@ export default function ArticleDiscussionModal({
                     className="text-[11px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 gap-1 h-5"
                   >
                     <RefreshCw className="h-3 w-3" />
-                    <span>{t("feather-rereview-badge", "Re-review requested")}</span>
+                    <span>{t("feather-rereview-badge")}</span>
                   </Badge>
                 )}
               </div>
               <DialogDescription className="text-xs text-muted-foreground flex items-center gap-2">
-                <span>Submitted by: <strong>{submitterUsername}</strong></span>
+                <span>{t("feather-discussion-submitted-by", submitterUsername)}</span>
                 <span>•</span>
-                <span>{(article.word_count || 0).toLocaleString()} words</span>
+                <span>{t("feather-review-preview-words", n(article.word_count || 0))}</span>
               </DialogDescription>
             </div>
           </div>
@@ -198,7 +202,7 @@ export default function ArticleDiscussionModal({
                 <RefreshCw className="h-4 w-4 shrink-0 mt-0.5" />
                 <div className="space-y-0.5 min-w-0 flex-1">
                   <p className="font-semibold">
-                    {t("feather-rereview-already-requested", "Re-review has already been requested and is pending in the jury queue.")}
+                    {t("feather-rereview-already-requested")}
                   </p>
                   {article.re_review_note && (
                     <p className="text-[11px] text-amber-900/80 dark:text-amber-200/80 italic bg-amber-500/10 p-1.5 rounded">
@@ -215,11 +219,11 @@ export default function ArticleDiscussionModal({
                       <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
                         <AlertCircle className="h-4 w-4 shrink-0" />
                         <span className="font-semibold text-xs">
-                          {t("feather-rereview-criteria-fixed", "Fixed criteria or added content on Wikipedia?")}
+                          {t("feather-rereview-criteria-fixed")}
                         </span>
                       </div>
                       <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80">
-                        {t("feather-rereview-refresh-hint", "Submitting this request will automatically re-fetch the latest article word and byte counts from Wikipedia.")}
+                        {t("feather-rereview-refresh-hint")}
                       </p>
                     </div>
                     <Button
@@ -229,30 +233,27 @@ export default function ArticleDiscussionModal({
                       className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium gap-1 shrink-0 cursor-pointer shadow-xs self-start sm:self-auto"
                     >
                       <RefreshCw className="h-3 w-3" />
-                      <span>{t("feather-rereview-btn", "Request Re-review")}</span>
+                      <span>{t("feather-rereview-btn")}</span>
                     </Button>
                   </div>
                 ) : (
                   <form onSubmit={handleReReviewSubmit} className="space-y-2 mt-1">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-semibold text-foreground">
-                        {t("feather-rereview-note-label", "Explanation of changes made")}
+                        {t("feather-rereview-note-label")}
                       </label>
                       <button
                         type="button"
                         onClick={() => setShowReReviewForm(false)}
                         className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
                       >
-                        Cancel
+                        {t("feather-submit-cancel")}
                       </button>
                     </div>
                     <Textarea
                       value={reReviewNote}
                       onChange={(e) => setReReviewNote(e.target.value)}
-                      placeholder={t(
-                        "feather-rereview-note-placeholder",
-                        "e.g., Added 200 words, fixed missing inline citations, and translated the remaining sections..."
-                      )}
+                      placeholder={t("feather-rereview-note-placeholder")}
                       rows={2}
                       className="text-xs bg-background resize-none"
                       required
@@ -270,10 +271,10 @@ export default function ArticleDiscussionModal({
                         {reReviewMutation.isPending ? (
                           <>
                             <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                            <span>{t("feather-rereview-submitting", "Submitting request...")}</span>
+                            <span>{t("feather-rereview-submitting")}</span>
                           </>
                         ) : (
-                          <span>{t("feather-rereview-submit-btn", "Submit Re-review Request")}</span>
+                          <span>{t("feather-rereview-submit-btn")}</span>
                         )}
                       </Button>
                     </div>
@@ -289,19 +290,16 @@ export default function ArticleDiscussionModal({
           {isLoading ? (
             <div className="py-12 flex flex-col items-center justify-center text-muted-foreground gap-2">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-xs">Loading discussion...</span>
+              <span className="text-xs">{t("feather-loading")}</span>
             </div>
           ) : messages.length === 0 ? (
             <div className="py-12 px-6 flex flex-col items-center justify-center text-center text-muted-foreground">
               <MessageSquare className="h-8 w-8 text-muted-foreground/40 mb-2" />
               <p className="text-xs font-semibold text-foreground">
-                {t("feather-discussion-title", "Article Discussion")}
+                {t("feather-discussion-title")}
               </p>
               <p className="text-[11px] text-muted-foreground mt-1 max-w-[280px]">
-                {t(
-                  "feather-discussion-empty",
-                  "No messages in this discussion yet. Ask a question or provide criteria clarification."
-                )}
+                {t("feather-discussion-empty")}
               </p>
             </div>
           ) : (
@@ -344,7 +342,7 @@ export default function ArticleDiscussionModal({
                     <UserBadge username={msg.username} contestRoles={contestRoles} />
                     {isSenderAuthor && (
                       <span className="text-[9px] bg-muted px-1.5 py-0.2 rounded font-medium">
-                        Author
+                        {t("feather-discussion-author")}
                       </span>
                     )}
                     <span>•</span>
@@ -380,10 +378,7 @@ export default function ArticleDiscussionModal({
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={t(
-                  "feather-discussion-placeholder",
-                  "Type your message or clarification here..."
-                )}
+                placeholder={t("feather-discussion-placeholder")}
                 rows={1}
                 className="text-xs bg-background resize-none min-h-[38px] max-h-[80px] flex-1 py-2"
               />
@@ -399,7 +394,7 @@ export default function ArticleDiscussionModal({
                   <>
                     <Send className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">
-                      {t("feather-discussion-send-btn", "Send")}
+                      {t("feather-discussion-send-btn")}
                     </span>
                   </>
                 )}
@@ -407,17 +402,11 @@ export default function ArticleDiscussionModal({
             </form>
           ) : !currentUsername ? (
             <div className="py-1 text-center text-xs text-muted-foreground">
-              {t(
-                "feather-discussion-login-required",
-                "You must be logged in to participate in the discussion."
-              )}
+              {t("feather-discussion-login-required")}
             </div>
           ) : (
             <div className="py-1 text-center text-xs text-muted-foreground">
-              {t(
-                "feather-discussion-forbidden",
-                "Only the author, contest juries, and organizers can participate in this discussion."
-              )}
+              {t("feather-discussion-forbidden")}
             </div>
           )}
         </div>

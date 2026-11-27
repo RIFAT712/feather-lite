@@ -2401,8 +2401,8 @@ export default function ContestDashboardClient({
         {/* Quick Community Submit Picker Dialog for Umbrella Campaigns */}
         {contest.is_umbrella && (
           <Dialog open={isSubmitPickerOpen} onOpenChange={setIsSubmitPickerOpen}>
-            <DialogContent className="sm:max-w-xl">
-              <DialogHeader>
+            <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col overflow-hidden">
+              <DialogHeader className="shrink-0">
                 <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Globe className="h-5 w-5 text-primary shrink-0" />
                   <span>{t("feather-campaign-submit-picker-title")}</span>
@@ -2412,7 +2412,7 @@ export default function ContestDashboardClient({
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="max-h-[60vh] overflow-y-auto space-y-2.5 pr-1 mt-2">
+              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1.5 my-2 overscroll-contain">
                 {(!contest.sub_contests || contest.sub_contests.length === 0) ? (
                   <div className="p-8 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/20">
                     {t("feather-campaign-no-communities-found")}
@@ -2494,7 +2494,7 @@ export default function ContestDashboardClient({
                 )}
               </div>
 
-              <DialogFooter className="pt-2 border-t border-border/60">
+              <DialogFooter className="shrink-0 pt-2 border-t border-border/60">
                 <Button
                   type="button"
                   variant="outline"
@@ -2757,7 +2757,7 @@ export default function ContestDashboardClient({
                                 )}
                               </div>
 
-                              <DialogFooter className="pt-2 border-t border-border/60">
+                              <DialogFooter className="shrink-0 pt-2 border-t border-border/60">
                                 <Button
                                   type="button"
                                   variant="outline"

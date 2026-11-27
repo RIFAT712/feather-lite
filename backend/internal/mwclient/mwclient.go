@@ -559,6 +559,92 @@ func FetchPageInfo(wikiURL string, title string) (*PageInfo, error) {
 	}, nil
 }
 
+// FetchLatestPageMetrics queries the latest revision of a page to get up-to-date byte size, word count, and ref count.
+// Unlike FetchPageInfo (which inspects the original creator revision), this queries the current state of the page.
+func FetchLatestPageMetrics(wikiURL string, title string) (*PageInfo, error) {
+	if strings.TrimSpace(wikiURL) == "" {
+		wikiURL = "https://bn.wikipedia.org"
+	}
+	apiEndpoint := strings.TrimRight(wikiURL, "/") + "/w/api.php"
+	params := url.Values{}
+	params.Set("action", "query")
+	params.Set("prop", "info|revisions|pageprops")
+	params.Set("rvprop", "user|timestamp|size|content")
+	params.Set("rvslots", "main")
+	params.Set("rvlimit", "1")
+	// Note: omitting rvdir=newer defaults to latest revision (rvdir=older)
+	params.Set("titles", title)
+	params.Set("format", "json")
+	params.Set("formatversion", "2")
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", apiEndpoint, params.Encode()), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", DefaultUserAgent)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("mediawiki query failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var result mwQueryResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode mediawiki response: %w", err)
+	}
+
+	if len(result.Query.Pages) == 0 || result.Query.Pages[0].Missing {
+		return &PageInfo{
+			Title:  title,
+			Exists: false,
+		}, nil
+	}
+
+	page := result.Query.Pages[0]
+	lastEditor := ""
+	var editTime time.Time
+	wordCount := 0
+	refCount := 0
+	isRedirect := isRedirectField(page.Redirect)
+	isDisambig := isDisambigData(page.Title, page.PageProps)
+
+	if len(page.Revisions) > 0 {
+		rev := page.Revisions[0]
+		lastEditor = rev.User
+		editTime, _ = time.Parse(time.RFC3339, rev.Timestamp)
+		rawText := rev.Slots.Main.Content
+		wordCount = wikitext.CountWords(rawText)
+		refCount = wikitext.CountRefs(rawText)
+
+		trimmed := strings.TrimSpace(rawText)
+		trimmedLower := strings.ToLower(trimmed)
+		if strings.HasPrefix(trimmedLower, "#redirect") ||
+			strings.HasPrefix(trimmed, "#পুনর্নির্দেশ") ||
+			strings.HasPrefix(trimmed, "#পুনঃনির্দেশ") ||
+			strings.HasPrefix(trimmed, "#পুনর্নিদের্শ") {
+			isRedirect = true
+		}
+		if strings.Contains(trimmedLower, "{{disambig") ||
+			strings.Contains(trimmedLower, "{{দ্ব্যর্থতা নিরসন") ||
+			strings.Contains(trimmedLower, "{{দ্ব্যর্থতা") {
+			isDisambig = true
+		}
+	}
+
+	return &PageInfo{
+		Title:        page.Title,
+		Exists:       true,
+		IsRedirect:   isRedirect,
+		IsDisambig:   isDisambig,
+		Creator:      lastEditor,
+		CreationDate: editTime,
+		ByteSize:     page.Length,
+		WordCount:    wordCount,
+		RefCount:     refCount,
+	}, nil
+}
+
 // FetchPagesBatch validates multiple titles in parallel using a controlled worker pool.
 // Avoids MediaWiki's 'invalidparammix' constraint while running in sub-second response times.
 func FetchPagesBatch(wikiURL string, titles []string) (map[string]*PageInfo, error) {

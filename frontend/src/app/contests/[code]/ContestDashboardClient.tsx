@@ -3812,22 +3812,66 @@ export default function ContestDashboardClient({
                               {formatDate(art.submitted_at)}
                             </TableCell>
                             <TableCell className="text-center">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDiscussionArticle(art)}
-                                className={`h-7 px-2 text-xs cursor-pointer gap-1 rounded-md ${
-                                  art.re_review_requested
-                                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-semibold"
-                                    : "text-muted-foreground hover:text-foreground"
-                                }`}
-                                title={t("feather-discussion-title")}
-                              >
-                                <MessageSquare className="h-3.5 w-3.5 text-primary" />
-                                <span className="text-[11px] hidden md:inline">
-                                  {art.re_review_requested ? t("feather-review-tab-rereview") : t("feather-discussion-btn-empty")}
-                                </span>
-                              </Button>
+                              {art.status === "rejected" ? (
+                                art.re_review_requested ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setDiscussionArticle(art)}
+                                    className="h-7 px-2 text-xs cursor-pointer gap-1 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-semibold"
+                                    title={t("feather-rereview-already-requested")}
+                                  >
+                                    <RefreshCw className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                    <span className="text-[11px] hidden md:inline">
+                                      {t("feather-rereview-badge", "Re-review requested")}
+                                    </span>
+                                  </Button>
+                                ) : Boolean(
+                                    me?.wiki_username &&
+                                    art.submitter_username &&
+                                    me.wiki_username.trim().toLowerCase() ===
+                                      art.submitter_username.trim().toLowerCase()
+                                  ) ? (
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => setDiscussionArticle(art)}
+                                    className="h-7 px-2 text-xs cursor-pointer gap-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs"
+                                    title={t("feather-rereview-btn", "Request Re-review")}
+                                  >
+                                    <RefreshCw className="h-3 w-3" />
+                                    <span className="text-[11px] hidden md:inline">
+                                      {t("feather-rereview-btn", "Request Re-review")}
+                                    </span>
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setDiscussionArticle(art)}
+                                    className="h-7 px-2 text-xs cursor-pointer gap-1 rounded-md text-muted-foreground hover:text-foreground"
+                                    title={t("feather-discussion-title")}
+                                  >
+                                    <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                                    <span className="text-[11px] hidden md:inline">
+                                      {t("feather-discussion-btn-empty")}
+                                    </span>
+                                  </Button>
+                                )
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setDiscussionArticle(art)}
+                                  className="h-7 px-2 text-xs cursor-pointer gap-1 rounded-md text-muted-foreground hover:text-foreground"
+                                  title={t("feather-discussion-title")}
+                                >
+                                  <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                                  <span className="text-[11px] hidden md:inline">
+                                    {t("feather-discussion-btn-empty")}
+                                  </span>
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -3909,15 +3953,34 @@ export default function ContestDashboardClient({
                               <span>{t("feather-rereview-badge", "Re-review requested")}</span>
                             </span>
                           ) : <span />}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDiscussionArticle(art)}
-                            className="h-6 text-[11px] gap-1 px-2 cursor-pointer"
-                          >
-                            <MessageSquare className="h-3 w-3 text-primary" />
-                            <span>Discussion</span>
-                          </Button>
+                          {art.status === "rejected" &&
+                          !art.re_review_requested &&
+                          Boolean(
+                            me?.wiki_username &&
+                              art.submitter_username &&
+                              me.wiki_username.trim().toLowerCase() ===
+                                art.submitter_username.trim().toLowerCase()
+                          ) ? (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => setDiscussionArticle(art)}
+                              className="h-6 text-[10px] gap-1 px-2 cursor-pointer bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs"
+                            >
+                              <RefreshCw className="h-2.5 w-2.5" />
+                              <span>{t("feather-rereview-btn", "Request Re-review")}</span>
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDiscussionArticle(art)}
+                              className="h-6 text-[11px] gap-1 px-2 cursor-pointer"
+                            >
+                              <MessageSquare className="h-3 w-3 text-primary" />
+                              <span>{t("feather-discussion-btn-empty", "Discussion")}</span>
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}

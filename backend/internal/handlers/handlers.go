@@ -2366,12 +2366,14 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 	var lockedByID sql.NullInt64
 	var lockedUntil sql.NullTime
 	var lockedByUsername sql.NullString
+	var reReviewRequested int
 	err = h.db.QueryRow(`
-		SELECT a.contest_id, a.submitter_id, a.wiki_creator, a.locked_by_id, a.locked_until, u.wiki_username
+		SELECT a.contest_id, a.submitter_id, a.wiki_creator, a.locked_by_id, a.locked_until, u.wiki_username,
+		       COALESCE(a.re_review_requested, 0)
 		FROM articles a
 		LEFT JOIN users u ON a.locked_by_id = u.id
 		WHERE a.id = ?
-	`, articleID).Scan(&contestID, &submitterID, &wikiCreator, &lockedByID, &lockedUntil, &lockedByUsername)
+	`, articleID).Scan(&contestID, &submitterID, &wikiCreator, &lockedByID, &lockedUntil, &lockedByUsername, &reReviewRequested)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Article not found")
 		return
@@ -2436,7 +2438,7 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Status == "accepted" || req.Status == "rejected" {
-		_, _ = h.db.Exec("UPDATE articles SET status = ?, locked_until = NULL, locked_by_id = NULL, re_review_requested = 0 WHERE id = ?", req.Status, articleID)
+		_, _ = h.db.Exec("UPDATE articles SET status = ?, locked_until = NULL, locked_by_id = NULL, re_review_requested = 0, re_reviewed_at = CURRENT_TIMESTAMP WHERE id = ?", req.Status, articleID)
 
 		var articleTitle, contestCode, contestName string
 		_ = h.db.QueryRow(`
@@ -2445,6 +2447,29 @@ func (h *Handler) ReviewArticle(w http.ResponseWriter, r *http.Request) {
 			JOIN contests c ON a.contest_id = c.id
 			WHERE a.id = ?
 		`, articleID).Scan(&articleTitle, &contestCode, &contestName)
+
+		if reReviewRequested == 1 {
+			var reReviewSysMsg string
+			if strings.TrimSpace(req.Comment) != "" {
+				reReviewSysMsg = fmt.Sprintf("%s completed the re-review and marked the article as %s: %q", reviewer, strings.Title(req.Status), req.Comment)
+			} else {
+				reReviewSysMsg = fmt.Sprintf("%s completed the re-review and marked the article as %s.", reviewer, strings.Title(req.Status))
+			}
+			_, _ = h.db.Exec(`
+				INSERT INTO article_messages (article_id, user_id, message, is_system, created_at)
+				VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+			`, articleID, reviewerID, reReviewSysMsg)
+
+			h.createNotification(
+				submitterID,
+				contestID,
+				&articleID,
+				"re_review_resolved",
+				fmt.Sprintf("Re-review completed: %s", articleTitle),
+				fmt.Sprintf("Your article '%s' was re-evaluated and marked as %s by %s.", articleTitle, req.Status, reviewer),
+				fmt.Sprintf("/contests/%s?article=%d", contestCode, articleID),
+			)
+		}
 
 		if req.Status == "rejected" {
 			var notifMsg string
@@ -3918,7 +3943,8 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 	// 1. Fetch user submissions in this contest (keyset limited for fast sub-millisecond SSR payload)
 	subQuery := `
 		SELECT a.id, a.title, a.status, COALESCE(a.validation_error, ''), 
-		       a.word_count, a.byte_count, a.submitted_at
+		       a.word_count, a.byte_count, a.submitted_at,
+		       COALESCE(a.re_review_requested, 0), COALESCE(a.re_review_note, ''), a.re_reviewed_at
 		FROM articles a
 		WHERE a.contest_id = ? AND a.submitter_id = ? AND a.status != 'validation_failed'
 	`
@@ -3941,11 +3967,22 @@ func (h *Handler) GetContestUserProfile(w http.ResponseWriter, r *http.Request) 
 	subIndexMap := make(map[int64]int)
 	for rows.Next() {
 		var sub models.ContestUserSubmission
+		var reReviewReqInt int
+		var reReviewNoteStr sql.NullString
+		var reReviewedAt sql.NullTime
 		if err := rows.Scan(
 			&sub.ID, &sub.Title, &sub.Status, &sub.ValidationError,
 			&sub.WordCount, &sub.ByteCount, &sub.SubmittedAt,
+			&reReviewReqInt, &reReviewNoteStr, &reReviewedAt,
 		); err != nil {
 			continue
+		}
+		sub.ReReviewRequested = reReviewReqInt == 1
+		if reReviewNoteStr.Valid {
+			sub.ReReviewNote = reReviewNoteStr.String
+		}
+		if reReviewedAt.Valid {
+			sub.ReReviewedAt = &reReviewedAt.Time
 		}
 		sub.Reviews = make([]models.ContestUserSubmissionReview, 0)
 		subIndexMap[sub.ID] = len(submissions)

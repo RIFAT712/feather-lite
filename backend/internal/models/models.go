@@ -372,14 +372,17 @@ type ContestUserSubmissionReview struct {
 }
 
 type ContestUserSubmission struct {
-	ID              int64                         `json:"id"`
-	Title           string                        `json:"title"`
-	Status          string                        `json:"status"`
-	ValidationError string                        `json:"validation_error"`
-	WordCount       int                           `json:"word_count"`
-	ByteCount       int                           `json:"byte_count"`
-	SubmittedAt     time.Time                     `json:"submitted_at"`
-	Reviews         []ContestUserSubmissionReview `json:"reviews"`
+	ID                int64                         `json:"id"`
+	Title             string                        `json:"title"`
+	Status            string                        `json:"status"`
+	ValidationError   string                        `json:"validation_error"`
+	WordCount         int                           `json:"word_count"`
+	ByteCount         int                           `json:"byte_count"`
+	SubmittedAt       time.Time                     `json:"submitted_at"`
+	ReReviewRequested bool                          `json:"re_review_requested"`
+	ReReviewNote      string                        `json:"re_review_note,omitempty"`
+	ReReviewedAt      *time.Time                    `json:"re_reviewed_at,omitempty"`
+	Reviews           []ContestUserSubmissionReview `json:"reviews"`
 }
 
 type ContestUserProfile struct {

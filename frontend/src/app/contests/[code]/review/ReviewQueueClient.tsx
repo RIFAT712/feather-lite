@@ -448,6 +448,7 @@ export default function ReviewQueueClient({
   const [wikitextCopied, setWikitextCopied] = useState(false);
 
   const [listTab, setListTab] = useState<"queue" | "rereview" | "others">("queue");
+  const [onlyPendingReReview, setOnlyPendingReReview] = useState(false);
   const [isDiscussionOpen, setIsDiscussionOpen] = useState(false);
   const [showQueueOptions, setShowQueueOptions] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -749,7 +750,10 @@ ${body}
       clearTimeout(focusOpenTimerRef.current);
       clearInterval(lockHeartbeatTimerRef.current);
       if (!article) return;
-      const canReReview = article?.reviews?.some((r: any) => r.reviewer === myUsername);
+      const canReReview =
+        article?.reviews?.some((r: any) => r.reviewer === myUsername) ||
+        Boolean(article?.re_review_requested) ||
+        isOwner;
       if (article.status !== "pending" && !canReReview) return;
 
       awaitingFirstSelectionRef.current = false;
@@ -879,8 +883,12 @@ ${body}
 
   const judgedArticles = useMemo(() => {
     if (!myUsername) return [];
-    return articles.filter((a) => a.reviews.some((r: any) => r.reviewer === myUsername));
-  }, [articles, myUsername]);
+    return articles.filter((a) => {
+      const isMine = a.reviews?.some((r: any) => r.reviewer === myUsername);
+      const isPendingReReview = a.re_review_requested && !isOwnArticle(a);
+      return isMine || isPendingReReview;
+    });
+  }, [articles, isOwnArticle, myUsername]);
 
   const otherReviewedArticles = useMemo(() => {
     if (!myUsername || !isOwner) return [];
@@ -948,9 +956,16 @@ ${body}
     [matchesSearch]
   );
 
+  const pendingReReviewCount = useMemo(() => {
+    return articles.filter((a) => a.re_review_requested && !isOwnArticle(a)).length;
+  }, [articles, isOwnArticle]);
+
   const filteredNewArticles = useMemo(() => forSidebar(newArticles), [forSidebar, newArticles]);
   const filteredJudgedArticles = useMemo(() => {
-    const list = [...forSidebar(judgedArticles, true)];
+    let list = [...forSidebar(judgedArticles, true)];
+    if (onlyPendingReReview) {
+      list = list.filter((a) => a.re_review_requested);
+    }
     return list.sort((a, b) => {
       if (a.re_review_requested && !b.re_review_requested) return -1;
       if (!a.re_review_requested && b.re_review_requested) return 1;
@@ -958,7 +973,7 @@ ${body}
       const rb = DECISION_RANK[getMyLatestDecision(b)] ?? 9;
       return ra - rb;
     });
-  }, [forSidebar, getMyLatestDecision, judgedArticles]);
+  }, [forSidebar, getMyLatestDecision, judgedArticles, onlyPendingReReview]);
 
   const filteredOtherArticles = useMemo(
     () => forSidebar(otherReviewedArticles),
@@ -1234,7 +1249,12 @@ ${body}
       setArticles((prev) =>
         prev.map((article) =>
           article.article_id === reviewedArticleId
-            ? { ...article, status: decision, reviews: [...(article.reviews || []), optimisticReview] }
+            ? {
+                ...article,
+                status: decision,
+                re_review_requested: false,
+                reviews: [...(article.reviews || []), optimisticReview],
+              }
             : article
         )
       );
@@ -1837,6 +1857,7 @@ ${body}
               <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40 text-xs font-medium" role="tablist" aria-label="Queue lists">
                 {listTabs.map((tab) => {
                   const isActive = activeTab.id === tab.id;
+                  const isReReviewTab = tab.id === "rereview";
                   return (
                     <button
                       key={tab.id}
@@ -1851,6 +1872,14 @@ ${body}
                       onClick={() => setListTab(tab.id as any)}
                     >
                       <span className="truncate">{tab.label}</span>
+                      {isReReviewTab && pendingReReviewCount > 0 && (
+                        <span
+                          className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-amber-950 dark:bg-amber-500 dark:text-amber-950 leading-none shrink-0 animate-pulse"
+                          title={t("feather-rereview-badge", "Re-review requested")}
+                        >
+                          {pendingReReviewCount}
+                        </span>
+                      )}
                       <span
                         className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none ${
                           isActive
@@ -1864,6 +1893,29 @@ ${body}
                   );
                 })}
               </div>
+
+              {/* Quick filter for pending re-reviews */}
+              {activeTab.id === "rereview" && pendingReReviewCount > 0 && (
+                <div className="pt-2 px-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setOnlyPendingReReview(!onlyPendingReReview)}
+                    className={`w-full py-1 px-2.5 rounded-md text-[11px] flex items-center justify-between gap-1.5 font-medium transition-all cursor-pointer ${
+                      onlyPendingReReview
+                        ? "bg-amber-500/25 text-amber-900 dark:text-amber-200 border border-amber-500/50 font-bold"
+                        : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted/80 border border-border/40"
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <RefreshCw className={`h-3 w-3 ${onlyPendingReReview ? "animate-spin text-amber-600 dark:text-amber-400" : ""}`} />
+                      <span>{t("feather-filter-only-rereviews", "Pending re-reviews ($1)", pendingReReviewCount)}</span>
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300">
+                      {onlyPendingReReview ? "Filtered" : "Filter"}
+                    </span>
+                  </button>
+                </div>
+              )}
             </header>
 
             {/* Bulk Action Bar */}
@@ -2321,20 +2373,30 @@ ${body}
 
                   {/* Author Re-review Request Notice Banner */}
                   {currentArticle?.re_review_requested && (
-                    <div className="rq-rereview-banner flex items-center justify-between gap-3 p-2.5 px-4 bg-amber-500/15 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs">
-                      <div className="flex items-center gap-2 min-w-0">
+                    <div className="rq-rereview-banner flex items-center justify-between gap-3 p-2.5 px-4 bg-amber-500/15 border-b border-amber-500/30 text-amber-950 dark:text-amber-200 text-xs">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <RefreshCw className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                        <div className="min-w-0">
-                          <span className="font-bold">Re-review requested by author:</span>{" "}
-                          <span className="italic truncate">{currentArticle.re_review_note || "Please re-evaluate my submission."}</span>
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-amber-900 dark:text-amber-200">
+                              {t("feather-rereview-banner-title", "Re-review requested by author")}
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 font-mono">
+                              {currentArticle.word_count || 0} {t("feather-words", "words")} · {currentArticle.byte_count || 0} {t("feather-bytes", "bytes")}
+                            </span>
+                          </div>
+                          <p className="italic text-[11px] text-amber-900/90 dark:text-amber-300/90 break-words line-clamp-1">
+                            &ldquo;{currentArticle.re_review_note || "Please re-evaluate my submission."}&rdquo;
+                          </p>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => setIsDiscussionOpen(true)}
-                        className="px-2.5 py-1 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded cursor-pointer shrink-0 transition-colors"
+                        className="px-2.5 py-1 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded cursor-pointer shrink-0 transition-colors flex items-center gap-1.5"
                       >
-                        View discussion
+                        <MessageSquare className="h-3 w-3" />
+                        <span>{t("feather-open-discussion", "Open Discussion")}</span>
                       </button>
                     </div>
                   )}

@@ -13,6 +13,7 @@ import (
 	"feather-backend/internal/auth"
 	"feather-backend/internal/database"
 	"feather-backend/internal/models"
+	"feather-backend/internal/mwclient"
 )
 
 type PostMessageRequest struct {
@@ -216,13 +217,24 @@ func (h *Handler) RequestArticleReReview(w http.ResponseWriter, r *http.Request)
 
 	var contestID, submitterID int64
 	var assignedToID sql.NullInt64
-	var status, title, contestCode, contestName string
+	var status, title, contestCode, contestName, contestWikiURL, submitterUsername string
+	var reReviewRequested int
+	var currentByteCount, currentWordCount int
 	err = h.db.QueryRow(`
-		SELECT a.contest_id, a.submitter_id, a.assigned_to_id, a.status, a.title, c.code, c.name
+		SELECT a.contest_id, a.submitter_id, a.assigned_to_id, a.status, a.title, 
+		       c.code, c.name, COALESCE(c.wiki_url, 'https://bn.wikipedia.org'),
+		       u.wiki_username, COALESCE(a.re_review_requested, 0),
+		       a.byte_count, a.word_count
 		FROM articles a
 		JOIN contests c ON a.contest_id = c.id
+		JOIN users u ON a.submitter_id = u.id
 		WHERE a.id = ?
-	`, articleID).Scan(&contestID, &submitterID, &assignedToID, &status, &title, &contestCode, &contestName)
+	`, articleID).Scan(
+		&contestID, &submitterID, &assignedToID, &status, &title,
+		&contestCode, &contestName, &contestWikiURL,
+		&submitterUsername, &reReviewRequested,
+		&currentByteCount, &currentWordCount,
+	)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Article not found")
 		return
@@ -231,7 +243,8 @@ func (h *Handler) RequestArticleReReview(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if currentUser.UserID != submitterID && currentUser.Role != "owner" {
+	isAuthor := currentUser.UserID == submitterID || strings.EqualFold(currentUser.WikiUsername, submitterUsername)
+	if !isAuthor && currentUser.Role != "owner" {
 		jsonError(w, http.StatusForbidden, "Only the article submitter can request a re-review")
 		return
 	}
@@ -241,18 +254,40 @@ func (h *Handler) RequestArticleReReview(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if reReviewRequested == 1 {
+		jsonError(w, http.StatusBadRequest, "A re-review request is already pending for this article")
+		return
+	}
+
+	// Re-evaluate page metrics from Wikipedia (author likely updated or expanded the article)
+	newByteCount := currentByteCount
+	newWordCount := currentWordCount
+	if pageInfo, fetchErr := mwclient.FetchLatestPageMetrics(contestWikiURL, title); fetchErr == nil && pageInfo != nil && pageInfo.Exists {
+		if pageInfo.ByteSize > 0 {
+			newByteCount = pageInfo.ByteSize
+		}
+		if pageInfo.WordCount > 0 {
+			newWordCount = pageInfo.WordCount
+		}
+	}
+
 	_, err = h.db.Exec(`
 		UPDATE articles
-		SET re_review_requested = 1, re_review_note = ?, re_reviewed_at = CURRENT_TIMESTAMP
+		SET re_review_requested = 1, re_review_note = ?, re_reviewed_at = CURRENT_TIMESTAMP,
+		    byte_count = ?, word_count = ?
 		WHERE id = ?
-	`, note, articleID)
+	`, note, newByteCount, newWordCount, articleID)
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, "Failed to update re-review request")
 		return
 	}
 
 	// Add system audit message into article discussion thread
-	sysMsg := fmt.Sprintf("%s requested a re-review: %q", currentUser.WikiUsername, note)
+	metricsDiff := ""
+	if newWordCount != currentWordCount || newByteCount != currentByteCount {
+		metricsDiff = fmt.Sprintf(" (Refreshed metrics: %d words, %d bytes)", newWordCount, newByteCount)
+	}
+	sysMsg := fmt.Sprintf("%s requested a re-review: %q%s", currentUser.WikiUsername, note, metricsDiff)
 	_, _ = h.db.Exec(`
 		INSERT INTO article_messages (article_id, user_id, message, is_system, created_at)
 		VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
@@ -293,7 +328,9 @@ func (h *Handler) RequestArticleReReview(w http.ResponseWriter, r *http.Request)
 	}
 
 	jsonResponse(w, http.StatusOK, map[string]any{
-		"success": true,
-		"message": "Re-review requested successfully",
+		"success":    true,
+		"message":    "Re-review requested successfully",
+		"word_count": newWordCount,
+		"byte_count": newByteCount,
 	})
 }

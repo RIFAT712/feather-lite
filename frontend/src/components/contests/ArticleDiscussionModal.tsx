@@ -135,8 +135,17 @@ export default function ArticleDiscussionModal({
   if (!article) return null;
 
   const articleTitle = (article as any).article_title || article.title || "";
-  const submitterUsername = (article as any).user_name || article.submitter_username || "";
-  const isAuthor = Boolean(currentUsername && currentUsername === submitterUsername);
+  const submitterUsername =
+    (article as any).user_name ||
+    article.submitter_username ||
+    (article as any).submitted_by ||
+    (article as any).wiki_creator ||
+    "";
+  const isAuthor = Boolean(
+    currentUsername &&
+      submitterUsername &&
+      currentUsername.trim().toLowerCase() === submitterUsername.trim().toLowerCase()
+  );
   const canParticipate = Boolean(currentUsername && (isAuthor || isJuryOrOrganizer));
 
   return (
@@ -201,18 +210,23 @@ export default function ArticleDiscussionModal({
             ) : isAuthor ? (
               <div>
                 {!showReReviewForm ? (
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
-                      <AlertCircle className="h-4 w-4 shrink-0" />
-                      <span className="font-medium">
-                        Fixed criteria or added content?
-                      </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <span className="font-semibold text-xs">
+                          {t("feather-rereview-criteria-fixed", "Fixed criteria or added content on Wikipedia?")}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80">
+                        {t("feather-rereview-refresh-hint", "Submitting this request will automatically re-fetch the latest article word and byte counts from Wikipedia.")}
+                      </p>
                     </div>
                     <Button
                       size="sm"
                       variant="default"
                       onClick={() => setShowReReviewForm(true)}
-                      className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium gap-1 shrink-0 cursor-pointer shadow-xs"
+                      className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium gap-1 shrink-0 cursor-pointer shadow-xs self-start sm:self-auto"
                     >
                       <RefreshCw className="h-3 w-3" />
                       <span>{t("feather-rereview-btn", "Request Re-review")}</span>

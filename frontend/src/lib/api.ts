@@ -690,6 +690,9 @@ export interface ContestUserSubmission {
   word_count: number;
   byte_count: number;
   submitted_at: string;
+  re_review_requested?: boolean;
+  re_review_note?: string;
+  re_reviewed_at?: string;
   reviews: ContestUserSubmissionReview[];
 }
 

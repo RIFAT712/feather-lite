@@ -4,12 +4,13 @@ import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { fetchContestUserProfile, fetchArticles, ContestUserProfile } from "@/lib/api";
+import { fetchContestUserProfile, fetchArticles, fetchMe, ContestUserProfile } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
 import {
   ArrowLeft, ExternalLink, Trophy, CheckCircle, XCircle,
   Clock, Shield, AlertTriangle, ChevronDown, ChevronRight,
-  BookOpen, Award, FileText, User, Layers, Calendar, ShieldCheck
+  BookOpen, Award, FileText, User, Layers, Calendar, ShieldCheck,
+  MessageSquare, RefreshCw
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatUtcToTz } from "@/lib/time";
 import UserBadge from "@/components/users/UserBadge";
+import ArticleDiscussionModal from "@/components/contests/ArticleDiscussionModal";
 
 interface ContestUserProfileClientProps {
   code: string;
@@ -35,14 +37,31 @@ export default function ContestUserProfileClient({
   const [reviewsOpen, setReviewsOpen] = useState(true);
   const [submissionSearch, setSubmissionSearch] = useState("");
   const [reviewSearch, setReviewSearch] = useState("");
+  const [discussionArticle, setDiscussionArticle] = useState<any | null>(null);
 
-  const { data: profile, isLoading, error } = useQuery<ContestUserProfile>({
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: fetchMe,
+  });
+
+  const { data: profile, isLoading, error, refetch } = useQuery<ContestUserProfile>({
     queryKey: ["contestUserProfile", code, username],
     queryFn: () => fetchContestUserProfile(code, username),
     initialData: initialProfile || undefined,
     staleTime: 60 * 1000,
     enabled: !!code && !!username,
   });
+
+  const isViewingSelf = Boolean(
+    me?.wiki_username &&
+      username &&
+      me.wiki_username.trim().toLowerCase() === username.trim().toLowerCase()
+  );
+  const isJuryOrOrganizer = Boolean(
+    me?.role === "owner" ||
+      profile?.is_contest_organizer ||
+      profile?.is_contest_jury
+  );
 
   if (isLoading) {
     return (
@@ -214,7 +233,7 @@ export default function ContestUserProfileClient({
   const totalVirtualSize = rowVirtualizer.getTotalSize();
   const paddingTop = virtualRows.length > 0 ? virtualRows[0]?.start || 0 : 0;
   const paddingBottom = virtualRows.length > 0 ? totalVirtualSize - (virtualRows[virtualRows.length - 1]?.end || 0) : 0;
-  const colSpan = 5 + (showWords ? 1 : 0) + (showBytes ? 1 : 0);
+  const colSpan = 6 + (showWords ? 1 : 0) + (showBytes ? 1 : 0);
 
   // Trigger infinite scroll when approaching the bottom of loaded submissions
   useEffect(() => {
@@ -419,12 +438,13 @@ export default function ContestUserProfileClient({
                 >
                   <table className="table-fixed w-full text-left text-xs border-collapse">
                     <colgroup>
-                      <col className="w-[32%] min-w-[140px]" />
-                      <col className="w-[105px]" />
-                      <col className="w-[120px]" />
-                      <col className="w-[26%]" />
-                      {showWords && <col className="w-[80px]" />}
-                      {showBytes && <col className="w-[80px]" />}
+                      <col className="w-[28%] min-w-[140px]" />
+                      <col className="w-[100px]" />
+                      <col className="w-[110px]" />
+                      <col className="w-[22%]" />
+                      {showWords && <col className="w-[75px]" />}
+                      {showBytes && <col className="w-[75px]" />}
+                      <col className="w-[100px]" />
                       <col className="w-[110px]" />
                     </colgroup>
                     <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur-xs text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border">
@@ -436,6 +456,7 @@ export default function ContestUserProfileClient({
                         {showWords && <th className="py-2.5 px-3 text-right whitespace-nowrap">{t("feather-profile-th-words")}</th>}
                         {showBytes && <th className="py-2.5 px-3 text-right whitespace-nowrap">{t("feather-profile-th-bytes")}</th>}
                         <th className="py-2.5 px-3 whitespace-nowrap">{t("feather-profile-th-submitted")}</th>
+                        <th className="py-2.5 px-3 text-center whitespace-nowrap">{t("feather-profile-th-actions", "Actions")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -530,6 +551,101 @@ export default function ContestUserProfileClient({
                             )}
                             <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">
                               {formatUtcToTz(sub.submitted_at, "UTC", "MMM d, yyyy")}
+                            </td>
+                            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                              {sub.status === "rejected" ? (
+                                sub.re_review_requested ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      setDiscussionArticle({
+                                        id: sub.id,
+                                        title: sub.title,
+                                        status: sub.status,
+                                        user_name: username,
+                                        submitter_username: username,
+                                        word_count: sub.word_count,
+                                        byte_count: sub.byte_count,
+                                        re_review_requested: true,
+                                        re_review_note: sub.re_review_note,
+                                      })
+                                    }
+                                    className="h-6 text-[10px] gap-1 px-2 cursor-pointer bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-semibold"
+                                    title={t("feather-rereview-already-requested")}
+                                  >
+                                    <RefreshCw className="h-2.5 w-2.5 text-amber-600 dark:text-amber-400" />
+                                    <span>{t("feather-rereview-badge", "Re-review requested")}</span>
+                                  </Button>
+                                ) : isViewingSelf ? (
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() =>
+                                      setDiscussionArticle({
+                                        id: sub.id,
+                                        title: sub.title,
+                                        status: sub.status,
+                                        user_name: username,
+                                        submitter_username: username,
+                                        word_count: sub.word_count,
+                                        byte_count: sub.byte_count,
+                                        re_review_requested: false,
+                                      })
+                                    }
+                                    className="h-6 text-[10px] gap-1 px-2 cursor-pointer bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs"
+                                    title={t("feather-rereview-btn", "Request Re-review")}
+                                  >
+                                    <RefreshCw className="h-2.5 w-2.5" />
+                                    <span>{t("feather-rereview-btn", "Request Re-review")}</span>
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      setDiscussionArticle({
+                                        id: sub.id,
+                                        title: sub.title,
+                                        status: sub.status,
+                                        user_name: username,
+                                        submitter_username: username,
+                                        word_count: sub.word_count,
+                                        byte_count: sub.byte_count,
+                                        re_review_requested: false,
+                                      })
+                                    }
+                                    className="h-6 text-[10px] gap-1 px-2 cursor-pointer text-muted-foreground hover:text-foreground"
+                                    title={t("feather-discussion-title")}
+                                  >
+                                    <MessageSquare className="h-3 w-3 text-primary" />
+                                    <span className="hidden sm:inline">{t("feather-discussion-btn-empty")}</span>
+                                  </Button>
+                                )
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setDiscussionArticle({
+                                      id: sub.id,
+                                      title: sub.title,
+                                      status: sub.status,
+                                      user_name: username,
+                                      submitter_username: username,
+                                      word_count: sub.word_count,
+                                      byte_count: sub.byte_count,
+                                      re_review_requested: sub.re_review_requested,
+                                      re_review_note: sub.re_review_note,
+                                    })
+                                  }
+                                  className="h-6 text-[10px] gap-1 px-2 cursor-pointer text-muted-foreground hover:text-foreground"
+                                  title={t("feather-discussion-title")}
+                                >
+                                  <MessageSquare className="h-3 w-3 text-primary" />
+                                  <span className="hidden sm:inline">{t("feather-discussion-btn-empty")}</span>
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         );
@@ -710,6 +826,19 @@ export default function ContestUserProfileClient({
           )}
         </Card>
       )}
+
+      {/* Article Discussion & Re-Review Modal */}
+      <ArticleDiscussionModal
+        isOpen={!!discussionArticle}
+        onClose={() => setDiscussionArticle(null)}
+        article={discussionArticle}
+        contestCode={code}
+        currentUsername={me?.wiki_username}
+        isJuryOrOrganizer={isJuryOrOrganizer}
+        onReReviewRequested={() => {
+          refetch();
+        }}
+      />
     </div>
   );
 }

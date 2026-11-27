@@ -1698,6 +1698,20 @@ export default function ContestDashboardClient({
                   )}
 
                   <Link
+                    href={`/contests/${code}/chat`}
+                    className={buttonVariants({
+                      variant: "ghost",
+                      size: "sm",
+                      className:
+                        "gap-1.5 cursor-pointer font-medium text-xs h-8 px-2.5 text-muted-foreground hover:text-foreground border border-border/50 hover:bg-muted/60",
+                    })}
+                    title={t("feather-chat-title")}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                    <span>{t("feather-chat-direct-link")}</span>
+                  </Link>
+
+                  <Link
                     href={`/contests/${code}/stats`}
                     className={buttonVariants({
                       variant: "ghost",
@@ -2388,7 +2402,7 @@ export default function ContestDashboardClient({
                   <DialogClose
                     render={
                       <Button variant="outline" size="sm" className="text-xs cursor-pointer">
-                        Close
+                        {t("feather-action-close")}
                       </Button>
                     }
                   />
@@ -2412,7 +2426,7 @@ export default function ContestDashboardClient({
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1.5 my-2 overscroll-contain">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1.5 my-2 overscroll-contain">
                 {(!contest.sub_contests || contest.sub_contests.length === 0) ? (
                   <div className="p-8 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/20">
                     {t("feather-campaign-no-communities-found")}

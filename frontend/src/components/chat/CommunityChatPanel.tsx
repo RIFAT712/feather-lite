@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchChatMessages,
@@ -31,6 +32,7 @@ import {
   Info,
   Layers,
   MessageCircle,
+  ExternalLink,
 } from "lucide-react";
 import { WikimediaLogoIcon } from "@/components/icons/CodexIcons";
 import { Badge } from "@/components/ui/badge";
@@ -75,12 +77,12 @@ export default function CommunityChatPanel({
 }: CommunityChatPanelProps) {
   const { t, formatDate } = useI18n();
   const queryClient = useQueryClient();
+  const pathname = usePathname();
+  const isStandaloneChatPage = pathname?.endsWith("/chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Active channel: "local" (contest chat) vs "campaign" (umbrella lounge)
-  const [activeChannel, setActiveChannel] = useState<"local" | "campaign">(
-    isUmbrella ? "campaign" : "local"
-  );
+  const [activeChannel, setActiveChannel] = useState<"local" | "campaign">("local");
   const isCampaignChat = activeChannel === "campaign";
 
   const [messageText, setMessageText] = useState("");
@@ -151,7 +153,7 @@ export default function CommunityChatPanel({
       queryClient.invalidateQueries({ queryKey: ["my-chat-status", contestCode] });
     },
     onError: (err: any) => {
-      const msg = err.message || "Failed to post message";
+      const msg = err.message || t("feather-chat-error-post");
       if (
         msg.toLowerCase().includes("harmful") ||
         msg.toLowerCase().includes("moderation") ||
@@ -169,11 +171,11 @@ export default function CommunityChatPanel({
     mutationFn: ({ messageId, reason }: { messageId: number; reason?: string }) =>
       deleteChatMessage(contestCode, messageId, reason),
     onSuccess: () => {
-      toast.success("Message removed");
+      toast.success(t("feather-chat-msg-removed"));
       queryClient.invalidateQueries({ queryKey: ["chat-messages", contestCode] });
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to remove message");
+      toast.error(err.message || t("feather-chat-error-remove"));
     },
   });
 
@@ -188,14 +190,14 @@ export default function CommunityChatPanel({
         modReason || undefined
       ),
     onSuccess: () => {
-      toast.success(`Action applied to ${modTargetUser}`);
+      toast.success(t("feather-chat-mod-action-applied", modTargetUser || ""));
       setIsModDialogOpen(false);
       setModReason("");
       queryClient.invalidateQueries({ queryKey: ["chat-messages", contestCode] });
       queryClient.invalidateQueries({ queryKey: ["chat-mod-logs", contestCode] });
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to moderate user");
+      toast.error(err.message || t("feather-chat-error-moderate"));
     },
   });
 
@@ -261,10 +263,24 @@ export default function CommunityChatPanel({
               onClick={() => refetchMessages()}
               disabled={isFetchingMessages}
               className="h-7 px-2 text-[11px] gap-1 cursor-pointer"
-              title="Refresh messages"
+              title={t("feather-chat-refresh-title")}
             >
               <RefreshCw className={`h-3 w-3 ${isFetchingMessages ? "animate-spin" : ""}`} />
             </Button>
+
+            {!isStandaloneChatPage && (
+              <Link href={`/contests/${contestCode}/chat`}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2.5 text-[11px] gap-1.5 font-medium cursor-pointer"
+                  title={t("feather-chat-open-full")}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  <span className="hidden md:inline">{t("feather-chat-open-full")}</span>
+                </Button>
+              </Link>
+            )}
 
             {isJuryOrAdmin && (
               <Button
@@ -317,7 +333,7 @@ export default function CommunityChatPanel({
               onClick={() => setAutoModError(null)}
               className="h-6 px-2 text-[10px]"
             >
-              Dismiss
+              {t("feather-chat-mod-dismiss")}
             </Button>
           </div>
         )}
@@ -327,7 +343,7 @@ export default function CommunityChatPanel({
           {isLoadingMessages ? (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground gap-2">
               <RefreshCw className="h-4 w-4 animate-spin text-primary" />
-              <span>Loading messages...</span>
+              <span>{t("feather-chat-loading")}</span>
             </div>
           ) : messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
@@ -378,7 +394,7 @@ export default function CommunityChatPanel({
 
                       {msg.is_campaign_chat && (
                         <Badge variant="outline" className="text-[9px] px-1 py-0 border-amber-500/30 text-amber-600">
-                          Campaign
+                          {t("feather-chat-badge-campaign")}
                         </Badge>
                       )}
 
@@ -436,7 +452,7 @@ export default function CommunityChatPanel({
                     {msg.is_deleted ? (
                       <p className="mt-1 text-muted-foreground italic flex items-center gap-1.5 text-[11px]">
                         <ShieldAlert className="h-3 w-3 text-muted-foreground/60 shrink-0" />
-                        <span>{t("feather-chat-deleted-msg", msg.deleted_reason || "Violation of guidelines")}</span>
+                        <span>{t("feather-chat-deleted-msg", msg.deleted_reason || t("feather-chat-deleted-default-reason"))}</span>
                       </p>
                     ) : (
                       <p className="mt-1 text-foreground text-xs leading-relaxed break-words whitespace-pre-wrap">
@@ -461,7 +477,7 @@ export default function CommunityChatPanel({
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity text-xs cursor-pointer shadow-xs"
               >
                 <WikimediaLogoIcon className="h-3.5 w-3.5" />
-                <span>Log in</span>
+                <span>{t("feather-nav-login-short")}</span>
               </a>
             </div>
           ) : (
@@ -476,7 +492,7 @@ export default function CommunityChatPanel({
                     cannotPost
                       ? isUserBanned
                         ? t("feather-chat-banned-banner")
-                        : "You are currently muted..."
+                        : t("feather-chat-muted-placeholder")
                       : t("feather-chat-input-placeholder")
                   }
                   className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
@@ -512,17 +528,17 @@ export default function CommunityChatPanel({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <Shield className="h-4 w-4 text-primary" />
-              <span>Moderate User: {modTargetUser}</span>
+              <span>{t("feather-chat-mod-user-title", modTargetUser || "")}</span>
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Apply administrative action for harmful chat behavior, slurs, or harassment.
+              {t("feather-chat-mod-user-desc")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3.5 py-2 text-xs">
             {/* Action Selector */}
             <div className="space-y-1.5">
-              <label className="font-semibold text-foreground">Action Type</label>
+              <label className="font-semibold text-foreground">{t("feather-chat-mod-action-type")}</label>
               <div className="grid grid-cols-4 gap-1.5">
                 {(["warn", "timeout", "ban", "unban"] as const).map((act) => (
                   <button
@@ -535,7 +551,7 @@ export default function CommunityChatPanel({
                         : "border-border bg-card hover:bg-muted/50 text-muted-foreground"
                     }`}
                   >
-                    {act}
+                    {t(`feather-chat-mod-act-${act}`)}
                   </button>
                 ))}
               </div>
@@ -544,7 +560,7 @@ export default function CommunityChatPanel({
             {/* Timeout Duration Selector if Timeout */}
             {modAction === "timeout" && (
               <div className="space-y-1.5">
-                <label className="font-semibold text-foreground">Timeout Duration</label>
+                <label className="font-semibold text-foreground">{t("feather-chat-mod-timeout-label")}</label>
                 <div className="grid grid-cols-4 gap-1.5">
                   {[
                     { label: t("feather-chat-mod-timeout-15m"), min: 15 },
@@ -571,7 +587,7 @@ export default function CommunityChatPanel({
 
             {/* Reason Input */}
             <div className="space-y-1.5">
-              <label className="font-semibold text-foreground">Reason / Audit Justification</label>
+              <label className="font-semibold text-foreground">{t("feather-chat-mod-reason-label")}</label>
               <input
                 type="text"
                 value={modReason}
@@ -589,7 +605,7 @@ export default function CommunityChatPanel({
               onClick={() => setIsModDialogOpen(false)}
               className="text-xs cursor-pointer"
             >
-              Cancel
+              {t("feather-submit-cancel")}
             </Button>
             <Button
               size="sm"
@@ -598,7 +614,7 @@ export default function CommunityChatPanel({
               variant={modAction === "ban" || modAction === "timeout" ? "destructive" : "default"}
               className="text-xs font-semibold cursor-pointer"
             >
-              Confirm {modAction}
+              {t("feather-chat-mod-confirm-btn", t(`feather-chat-mod-act-${modAction}`))}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -606,18 +622,18 @@ export default function CommunityChatPanel({
 
       {/* Moderation Audit Log Viewer Dialog */}
       <Dialog open={isLogDialogOpen} onOpenChange={setIsLogDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <ShieldAlert className="h-4 w-4 text-primary" />
               <span>{t("feather-chat-mod-history-title")}</span>
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Audit log of all warnings, timeouts, bans, and unbans issued in this contest.
+              {t("feather-chat-mod-history-desc")}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-2 pr-1">
             {!modLogs || modLogs.length === 0 ? (
               <div className="text-center py-8 text-xs text-muted-foreground">
                 {t("feather-chat-mod-history-empty")}
@@ -641,11 +657,11 @@ export default function CommunityChatPanel({
                         }
                         className="text-[10px] uppercase font-mono px-1.5 py-0"
                       >
-                        {log.action}
+                        {t(`feather-chat-mod-act-${log.action}`)}
                       </Badge>
                       {log.timeout_until && (
                         <span className="text-[10px] text-muted-foreground">
-                          until {formatDate(log.timeout_until)}
+                          {t("feather-chat-until-date", formatDate(log.timeout_until))}
                         </span>
                       )}
                     </div>
@@ -655,7 +671,7 @@ export default function CommunityChatPanel({
                       </p>
                     )}
                     <div className="text-[10px] text-muted-foreground/80">
-                      by <strong>{log.moderated_by}</strong> • {formatDate(log.created_at)}
+                      {t("feather-chat-by-moderator", log.moderated_by)} • {formatDate(log.created_at)}
                     </div>
                   </div>
 
@@ -667,13 +683,13 @@ export default function CommunityChatPanel({
                       onClick={() => {
                         setModTargetUser(log.username);
                         setModAction("unban");
-                        setModReason("Lifted via moderation log viewer");
+                        setModReason(t("feather-chat-mod-reason-lifted"));
                         moderateMutation.mutate();
                       }}
                       className="h-7 px-2 text-[11px] gap-1 shrink-0 cursor-pointer"
                     >
                       <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                      <span>Lift</span>
+                      <span>{t("feather-chat-mod-lift-btn")}</span>
                     </Button>
                   )}
                 </div>

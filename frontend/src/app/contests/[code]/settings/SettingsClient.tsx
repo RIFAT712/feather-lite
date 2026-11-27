@@ -108,6 +108,14 @@ export default function SettingsClient({
   }, [me, contest]);
 
   const isOwner = me?.role === "owner" || (me as any)?.is_owner;
+  const isContestOrganizer = useMemo(() => {
+    if (!me?.is_authenticated) return false;
+    if (contest?.created_by_id && me.user_id && contest.created_by_id === me.user_id) return true;
+    const myLower = me.wiki_username?.trim().toLowerCase();
+    if (myLower && contest?.created_by_username && contest.created_by_username.trim().toLowerCase() === myLower) return true;
+    if (myLower && contest?.organizers?.some((o) => (o || "").trim().toLowerCase() === myLower)) return true;
+    return false;
+  }, [me, contest]);
   const isCreator = Boolean(
     contest?.created_by_id && me?.user_id && contest.created_by_id === me.user_id
   ) || Boolean(
@@ -1306,8 +1314,8 @@ export default function SettingsClient({
         </div>
       </form>
 
-      {/* Danger Zone: Delete Contest (Owner or Creator only) */}
-      {(isOwner || isCreator) && (
+      {/* Danger Zone: Delete Contest (Owner or Organizers only) */}
+      {(isOwner || isContestOrganizer) && (
         <div className="rounded-xl border border-destructive/25 dark:border-destructive/35 bg-card overflow-hidden shadow-xs mt-8">
           <div className="px-4 sm:px-6 py-3 border-b border-destructive/15 bg-destructive/[0.03] dark:bg-destructive/[0.06] flex items-center justify-between">
             <div className="flex items-center gap-2.5">

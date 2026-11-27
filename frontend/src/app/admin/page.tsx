@@ -73,6 +73,15 @@ export default function AdminPage() {
   const isOwner = me?.role === "owner" || Boolean((me as any)?.is_owner);
   const isAdmin = isOwner || me?.role === "admin" || Boolean((me as any)?.is_admin);
 
+  const canDeleteContest = (c: Contest) => {
+    if (isOwner) return true;
+    if (me?.user_id && c.created_by_id === me.user_id) return true;
+    const myLower = me?.wiki_username?.trim().toLowerCase();
+    if (myLower && c.created_by_username && c.created_by_username.trim().toLowerCase() === myLower) return true;
+    if (myLower && c.organizers?.some((o) => (o || "").trim().toLowerCase() === myLower)) return true;
+    return false;
+  };
+
   // Admin Overview Stats
   const {
     data: overview,
@@ -520,7 +529,7 @@ export default function AdminPage() {
                           <span>{t("feather-admin-reject")}</span>
                         </Button>
 
-                        {isOwner && (
+                        {canDeleteContest(contest) && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -685,7 +694,7 @@ export default function AdminPage() {
                         <span>{t("feather-admin-restore")}</span>
                       </Button>
                     ) : (
-                      isOwner && (
+                      canDeleteContest(contest) && (
                         <Button
                           variant="ghost"
                           size="sm"

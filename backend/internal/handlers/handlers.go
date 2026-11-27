@@ -4440,8 +4440,20 @@ func (h *Handler) DeleteContest(w http.ResponseWriter, r *http.Request) {
 	isOwner := h.isPlatformOwner(currentUser)
 	isCreator := createdByID != nil && *createdByID == currentUser.UserID
 
-	if !isOwner && !isCreator {
-		jsonError(w, http.StatusForbidden, "You do not have permission to delete this contest")
+	var isOrganizerCount int
+	_ = h.db.QueryRow(`
+		SELECT COUNT(1) FROM (
+			SELECT 1 FROM contest_organizers co JOIN users u ON co.user_id = u.id 
+			WHERE co.contest_id = ? AND (co.user_id = ? OR LOWER(u.username) = LOWER(?))
+			UNION
+			SELECT 1 FROM contest_organizers co JOIN contests sub ON sub.parent_contest_id = co.contest_id JOIN users u ON co.user_id = u.id 
+			WHERE sub.id = ? AND (co.user_id = ? OR LOWER(u.username) = LOWER(?))
+		)
+	`, contestID, currentUser.UserID, currentUser.WikiUsername, contestID, currentUser.UserID, currentUser.WikiUsername).Scan(&isOrganizerCount)
+	isOrganizer := isOrganizerCount > 0
+
+	if !isOwner && !isCreator && !isOrganizer {
+		jsonError(w, http.StatusForbidden, "Permission denied: Only the platform owner and contest organizers can delete this contest")
 		return
 	}
 

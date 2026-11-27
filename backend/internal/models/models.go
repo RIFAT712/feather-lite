@@ -123,16 +123,18 @@ type KeysetPaginationResult struct {
 }
 
 type Notification struct {
-	ID        int64     `json:"id"`
-	UserID    int64     `json:"user_id"`
-	ContestID int64     `json:"contest_id"`
-	ArticleID *int64    `json:"article_id,omitempty"`
-	Type      string    `json:"type"` // "article_rejected", "article_accepted", "re_review_requested", "article_message"
-	Title     string    `json:"title"`
-	Message   string    `json:"message"`
-	LinkURL   string    `json:"link_url"`
-	IsRead    bool      `json:"is_read"`
-	CreatedAt time.Time `json:"created_at"`
+	ID          int64     `json:"id"`
+	UserID      int64     `json:"user_id"`
+	ContestID   int64     `json:"contest_id"`
+	ContestName string    `json:"contest_name,omitempty"`
+	ContestCode string    `json:"contest_code,omitempty"`
+	ArticleID   *int64    `json:"article_id,omitempty"`
+	Type        string    `json:"type"` // "article_rejected", "article_accepted", "re_review_requested", "article_message", "contest_approved", "contest_rejected"
+	Title       string    `json:"title"`
+	Message     string    `json:"message"`
+	LinkURL     string    `json:"link_url"`
+	IsRead      bool      `json:"is_read"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type NotificationKeysetResult struct {

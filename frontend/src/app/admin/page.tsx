@@ -60,6 +60,8 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [contestToDelete, setContestToDelete] = useState<Contest | null>(null);
+  const [contestToReject, setContestToReject] = useState<Contest | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
   // User session
@@ -110,8 +112,8 @@ export default function AdminPage() {
 
   // Reject Mutation
   const rejectMutation = useMutation({
-    mutationFn: (code: string) => rejectContest(code),
-    onSuccess: (_, code) => {
+    mutationFn: ({ code, reason }: { code: string; reason?: string }) => rejectContest(code, reason),
+    onSuccess: (_, { code }) => {
       toast.success(t("feather-admin-rejected-success"));
       queryClient.invalidateQueries({ queryKey: ["adminOverview"] });
       queryClient.invalidateQueries({ queryKey: ["adminContests"] });
@@ -508,7 +510,10 @@ export default function AdminPage() {
                           variant="outline"
                           size="sm"
                           disabled={rejectMutation.isPending}
-                          onClick={() => rejectMutation.mutate(contest.code)}
+                          onClick={() => {
+                            setContestToReject(contest);
+                            setRejectionReason("");
+                          }}
                           className="h-9 gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10 cursor-pointer"
                         >
                           <XCircle className="h-3.5 w-3.5" />
@@ -642,15 +647,30 @@ export default function AdminPage() {
                     </Link>
 
                     {contest.status === "pending_approval" && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => approveMutation.mutate(contest.code)}
-                        className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                      >
-                        <Check className="h-3 w-3 mr-1" />
-                        Approve
-                      </Button>
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => approveMutation.mutate(contest.code)}
+                          className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          <span>{t("feather-admin-approve")}</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={rejectMutation.isPending}
+                          onClick={() => {
+                            setContestToReject(contest);
+                            setRejectionReason("");
+                          }}
+                          className="h-8 text-xs text-destructive border-destructive/30 hover:bg-destructive/10 cursor-pointer"
+                        >
+                          <XCircle className="h-3 w-3 mr-1" />
+                          <span>{t("feather-admin-reject")}</span>
+                        </Button>
+                      </>
                     )}
 
                     {contest.status === "deleted" ? (
@@ -738,6 +758,102 @@ export default function AdminPage() {
             >
               <Trash2 className="h-3.5 w-3.5" />
               <span>{isDeleting ? "Deleting..." : t("feather-admin-delete-confirm-btn")}</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Confirmation Dialog with Reason */}
+      <Dialog
+        open={!!contestToReject}
+        onOpenChange={(open) => {
+          if (!open) {
+            setContestToReject(null);
+            setRejectionReason("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2.5 text-destructive mb-1">
+              <div className="p-2 bg-destructive/10 rounded-full">
+                <XCircle className="h-5 w-5" />
+              </div>
+              <DialogTitle className="text-lg font-bold">
+                {t("feather-admin-reject-dialog-title")}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-muted-foreground pt-1 leading-relaxed">
+              {t("feather-admin-reject-dialog-desc")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {contestToReject && (
+            <div className="space-y-4 py-2">
+              <div className="p-3 bg-muted/50 rounded-lg border text-xs space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-foreground">{contestToReject.name}</span>
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {contestToReject.code}
+                  </Badge>
+                </div>
+                <div className="text-muted-foreground">
+                  {t("feather-admin-creator-label")}{" "}
+                  <strong className="text-foreground">
+                    {contestToReject.created_by_username || "Unknown"}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                  <span>{t("feather-admin-reject-reason-label")}</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">
+                    {t("feather-admin-reject-reason-hint")}
+                  </span>
+                </label>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder={t("feather-admin-reject-reason-placeholder")}
+                  rows={3}
+                  className="w-full text-xs rounded-md border border-input bg-background px-3 py-2 text-foreground shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring placeholder:text-muted-foreground/60 resize-none"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={rejectMutation.isPending}
+              onClick={() => {
+                setContestToReject(null);
+                setRejectionReason("");
+              }}
+              className="text-xs cursor-pointer"
+            >
+              {t("feather-submit-cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={rejectMutation.isPending}
+              onClick={async () => {
+                if (!contestToReject) return;
+                await rejectMutation.mutateAsync({
+                  code: contestToReject.code,
+                  reason: rejectionReason.trim(),
+                });
+                setContestToReject(null);
+                setRejectionReason("");
+              }}
+              className="text-xs gap-1.5 cursor-pointer shadow-xs"
+            >
+              {rejectMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              <XCircle className="h-3.5 w-3.5" />
+              <span>{t("feather-admin-reject-confirm-btn")}</span>
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -50,18 +50,24 @@ func (h *Handler) GetNotifications(w http.ResponseWriter, r *http.Request) {
 	var unreadCount int
 	_ = h.db.QueryRow("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0", currentUser.UserID).Scan(&unreadCount)
 
-	query := "SELECT id, user_id, contest_id, article_id, type, title, message, link_url, is_read, created_at FROM notifications WHERE user_id = ?"
+	query := `
+		SELECT n.id, n.user_id, n.contest_id, n.article_id, n.type, n.title, n.message, n.link_url, n.is_read, n.created_at,
+		       COALESCE(c.name, ''), COALESCE(c.code, '')
+		FROM notifications n
+		LEFT JOIN contests c ON n.contest_id = c.id
+		WHERE n.user_id = ?
+	`
 	args := []any{currentUser.UserID}
 
 	if unreadOnly {
-		query += " AND is_read = 0"
+		query += " AND n.is_read = 0"
 	}
 	if beforeID > 0 {
-		query += " AND id < ?"
+		query += " AND n.id < ?"
 		args = append(args, beforeID)
 	}
 
-	query += " ORDER BY id DESC LIMIT ?"
+	query += " ORDER BY n.id DESC LIMIT ?"
 	args = append(args, limit+1)
 
 	rows, err := h.db.Query(query, args...)
@@ -77,10 +83,13 @@ func (h *Handler) GetNotifications(w http.ResponseWriter, r *http.Request) {
 		var artID sql.NullInt64
 		var isReadInt int
 		var createdAtStr sql.NullString
-		if err := rows.Scan(&n.ID, &n.UserID, &n.ContestID, &artID, &n.Type, &n.Title, &n.Message, &n.LinkURL, &isReadInt, &createdAtStr); err == nil {
+		var contestName, contestCode string
+		if err := rows.Scan(&n.ID, &n.UserID, &n.ContestID, &artID, &n.Type, &n.Title, &n.Message, &n.LinkURL, &isReadInt, &createdAtStr, &contestName, &contestCode); err == nil {
 			if artID.Valid {
 				n.ArticleID = &artID.Int64
 			}
+			n.ContestName = contestName
+			n.ContestCode = contestCode
 			n.IsRead = isReadInt == 1
 			if createdAtStr.Valid {
 				if t := database.ParseFlexTime(createdAtStr.String); t != nil {

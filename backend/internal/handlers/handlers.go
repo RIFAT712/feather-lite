@@ -4292,7 +4292,9 @@ func (h *Handler) ApproveContest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var contestID int64
-	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	var createdByID *int64
+	var contestName string
+	err := h.db.QueryRow("SELECT id, created_by_id, name FROM contests WHERE code = ?", code).Scan(&contestID, &createdByID, &contestName)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Contest not found")
 		return
@@ -4320,11 +4322,27 @@ func (h *Handler) ApproveContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if createdByID != nil && *createdByID > 0 {
+		h.createNotification(
+			*createdByID,
+			contestID,
+			nil,
+			"contest_approved",
+			fmt.Sprintf("Contest approved: %s", contestName),
+			fmt.Sprintf("Your contest '%s' has been approved and is now live.", contestName),
+			fmt.Sprintf("/contests/%s", code),
+		)
+	}
+
 	log.Printf("[ApproveContest] Contest %s (ID: %d) approved by %s", code, contestID, currentUser.WikiUsername)
 	jsonResponse(w, http.StatusOK, map[string]any{
 		"status":  "ok",
 		"message": "Contest approved successfully",
 	})
+}
+
+type RejectContestRequest struct {
+	Reason string `json:"reason"`
 }
 
 func (h *Handler) RejectContest(w http.ResponseWriter, r *http.Request) {
@@ -4340,8 +4358,14 @@ func (h *Handler) RejectContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var req RejectContestRequest
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	rejectionReason := strings.TrimSpace(req.Reason)
+
 	var contestID int64
-	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	var createdByID *int64
+	var contestName string
+	err := h.db.QueryRow("SELECT id, created_by_id, name FROM contests WHERE code = ?", code).Scan(&contestID, &createdByID, &contestName)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "Contest not found")
 		return
@@ -4369,7 +4393,19 @@ func (h *Handler) RejectContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[RejectContest] Contest %s (ID: %d) rejected by %s", code, contestID, currentUser.WikiUsername)
+	if createdByID != nil && *createdByID > 0 {
+		h.createNotification(
+			*createdByID,
+			contestID,
+			nil,
+			"contest_rejected",
+			fmt.Sprintf("Contest rejected: %s", contestName),
+			rejectionReason,
+			fmt.Sprintf("/contests/%s", code),
+		)
+	}
+
+	log.Printf("[RejectContest] Contest %s (ID: %d) rejected by %s, reason: %s", code, contestID, currentUser.WikiUsername, rejectionReason)
 	jsonResponse(w, http.StatusOK, map[string]any{
 		"status":  "ok",
 		"message": "Contest rejected",

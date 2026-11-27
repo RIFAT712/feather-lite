@@ -920,11 +920,12 @@ export async function approveContest(code: string): Promise<{ status: string; me
   return res.json();
 }
 
-export async function rejectContest(code: string): Promise<{ status: string; message: string }> {
+export async function rejectContest(code: string, reason?: string): Promise<{ status: string; message: string }> {
   const res = await fetch(`${API_BASE}/admin/contests/${encodeURIComponent(code)}/reject`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
+    body: JSON.stringify({ reason: reason || "" }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -1055,8 +1056,17 @@ export interface NotificationItem {
   id: number;
   user_id: number;
   contest_id: number;
+  contest_name?: string;
+  contest_code?: string;
   article_id?: number | null;
-  type: "article_rejected" | "article_accepted" | "re_review_requested" | "article_message" | string;
+  type:
+    | "article_rejected"
+    | "article_accepted"
+    | "re_review_requested"
+    | "article_message"
+    | "contest_approved"
+    | "contest_rejected"
+    | string;
   title: string;
   message: string;
   link_url: string;

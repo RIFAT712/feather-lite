@@ -12,6 +12,7 @@ import {
   CheckCheck,
   Loader2,
   Inbox,
+  Trophy,
 } from "lucide-react";
 import {
   fetchNotifications,
@@ -129,6 +130,13 @@ export default function NotificationBell() {
 
   const renderTypeIcon = (type: string) => {
     switch (type) {
+      case "contest_approved":
+        return (
+          <div className="h-7 w-7 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <Trophy className="h-4 w-4" />
+          </div>
+        );
+      case "contest_rejected":
       case "article_rejected":
         return (
           <div className="h-7 w-7 rounded-full bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
@@ -159,6 +167,10 @@ export default function NotificationBell() {
 
   const renderTypeLabel = (type: string) => {
     switch (type) {
+      case "contest_approved":
+        return t("feather-notif-type-contest-approved", "Contest Approved");
+      case "contest_rejected":
+        return t("feather-notif-type-contest-rejected", "Contest Rejected");
       case "article_rejected":
         return t("feather-notif-type-rejected", "Article Rejected");
       case "article_accepted":
@@ -168,6 +180,47 @@ export default function NotificationBell() {
       case "article_message":
       default:
         return t("feather-notif-type-message", "Discussion Message");
+    }
+  };
+
+  const renderNotificationTitle = (item: NotificationItem) => {
+    switch (item.type) {
+      case "contest_approved":
+        return t(
+          "feather-notif-contest-approved-title",
+          item.contest_name || item.title
+        );
+      case "contest_rejected":
+        return t(
+          "feather-notif-contest-rejected-title",
+          item.contest_name || item.title
+        );
+      default:
+        return item.title;
+    }
+  };
+
+  const renderNotificationMessage = (item: NotificationItem) => {
+    switch (item.type) {
+      case "contest_approved":
+        return t(
+          "feather-notif-contest-approved-body",
+          item.contest_name || item.title
+        );
+      case "contest_rejected":
+        if (item.message && item.message.trim() && item.message !== item.title) {
+          return t(
+            "feather-notif-contest-rejected-reason-body",
+            item.contest_name || item.title,
+            item.message
+          );
+        }
+        return t(
+          "feather-notif-contest-rejected-body",
+          item.contest_name || item.title
+        );
+      default:
+        return item.message;
     }
   };
 
@@ -295,11 +348,11 @@ export default function NotificationBell() {
                     </div>
 
                     <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                      {item.title}
+                      {renderNotificationTitle(item)}
                     </p>
 
                     <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5 leading-snug">
-                      {item.message}
+                      {renderNotificationMessage(item)}
                     </p>
                   </div>
 

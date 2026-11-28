@@ -692,7 +692,7 @@ button { cursor: pointer; }
   background: #fff; transition: transform 160ms var(--ease-out);
 }
 .rq-wikitext-switch.is-on .rq-switch-track { background: var(--rq-accent); }
-.rq-wikitext-switch.is-on .rq-switch-knob { transform: translateX(14px); }
+.rq-wikitext-switch.is-on .rq-switch-knob { background: var(--rq-bg); transform: translateX(14px); }
 
 /* Mobile pane picker: visual and raw are mutually exclusive on small screens. */
 .rq-pane-tabs {

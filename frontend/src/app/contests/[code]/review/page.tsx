@@ -33,7 +33,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ReviewPage({ params }: PageProps) {
   const { code } = await params;
-  const contest = await getServerContest(code);
+
+  const [contest, user, articles] = await Promise.all([
+    getServerContest(code),
+    getServerMe(),
+    getServerContestArticles(code, 200, undefined, "pending"),
+  ]);
 
   if (!contest) {
     notFound();
@@ -43,11 +48,6 @@ export default async function ReviewPage({ params }: PageProps) {
   if (contest.is_umbrella) {
     redirect(`/contests/${code}`);
   }
-
-  const [user, articles] = await Promise.all([
-    getServerMe(),
-    getServerContestArticles(code, 200, undefined, "pending"),
-  ]);
 
   return (
     <ReviewQueueClient

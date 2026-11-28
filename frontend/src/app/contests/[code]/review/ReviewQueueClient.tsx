@@ -54,6 +54,7 @@ import CdxIcon from "@/components/icons/CdxIcon";
 import {
   fetchContest,
   fetchArticles,
+  fetchArticleCursors,
   fetchMe,
   reviewArticle,
   acquireArticleLock,
@@ -267,7 +268,7 @@ export default function ReviewQueueClient({
   const [wikitextSource, setWikitextSource] = useState("");
   const [wikitextCopied, setWikitextCopied] = useState(false);
 
-  const [listTab, setListTab] = useState<"queue" | "rereview" | "others">("queue");
+  const [listTab, setListTab] = useState<"queue" | "rereview">("queue");
   const [onlyPendingReReview, setOnlyPendingReReview] = useState(false);
   const [isDiscussionOpen, setIsDiscussionOpen] = useState(false);
   const [showQueueOptions, setShowQueueOptions] = useState(false);
@@ -308,6 +309,7 @@ export default function ReviewQueueClient({
 
   const commentBoxRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const previewRequestIdRef = useRef(0);
+  const lastPreviewKeyRef = useRef("");
   const undoExpiryTimerRef = useRef<any>(null);
   const wikitextCopyTimerRef = useRef<any>(null);
   const focusOpenTimerRef = useRef<any>(null);
@@ -509,13 +511,19 @@ export default function ReviewQueueClient({
 
   // Fetch article preview
   const fetchPreview = useCallback(
-    async (title: string) => {
+    async (title: string, force: boolean = false) => {
+      const base = contest?.wiki_url || "https://bn.wikipedia.org";
+      const previewKey = `${title}::${base}::${isDark ? "dark" : "light"}`;
+      if (!force && lastPreviewKeyRef.current === previewKey) {
+        return;
+      }
+      lastPreviewKeyRef.current = previewKey;
+
       const requestId = ++previewRequestIdRef.current;
       setIsLoadingPreview(true);
       setPreviewSrcdoc("");
       setWikitextSource("");
       try {
-        const base = contest?.wiki_url || "https://bn.wikipedia.org";
         const res = await fetch(
           `${base}/w/api.php?action=parse&page=${encodeURIComponent(
             title
@@ -531,6 +539,7 @@ export default function ReviewQueueClient({
       } catch (e) {
         console.error(e);
         if (requestId === previewRequestIdRef.current) {
+          lastPreviewKeyRef.current = "";
           setPreviewSrcdoc(
             `<!DOCTYPE html><html><body style="color:#20364d;background:#f5f8fb;padding:24px">${t("feather-review-preview-error")}</body></html>`
           );
@@ -546,7 +555,7 @@ export default function ReviewQueueClient({
     if (currentArticle?.title) {
       fetchPreview(currentArticle.title);
     }
-  }, [fetchPreview, isDark]);
+  }, [currentArticle?.title, fetchPreview]);
 
   const getMyLatestDecision = useCallback(
     (article: any) => {
@@ -708,32 +717,70 @@ export default function ReviewQueueClient({
           setIsLoading(false);
         }
 
-        // Background-load remaining pending articles only (Re-review loads on demand when tab is clicked)
-        const yieldToMain = () => new Promise((resolve) => setTimeout(resolve, 60));
-
+        // Background-load remaining pending articles in parallel batches (Re-review loads on demand when tab is clicked)
         let pMore = Boolean(pendingData?.has_more);
         let pCursor = pendingData?.next_cursor;
         if (pMore && pCursor && active) {
           setIsBackgroundLoading(true);
-          let pPages = 0;
-          while (active && pMore && pCursor && pPages < 30) {
-            await yieldToMain();
-            if (!active) break;
-            pPages += 1;
-            const pRes: KeysetResponse | null = await fetchArticles(code, pCursor, "pending", 500).catch(() => null);
-            if (!active || !pRes) break;
-            if (pRes.items?.length) {
-              const norm = pRes.items.map(normalizeArticle);
-              setArticles((prev) => {
-                const seen = new Set(prev.map((a) => a.article_id));
-                const add = norm.filter((a: any) => !seen.has(a.article_id));
-                return add.length > 0 ? [...prev, ...add] : prev;
-              });
+          const PARALLEL = 4;
+          const PAGE_SIZE = 500;
+          const extraCursors = await fetchArticleCursors(code, "pending", PAGE_SIZE, pCursor);
+          if (!active) return;
+
+          if (extraCursors.length > 0) {
+            const allCursors = [pCursor, ...extraCursors].slice(0, 30);
+            for (let i = 0; i < allCursors.length && active; i += PARALLEL) {
+              const batch = allCursors.slice(i, i + PARALLEL);
+              const results = await Promise.allSettled(
+                batch.map((c) => fetchArticles(code, c, "pending", PAGE_SIZE))
+              );
+              if (!active) break;
+
+              const merged: any[] = [];
+              let lastSuccessful: KeysetResponse | null = null;
+              for (const r of results) {
+                if (r.status === "fulfilled" && r.value) {
+                  lastSuccessful = r.value;
+                  if (r.value.items?.length) {
+                    merged.push(...r.value.items.map(normalizeArticle));
+                  }
+                }
+              }
+
+              if (merged.length > 0) {
+                setArticles((prev) => {
+                  const seen = new Set(prev.map((a) => a.article_id));
+                  const add = merged.filter((a: any) => !seen.has(a.article_id));
+                  return add.length > 0 ? [...prev, ...add] : prev;
+                });
+              }
+
+              const isLastBatch = i + PARALLEL >= allCursors.length;
+              if (isLastBatch && lastSuccessful) {
+                setPendingHasMore(Boolean(lastSuccessful.has_more));
+                setPendingNextCursor(lastSuccessful.next_cursor);
+              }
             }
-            pMore = Boolean(pRes.has_more);
-            pCursor = pRes.next_cursor;
-            setPendingHasMore(pMore);
-            setPendingNextCursor(pCursor);
+          } else {
+            // Sequential fallback if cursor pre-fetch is unavailable or only 1 page remains
+            let pPages = 0;
+            while (active && pMore && pCursor && pPages < 30) {
+              pPages += 1;
+              const pRes: KeysetResponse | null = await fetchArticles(code, pCursor, "pending", PAGE_SIZE).catch(() => null);
+              if (!active || !pRes) break;
+              if (pRes.items?.length) {
+                const norm = pRes.items.map(normalizeArticle);
+                setArticles((prev) => {
+                  const seen = new Set(prev.map((a) => a.article_id));
+                  const add = norm.filter((a: any) => !seen.has(a.article_id));
+                  return add.length > 0 ? [...prev, ...add] : prev;
+                });
+              }
+              pMore = Boolean(pRes.has_more);
+              pCursor = pRes.next_cursor;
+              setPendingHasMore(pMore);
+              setPendingNextCursor(pCursor);
+            }
           }
           if (active) setIsBackgroundLoading(false);
         }
@@ -754,6 +801,11 @@ export default function ReviewQueueClient({
   }, [code, initialContest, initialUser]);
 
   // Available new articles: strictly excluding own articles & deterministically shuffled using jury ID as seed
+  // Assign monotonic batch offsets so newly hydrated pages append below existing items instead of shifting the top.
+  const shuffleOrderRef = useRef<Map<number, number>>(new Map());
+  const lastShuffleSeedRef = useRef<number | null>(null);
+  const shuffleBatchRef = useRef<number>(0);
+
   const newArticles = useMemo(() => {
     const isOwnForView = (a: any) => {
       if (isOwnerMode || !viewAsUsernameLower) return false;
@@ -786,7 +838,30 @@ export default function ReviewQueueClient({
     });
     const seedKey = isOwnerMode ? "owner" : viewAsUsername || String(user?.user_id || "jury");
     const jurySeed = fnv1a(`${contest?.id || code}_${seedKey}`);
-    return seededShuffle(list, jurySeed);
+
+    // Only re-shuffle when seed changes (different jury/owner mode); otherwise extend the stable order
+    if (lastShuffleSeedRef.current !== jurySeed) {
+      lastShuffleSeedRef.current = jurySeed;
+      shuffleOrderRef.current = new Map();
+      shuffleBatchRef.current = 0;
+    }
+
+    // Assign stable positions to any new articles strictly after previous batches
+    const newOnes = list.filter((a) => !shuffleOrderRef.current.has(a.article_id));
+    if (newOnes.length > 0) {
+      const batchOffset = shuffleBatchRef.current++;
+      const rng = mulberry32(jurySeed + batchOffset);
+      for (const a of newOnes) {
+        shuffleOrderRef.current.set(a.article_id, batchOffset + rng());
+      }
+    }
+
+    // Sort by stable assigned position (no re-shuffle on each hydration batch)
+    return [...list].sort((a, b) => {
+      const pa = shuffleOrderRef.current.get(a.article_id) ?? 0.5;
+      const pb = shuffleOrderRef.current.get(b.article_id) ?? 0.5;
+      return pa - pb;
+    });
   }, [articles, code, contest?.distribute_jury_queue, contest?.id, isImpersonatingJudge, isOwner, isOwnerMode, user?.user_id, viewAsUsername, viewAsUsernameLower]);
 
   const availableNewArticles = useMemo(() => {
@@ -957,43 +1032,94 @@ export default function ReviewQueueClient({
     }
   }, [code, hasMore, isLoadingMore, nextCursor, pendingHasMore, pendingNextCursor]);
 
-  // On-demand background hydration for Re-review tab when clicked so Accepted/Rejected/Skipped match total
+  // Refs for hydration cursor state (avoids stale closure issues)
+  const hasMoreRef = useRef(hasMore);
+  const nextCursorRef = useRef(nextCursor);
+  useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
+  useEffect(() => { nextCursorRef.current = nextCursor; }, [nextCursor]);
+
+  // On-demand background hydration for Re-review tab — parallel fan-out (4 concurrent pages at a time)
   useEffect(() => {
-    if (listTab !== "rereview" || !hasMore) return;
+    if (listTab !== "rereview") return;
+    if (!hasMoreRef.current && !nextCursorRef.current) return;
     let active = true;
+
     async function hydrateReReview() {
-      let cursor = nextCursor;
-      let more = hasMore;
-      let pages = 0;
       setIsBackgroundLoading(true);
       try {
-        while (active && more && pages < 60) {
-          pages += 1;
-          const res: KeysetResponse | null = await fetchArticles(code, cursor, undefined, 500).catch(() => null);
-          if (!active || !res) break;
-          if (res.items?.length) {
-            const norm = res.items.map(normalizeArticle);
-            setArticles((prev) => {
-              const seen = new Set(prev.map((a) => a.article_id));
-              const add = norm.filter((a: any) => !seen.has(a.article_id));
-              return add.length > 0 ? [...prev, ...add] : prev;
-            });
+        const PARALLEL = 4;
+        const PAGE_SIZE = 500;
+        const startCursor = nextCursorRef.current;
+        const extraCursors = await fetchArticleCursors(code, undefined, PAGE_SIZE, startCursor);
+        if (!active) return;
+
+        const allCursors: (number | undefined)[] = [startCursor, ...extraCursors];
+        if (extraCursors.length > 0) {
+          for (let i = 0; i < allCursors.length && active; i += PARALLEL) {
+            const batch = allCursors.slice(i, i + PARALLEL);
+            const results = await Promise.allSettled(
+              batch.map((c) => fetchArticles(code, c, undefined, PAGE_SIZE))
+            );
+            if (!active) break;
+
+            const allItems: any[] = [];
+            let lastPage: KeysetResponse | null = null;
+            for (const r of results) {
+              if (r.status === "fulfilled" && r.value) {
+                lastPage = r.value;
+                if (r.value.items?.length) {
+                  allItems.push(...r.value.items.map(normalizeArticle));
+                }
+              }
+            }
+
+            if (allItems.length > 0) {
+              setArticles((prev) => {
+                const seen = new Set(prev.map((a) => a.article_id));
+                const add = allItems.filter((a: any) => !seen.has(a.article_id));
+                return add.length > 0 ? [...prev, ...add] : prev;
+              });
+            }
+
+            const isLastBatch = i + PARALLEL >= allCursors.length;
+            const nextMore = isLastBatch ? Boolean(lastPage?.has_more && lastPage?.next_cursor) : true;
+            const nextCursorVal = lastPage?.next_cursor;
+            hasMoreRef.current = nextMore;
+            nextCursorRef.current = nextCursorVal;
+            setHasMore(nextMore);
+            setNextCursor(nextCursorVal);
           }
-          more = Boolean(res.has_more && res.next_cursor);
-          cursor = res.next_cursor;
-          setHasMore(more);
-          setNextCursor(cursor);
-          if (!res.items?.length) break;
-          await new Promise((r) => setTimeout(r, 60));
+        } else {
+          // Fallback if cursors endpoint returned empty (<= 1 page remaining or older backend)
+          while (active && hasMoreRef.current) {
+            const page = await fetchArticles(code, nextCursorRef.current, undefined, PAGE_SIZE).catch(() => null);
+            if (!active || !page) break;
+            if (page.items?.length) {
+              const norm = page.items.map(normalizeArticle);
+              setArticles((prev) => {
+                const seen = new Set(prev.map((a) => a.article_id));
+                const add = norm.filter((a: any) => !seen.has(a.article_id));
+                return add.length > 0 ? [...prev, ...add] : prev;
+              });
+            }
+            const nextMore = Boolean(page.has_more && page.next_cursor);
+            hasMoreRef.current = nextMore;
+            nextCursorRef.current = page.next_cursor;
+            setHasMore(nextMore);
+            setNextCursor(page.next_cursor);
+            if (!nextMore || !page.items?.length) break;
+          }
         }
       } finally {
         if (active) setIsBackgroundLoading(false);
       }
     }
+
     hydrateReReview();
     return () => {
       active = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, listTab]);
 
   const listTabs = useMemo(() => {
@@ -1007,7 +1133,10 @@ export default function ReviewQueueClient({
       ? contest!.pending_articles!
       : filteredNewArticles.length;
 
+    // Only use server my_reviewed_count if fully hydrated (hasMore=false) and no filters active
+    const fullyHydrated = !hasMore && !isBackgroundLoading;
     const hasExactReviewedCount = Boolean(
+      fullyHydrated &&
       !searchQuery &&
       !onlyPendingReReview &&
       !isImpersonatingJudge &&
@@ -1025,13 +1154,13 @@ export default function ReviewQueueClient({
     ];
   }, [
     contest,
-    filteredJudgedArticles.length,
+    filteredJudgedArticles,
     filteredNewArticles.length,
     hasMore,
+    isBackgroundLoading,
     isImpersonatingJudge,
     isOwnerMode,
     onlyPendingReReview,
-    ownerViewMode,
     pendingHasMore,
     searchQuery,
     t,
@@ -1938,7 +2067,7 @@ export default function ReviewQueueClient({
                         </span>
                       )}
                       <span
-                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none ${
+                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono tabular-nums leading-none ${
                           isActive
                             ? "bg-primary/10 text-primary font-bold dark:bg-primary/20"
                             : "bg-muted/80 text-muted-foreground"

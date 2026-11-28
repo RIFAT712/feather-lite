@@ -331,6 +331,29 @@ export async function fetchArticles(
   return res.json();
 }
 
+export async function fetchArticleCursors(
+  code: string,
+  status?: string,
+  limit: number = 500,
+  beforeId?: number
+): Promise<number[]> {
+  try {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (beforeId) params.set("before_id", beforeId.toString());
+    params.set("limit", limit.toString());
+    const res = await fetch(`${API_BASE}/contests/${code}/articles/cursors?${params.toString()}`, {
+      cache: "no-store",
+      credentials: "include",
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data?.cursors) ? data.cursors : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchArticlePreview(code: string, articleId: number): Promise<ArticlePreview> {
   const res = await fetch(`${API_BASE}/contests/${code}/articles/${articleId}/preview`, {
     cache: "no-store",

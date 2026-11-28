@@ -402,3 +402,52 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 		HasMore:    hasMore,
 	}, nil
 }
+
+// GetArticleCursors returns keyset boundary IDs (every pageSize-th row) for parallel page fetching.
+func (d *DB) GetArticleCursors(contestID int64, beforeID int64, status string, pageSize int) ([]int64, error) {
+	if pageSize <= 0 || pageSize > 500 {
+		pageSize = 500
+	}
+
+	query := `
+		SELECT a.id
+		FROM articles a
+		JOIN contests c ON a.contest_id = c.id
+		WHERE (a.contest_id = ? OR c.parent_contest_id = ?)
+	`
+	args := []any{contestID, contestID}
+
+	if beforeID > 0 {
+		query += " AND a.id < ?"
+		args = append(args, beforeID)
+	}
+	if status != "" {
+		query += " AND a.status = ?"
+		args = append(args, status)
+	} else {
+		query += " AND a.status != 'validation_failed'"
+	}
+	query += " ORDER BY a.id DESC"
+
+	rows, err := d.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var cursors []int64
+	var prevID int64
+	idx := 0
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		if idx > 0 && idx%pageSize == 0 {
+			cursors = append(cursors, prevID)
+		}
+		prevID = id
+		idx++
+	}
+	return cursors, rows.Err()
+}

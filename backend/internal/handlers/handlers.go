@@ -1806,6 +1806,45 @@ func (h *Handler) GetContestArticles(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, res)
 }
 
+func (h *Handler) GetContestArticleCursors(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+
+	var contestID int64
+	err := h.db.QueryRow("SELECT id FROM contests WHERE code = ?", code).Scan(&contestID)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "Contest not found")
+		return
+	} else if err != nil {
+		jsonError(w, http.StatusInternalServerError, "Database query error")
+		return
+	}
+
+	var beforeID int64
+	if b := r.URL.Query().Get("before_id"); b != "" {
+		beforeID, _ = strconv.ParseInt(b, 10, 64)
+	}
+
+	limit := 500
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 && parsedLimit <= 500 {
+			limit = parsedLimit
+		}
+	}
+
+	status := r.URL.Query().Get("status")
+	cursors, err := h.db.GetArticleCursors(contestID, beforeID, status, limit)
+	if err != nil {
+		log.Printf("[GetContestArticleCursors] Error querying cursors for contest %d (%s): %v", contestID, code, err)
+		jsonError(w, http.StatusInternalServerError, "Failed to query article cursors")
+		return
+	}
+	if cursors == nil {
+		cursors = []int64{}
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{"cursors": cursors})
+}
+
 func (h *Handler) GetUserCreatedArticles(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 	username := strings.TrimSpace(r.URL.Query().Get("username"))

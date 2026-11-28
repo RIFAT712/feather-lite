@@ -90,6 +90,7 @@ func main() {
 		api.Post("/contests/{code}/attach-contest", h.AttachContest)
 		api.Post("/contests/{code}/detach-contest", h.DetachContest)
 		api.Get("/contests/{code}/articles", h.GetContestArticles)
+		api.Get("/contests/{code}/articles/cursors", h.GetContestArticleCursors)
 		api.Get("/contests/{code}/articles/{id}/preview", h.GetArticlePreview)
 		api.Get("/contests/{code}/user-created-articles", h.GetUserCreatedArticles)
 		api.Post("/contests/{code}/submit", h.SubmitArticles)

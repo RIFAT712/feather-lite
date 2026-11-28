@@ -957,13 +957,44 @@ export default function ReviewQueueClient({
     }
   }, [code, hasMore, isLoadingMore, nextCursor, pendingHasMore, pendingNextCursor]);
 
-  // On-demand load for Re-review tab when clicked
+  // On-demand background hydration for Re-review tab when clicked so Accepted/Rejected/Skipped match total
   useEffect(() => {
-    if (listTab !== "rereview" || !hasMore || isLoadingMore) return;
-    if (judgedArticles.length === 0) {
-      loadMoreArticles("all");
+    if (listTab !== "rereview" || !hasMore) return;
+    let active = true;
+    async function hydrateReReview() {
+      let cursor = nextCursor;
+      let more = hasMore;
+      let pages = 0;
+      setIsBackgroundLoading(true);
+      try {
+        while (active && more && pages < 60) {
+          pages += 1;
+          const res: KeysetResponse | null = await fetchArticles(code, cursor, undefined, 500).catch(() => null);
+          if (!active || !res) break;
+          if (res.items?.length) {
+            const norm = res.items.map(normalizeArticle);
+            setArticles((prev) => {
+              const seen = new Set(prev.map((a) => a.article_id));
+              const add = norm.filter((a: any) => !seen.has(a.article_id));
+              return add.length > 0 ? [...prev, ...add] : prev;
+            });
+          }
+          more = Boolean(res.has_more && res.next_cursor);
+          cursor = res.next_cursor;
+          setHasMore(more);
+          setNextCursor(cursor);
+          if (!res.items?.length) break;
+          await new Promise((r) => setTimeout(r, 60));
+        }
+      } finally {
+        if (active) setIsBackgroundLoading(false);
+      }
     }
-  }, [listTab, hasMore, isLoadingMore, judgedArticles.length, loadMoreArticles]);
+    hydrateReReview();
+    return () => {
+      active = false;
+    };
+  }, [code, listTab]);
 
   const listTabs = useMemo(() => {
     const useServerPendingCount =

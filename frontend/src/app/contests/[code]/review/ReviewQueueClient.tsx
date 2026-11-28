@@ -708,60 +708,35 @@ export default function ReviewQueueClient({
           setIsLoading(false);
         }
 
-        // Background-load remaining pending articles first, then reviewed articles,
-        // yielding 80ms between chunks so the UI stays 60 FPS with zero stutter.
-        const yieldToMain = () => new Promise((resolve) => setTimeout(resolve, 80));
-
-        if (active) setIsBackgroundLoading(true);
+        // Background-load remaining pending articles only (Re-review loads on demand when tab is clicked)
+        const yieldToMain = () => new Promise((resolve) => setTimeout(resolve, 60));
 
         let pMore = Boolean(pendingData?.has_more);
         let pCursor = pendingData?.next_cursor;
-        let pPages = 0;
-        while (active && pMore && pCursor && pPages < 30) {
-          await yieldToMain();
-          if (!active) break;
-          pPages += 1;
-          const pRes: KeysetResponse | null = await fetchArticles(code, pCursor, "pending", 500).catch(() => null);
-          if (!active || !pRes) break;
-          if (pRes.items?.length) {
-            const norm = pRes.items.map(normalizeArticle);
-            setArticles((prev) => {
-              const seen = new Set(prev.map((a) => a.article_id));
-              const add = norm.filter((a: any) => !seen.has(a.article_id));
-              return add.length > 0 ? [...prev, ...add] : prev;
-            });
+        if (pMore && pCursor && active) {
+          setIsBackgroundLoading(true);
+          let pPages = 0;
+          while (active && pMore && pCursor && pPages < 30) {
+            await yieldToMain();
+            if (!active) break;
+            pPages += 1;
+            const pRes: KeysetResponse | null = await fetchArticles(code, pCursor, "pending", 500).catch(() => null);
+            if (!active || !pRes) break;
+            if (pRes.items?.length) {
+              const norm = pRes.items.map(normalizeArticle);
+              setArticles((prev) => {
+                const seen = new Set(prev.map((a) => a.article_id));
+                const add = norm.filter((a: any) => !seen.has(a.article_id));
+                return add.length > 0 ? [...prev, ...add] : prev;
+              });
+            }
+            pMore = Boolean(pRes.has_more);
+            pCursor = pRes.next_cursor;
+            setPendingHasMore(pMore);
+            setPendingNextCursor(pCursor);
           }
-          pMore = Boolean(pRes.has_more);
-          pCursor = pRes.next_cursor;
-          setPendingHasMore(pMore);
-          setPendingNextCursor(pCursor);
+          if (active) setIsBackgroundLoading(false);
         }
-
-        let aMore = true;
-        let aCursor: number | undefined = undefined;
-        let aPages = 0;
-        while (active && aMore && aPages < 60) {
-          await yieldToMain();
-          if (!active) break;
-          aPages += 1;
-          const aRes: KeysetResponse | null = await fetchArticles(code, aCursor, undefined, 500).catch(() => null);
-          if (!active || !aRes) break;
-          if (aRes.items?.length) {
-            const norm = aRes.items.map(normalizeArticle);
-            setArticles((prev) => {
-              const seen = new Set(prev.map((a) => a.article_id));
-              const add = norm.filter((a: any) => !seen.has(a.article_id));
-              return add.length > 0 ? [...prev, ...add] : prev;
-            });
-          }
-          aMore = Boolean(aRes.has_more && aRes.next_cursor);
-          aCursor = aRes.next_cursor;
-          setHasMore(aMore);
-          setNextCursor(aCursor);
-          if (!aRes.items?.length) break;
-        }
-
-        if (active) setIsBackgroundLoading(false);
       } catch (err) {
         console.error("Failed to load review data", err);
       } finally {
@@ -786,6 +761,9 @@ export default function ReviewQueueClient({
       const creator = (a.wiki_creator || "").trim().toLowerCase();
       return submitter === viewAsUsernameLower || creator === viewAsUsernameLower;
     };
+    const filterByAssignment = Boolean(
+      contest?.distribute_jury_queue && (isImpersonatingJudge || !isOwner)
+    );
     const list = articles.filter((a) => {
       if (a.status !== "pending") return false;
       if (isOwnerMode) return true;
@@ -797,7 +775,7 @@ export default function ReviewQueueClient({
         return false;
       }
       if (
-        contest?.distribute_jury_queue &&
+        filterByAssignment &&
         viewAsUsernameLower &&
         a.assigned_to_username &&
         a.assigned_to_username.trim().toLowerCase() !== viewAsUsernameLower
@@ -809,7 +787,7 @@ export default function ReviewQueueClient({
     const seedKey = isOwnerMode ? "owner" : viewAsUsername || String(user?.user_id || "jury");
     const jurySeed = fnv1a(`${contest?.id || code}_${seedKey}`);
     return seededShuffle(list, jurySeed);
-  }, [articles, code, contest?.distribute_jury_queue, contest?.id, isOwnerMode, user?.user_id, viewAsUsername, viewAsUsernameLower]);
+  }, [articles, code, contest?.distribute_jury_queue, contest?.id, isImpersonatingJudge, isOwner, isOwnerMode, user?.user_id, viewAsUsername, viewAsUsernameLower]);
 
   const availableNewArticles = useMemo(() => {
     return newArticles.filter(
@@ -979,11 +957,19 @@ export default function ReviewQueueClient({
     }
   }, [code, hasMore, isLoadingMore, nextCursor, pendingHasMore, pendingNextCursor]);
 
+  // On-demand load for Re-review tab when clicked
+  useEffect(() => {
+    if (listTab !== "rereview" || !hasMore || isLoadingMore) return;
+    if (judgedArticles.length === 0) {
+      loadMoreArticles("all");
+    }
+  }, [listTab, hasMore, isLoadingMore, judgedArticles.length, loadMoreArticles]);
+
   const listTabs = useMemo(() => {
     const useServerPendingCount =
       !searchQuery &&
       !isImpersonatingJudge &&
-      !(contest?.distribute_jury_queue && ownerViewMode === "judge") &&
+      !(contest?.distribute_jury_queue && !isOwner) &&
       contest?.pending_articles !== undefined &&
       contest.pending_articles > filteredNewArticles.length;
     const totalPendingCount = useServerPendingCount

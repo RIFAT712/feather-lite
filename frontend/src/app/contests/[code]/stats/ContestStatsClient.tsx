@@ -16,6 +16,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import UserBadge, { ContestRoleScope } from "@/components/users/UserBadge";
+import MultiCommunityStatsPanel from "@/components/stats/MultiCommunityStatsPanel";
 import { getProjectMeta, getOnwikiPageLink } from "@/lib/wikis";
 import {
   ArrowLeft,
@@ -481,6 +482,19 @@ export default function ContestStatsClient({
             <XCircle className="h-4 w-4 shrink-0" />
             <span>{t("feather-stats-error")}</span>
           </div>
+        )}
+
+        {/* Multi-Community Campaign Statistics (Zury-inspired in Feather theme) */}
+        {contest?.is_umbrella && (
+          <MultiCommunityStatsPanel
+            contest={contest}
+            standings={standings}
+            retentionPercent={summary.retention_percent ?? 100}
+            acceptedCount={counts.accepted}
+            acceptedWords={words.accepted_words}
+            totalParticipants={summary.total_participants}
+            totalSubmissions={summary.total_submissions}
+          />
         )}
 
         {/* 2. Top Summary KPI Cards (Redesigned with shadcn blocks & icons) */}

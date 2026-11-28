@@ -361,6 +361,22 @@ export default function ReviewQueueClient({
   );
   const isAuthorized = isJury || isOwner;
 
+  // Effective reviewer identity when Owner uses "View as: Judge (<name>) | Owner"
+  const viewAsUsername = useMemo(() => {
+    if (isOwner && ownerViewMode === "judge" && selectedJudge.trim()) {
+      return selectedJudge.trim();
+    }
+    return myUsername;
+  }, [isOwner, ownerViewMode, selectedJudge, myUsername]);
+  const viewAsUsernameLower = viewAsUsername.toLowerCase();
+  const isOwnerMode = isOwner && ownerViewMode === "owner";
+  const isImpersonatingJudge = Boolean(
+    isOwner &&
+    ownerViewMode === "judge" &&
+    selectedJudge.trim() &&
+    selectedJudge.trim().toLowerCase() !== myUsernameLower
+  );
+
   // Conflict of Interest (COI) check
   const isOwnArticle = useCallback(
     (a: any) => {
@@ -535,21 +551,31 @@ export default function ReviewQueueClient({
   const getMyLatestDecision = useCallback(
     (article: any) => {
       if (!article || !article.reviews) return null;
-      const myReviews = article.reviews.filter((r: any) => r.reviewer === myUsername);
+      if (isOwnerMode) {
+        const last = article.reviews[article.reviews.length - 1];
+        return last ? (last.decision || last.status) : null;
+      }
+      const target = viewAsUsernameLower;
+      const myReviews = article.reviews.filter((r: any) => (r.reviewer || "").trim().toLowerCase() === target);
       if (!myReviews.length) return null;
       return myReviews[myReviews.length - 1].decision || myReviews[myReviews.length - 1].status;
     },
-    [myUsername]
+    [isOwnerMode, viewAsUsernameLower]
   );
 
   const getMyLatestComment = useCallback(
     (article: any) => {
       if (!article || !article.reviews) return "";
-      const myReviews = article.reviews.filter((r: any) => r.reviewer === myUsername);
+      if (isOwnerMode) {
+        const last = article.reviews[article.reviews.length - 1];
+        return last?.comment || "";
+      }
+      const target = viewAsUsernameLower;
+      const myReviews = article.reviews.filter((r: any) => (r.reviewer || "").trim().toLowerCase() === target);
       if (!myReviews.length) return "";
       return myReviews[myReviews.length - 1].comment || "";
     },
-    [myUsername]
+    [isOwnerMode, viewAsUsernameLower]
   );
 
   const getDecisionLabel = useCallback(
@@ -754,15 +780,36 @@ export default function ReviewQueueClient({
 
   // Available new articles: strictly excluding own articles & deterministically shuffled using jury ID as seed
   const newArticles = useMemo(() => {
-    const list = articles.filter(
-      (a) =>
-        a.status === "pending" &&
-        !isOwnArticle(a) &&
-        (!myUsername || !a.reviews.some((r: any) => r.reviewer === myUsername))
-    );
-    const jurySeed = fnv1a(`${contest?.id || code}_${user?.user_id || myUsername || "jury"}`);
+    const isOwnForView = (a: any) => {
+      if (isOwnerMode || !viewAsUsernameLower) return false;
+      const submitter = (a.submitted_by || a.submitter_username || "").trim().toLowerCase();
+      const creator = (a.wiki_creator || "").trim().toLowerCase();
+      return submitter === viewAsUsernameLower || creator === viewAsUsernameLower;
+    };
+    const list = articles.filter((a) => {
+      if (a.status !== "pending") return false;
+      if (isOwnerMode) return true;
+      if (isOwnForView(a)) return false;
+      if (
+        viewAsUsernameLower &&
+        a.reviews.some((r: any) => (r.reviewer || "").trim().toLowerCase() === viewAsUsernameLower)
+      ) {
+        return false;
+      }
+      if (
+        contest?.distribute_jury_queue &&
+        viewAsUsernameLower &&
+        a.assigned_to_username &&
+        a.assigned_to_username.trim().toLowerCase() !== viewAsUsernameLower
+      ) {
+        return false;
+      }
+      return true;
+    });
+    const seedKey = isOwnerMode ? "owner" : viewAsUsername || String(user?.user_id || "jury");
+    const jurySeed = fnv1a(`${contest?.id || code}_${seedKey}`);
     return seededShuffle(list, jurySeed);
-  }, [articles, code, contest?.id, isOwnArticle, myUsername, user?.user_id]);
+  }, [articles, code, contest?.distribute_jury_queue, contest?.id, isOwnerMode, user?.user_id, viewAsUsername, viewAsUsernameLower]);
 
   const availableNewArticles = useMemo(() => {
     return newArticles.filter(
@@ -771,13 +818,17 @@ export default function ReviewQueueClient({
   }, [newArticles, myUsername, myUsernameLower]);
 
   const judgedArticles = useMemo(() => {
-    if (!myUsername) return [];
+    if (isOwnerMode) {
+      return articles.filter((a) => a.status !== "pending" || (a.reviews && a.reviews.length > 0) || a.re_review_requested);
+    }
+    if (!viewAsUsernameLower) return [];
     return articles.filter((a) => {
-      const isMine = a.reviews?.some((r: any) => r.reviewer === myUsername);
-      const isPendingReReview = a.re_review_requested && !isOwnArticle(a);
+      const isMine = a.reviews?.some((r: any) => (r.reviewer || "").trim().toLowerCase() === viewAsUsernameLower);
+      const submitter = (a.submitted_by || a.submitter_username || "").trim().toLowerCase();
+      const isPendingReReview = a.re_review_requested && submitter !== viewAsUsernameLower;
       return isMine || isPendingReReview;
     });
-  }, [articles, isOwnArticle, myUsername]);
+  }, [articles, isOwnerMode, viewAsUsernameLower]);
 
   const otherReviewedArticles = useMemo(() => {
     if (!myUsername || !isOwner) return [];
@@ -904,14 +955,21 @@ export default function ReviewQueueClient({
   }, [code, hasMore, isLoadingMore, nextCursor, pendingHasMore, pendingNextCursor]);
 
   const listTabs = useMemo(() => {
-    const totalPendingCount =
-      !searchQuery && contest?.pending_articles && contest.pending_articles > filteredNewArticles.length
-        ? contest.pending_articles
-        : filteredNewArticles.length;
+    const useServerPendingCount =
+      !searchQuery &&
+      !isImpersonatingJudge &&
+      !(contest?.distribute_jury_queue && ownerViewMode === "judge") &&
+      contest?.pending_articles !== undefined &&
+      contest.pending_articles > filteredNewArticles.length;
+    const totalPendingCount = useServerPendingCount
+      ? contest!.pending_articles!
+      : filteredNewArticles.length;
 
     const hasExactReviewedCount = Boolean(
       !searchQuery &&
       !onlyPendingReReview &&
+      !isImpersonatingJudge &&
+      !isOwnerMode &&
       contest?.my_reviewed_count !== undefined &&
       contest.my_reviewed_count >= filteredJudgedArticles.length
     );
@@ -920,7 +978,7 @@ export default function ReviewQueueClient({
       : filteredJudgedArticles.length;
 
     return [
-      { id: "queue", key: "pending", label: t("feather-review-tab-queue"), count: totalPendingCount, hasMore: pendingHasMore, list: filteredNewArticles },
+      { id: "queue", key: "pending", label: t("feather-review-tab-queue"), count: totalPendingCount, hasMore: !useServerPendingCount && pendingHasMore, list: filteredNewArticles },
       { id: "rereview", key: "judged", label: t("feather-review-tab-rereview"), count: totalReviewedCount, hasMore: !hasExactReviewedCount && hasMore, list: filteredJudgedArticles },
     ];
   }, [
@@ -928,7 +986,10 @@ export default function ReviewQueueClient({
     filteredJudgedArticles.length,
     filteredNewArticles.length,
     hasMore,
+    isImpersonatingJudge,
+    isOwnerMode,
     onlyPendingReReview,
+    ownerViewMode,
     pendingHasMore,
     searchQuery,
     t,

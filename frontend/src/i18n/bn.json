@@ -1033,5 +1033,9 @@
     "feather-review-status-rejected": "প্রত্যাখ্যাত",
     "feather-review-status-skipped": "এড়িয়ে যাওয়া",
     "feather-review-shortcut-error-reserved": "একটি অক্ষর, সংখ্যা, Enter বা Space বেছে নিন। Esc, Tab, / এবং ? সংরক্ষিত।",
-    "feather-review-shortcut-error-clash": "“$1” ইতোমধ্যে $2-এর জন্য ব্যবহৃত হচ্ছে।"
+    "feather-review-shortcut-error-clash": "“$1” ইতোমধ্যে $2-এর জন্য ব্যবহৃত হচ্ছে।",
+    "feather-stats-by-wiki": "উইকি অনুযায়ী",
+    "feather-stats-submissions-by-wiki": "উইকি অনুযায়ী জমা",
+    "feather-stats-cross-wiki-participants": "সব উইকি মিলিয়ে অংশগ্রহণকারী",
+    "feather-stats-events-breakdown": "অংশগ্রহণকারী কমিউনিটির বিবরণ"
 }

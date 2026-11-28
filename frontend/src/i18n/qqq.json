@@ -1033,5 +1033,9 @@
     "feather-review-status-rejected": "Status badge label for rejected article.",
     "feather-review-status-skipped": "Status badge label for skipped article.",
     "feather-review-shortcut-error-reserved": "Error message when trying to bind a reserved key in keyboard shortcuts.",
-    "feather-review-shortcut-error-clash": "Error message when trying to bind a key that is already used by another action. $1 is the key label, $2 is the existing action."
+    "feather-review-shortcut-error-clash": "Error message when trying to bind a key that is already used by another action. $1 is the key label, $2 is the existing action.",
+    "feather-stats-by-wiki": "Section heading for wiki-by-wiki breakdown table in multi-community campaign statistics.",
+    "feather-stats-submissions-by-wiki": "Section heading for submissions-by-wiki bar chart in multi-community campaign statistics.",
+    "feather-stats-cross-wiki-participants": "Section heading for cross-wiki participants leaderboard in multi-community campaign statistics.",
+    "feather-stats-events-breakdown": "Section heading for participating community editions breakdown table in multi-community campaign statistics."
 }

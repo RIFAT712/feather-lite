@@ -1033,5 +1033,9 @@
     "feather-review-status-rejected": "Rejected",
     "feather-review-status-skipped": "Skipped",
     "feather-review-shortcut-error-reserved": "Pick a single character, Enter or Space. Esc, Tab, / and ? are reserved.",
-    "feather-review-shortcut-error-clash": "“$1” is already used for: $2."
+    "feather-review-shortcut-error-clash": "“$1” is already used for: $2.",
+    "feather-stats-by-wiki": "By wiki",
+    "feather-stats-submissions-by-wiki": "Submissions by wiki",
+    "feather-stats-cross-wiki-participants": "Participants across all wikis",
+    "feather-stats-events-breakdown": "Participating communities breakdown"
 }

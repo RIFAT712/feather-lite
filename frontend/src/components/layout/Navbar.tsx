@@ -42,9 +42,7 @@ export default function Navbar() {
     pathname &&
     (/\/contests\/[^/]+\/review(?:\/|$)/.test(pathname) ||
       pathname === "/login" ||
-      pathname.startsWith("/login/") ||
-      pathname === "/sandbox" ||
-      pathname.startsWith("/sandbox/"))
+      pathname.startsWith("/login/"))
   ) {
     return null;
   }

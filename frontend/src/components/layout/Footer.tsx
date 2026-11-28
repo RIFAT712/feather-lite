@@ -14,7 +14,9 @@ export default function Footer() {
     pathname &&
     (/\/contests\/[^/]+\/review(?:\/|$)/.test(pathname) ||
       pathname === "/login" ||
-      pathname.startsWith("/login/"))
+      pathname.startsWith("/login/") ||
+      pathname === "/sandbox" ||
+      pathname.startsWith("/sandbox/"))
   ) {
     return null;
   }

@@ -255,6 +255,7 @@ export default function ReviewQueueClient({
     return !(initialContest && initialArticles?.items);
   });
   const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
+  const [isReviewedLoading, setIsReviewedLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingAction, setSubmittingAction] = useState<"accepted" | "rejected" | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
@@ -1038,7 +1039,7 @@ export default function ReviewQueueClient({
   useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
   useEffect(() => { nextCursorRef.current = nextCursor; }, [nextCursor]);
 
-  // On-demand + background hydration for Re-review tab — single atomic commit so counts/rows never tick up or shift
+  // Parallel hydration for Re-review tab — runs concurrently with pending queue loading, commits atomically
   const reviewedLoadedRef = useRef(false);
   const reviewedLoadingPromiseRef = useRef<Promise<void> | null>(null);
 
@@ -1047,29 +1048,23 @@ export default function ReviewQueueClient({
     if (reviewedLoadingPromiseRef.current) return reviewedLoadingPromiseRef.current;
 
     const promise = (async () => {
-      setIsBackgroundLoading(true);
+      setIsReviewedLoading(true);
       try {
-        const PAGE_SIZE = 2000;
-        const PARALLEL = 4;
+        const PAGE_SIZE = 1000;
+        const PARALLEL = 6;
         const collected: any[] = [];
 
-        const first = await fetchArticles(code, undefined, "reviewed", PAGE_SIZE).catch(() => null);
-        if (first?.items?.length) {
-          collected.push(...first.items.map(normalizeArticle));
-        }
+        const cursors = await fetchArticleCursors(code, "reviewed", PAGE_SIZE);
+        const allCursors: (number | undefined)[] = [undefined, ...cursors];
 
-        if (first?.has_more && first.next_cursor) {
-          const extraCursors = await fetchArticleCursors(code, "reviewed", PAGE_SIZE, first.next_cursor);
-          const allCursors = [first.next_cursor, ...extraCursors];
-          for (let i = 0; i < allCursors.length; i += PARALLEL) {
-            const batch = allCursors.slice(i, i + PARALLEL);
-            const results = await Promise.allSettled(
-              batch.map((c) => fetchArticles(code, c, "reviewed", PAGE_SIZE))
-            );
-            for (const r of results) {
-              if (r.status === "fulfilled" && r.value?.items?.length) {
-                collected.push(...r.value.items.map(normalizeArticle));
-              }
+        for (let i = 0; i < allCursors.length; i += PARALLEL) {
+          const batch = allCursors.slice(i, i + PARALLEL);
+          const results = await Promise.allSettled(
+            batch.map((c) => fetchArticles(code, c, "reviewed", PAGE_SIZE))
+          );
+          for (const r of results) {
+            if (r.status === "fulfilled" && r.value?.items?.length) {
+              collected.push(...r.value.items.map(normalizeArticle));
             }
           }
         }
@@ -1087,7 +1082,7 @@ export default function ReviewQueueClient({
         setHasMore(false);
         setNextCursor(undefined);
       } finally {
-        setIsBackgroundLoading(false);
+        setIsReviewedLoading(false);
         reviewedLoadingPromiseRef.current = null;
       }
     })();
@@ -1096,19 +1091,10 @@ export default function ReviewQueueClient({
     return promise;
   }, [code]);
 
-  // Prefetch reviewed articles in the background right after mount so Re-review tab opens instantaneously
+  // Start loading reviewed articles immediately in parallel with the pending queue
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadAllReviewedArticles();
-    }, 150);
-    return () => clearTimeout(timer);
+    loadAllReviewedArticles();
   }, [loadAllReviewedArticles]);
-
-  useEffect(() => {
-    if (listTab === "rereview" && !reviewedLoadedRef.current) {
-      loadAllReviewedArticles();
-    }
-  }, [listTab, loadAllReviewedArticles]);
 
   const listTabs = useMemo(() => {
     const useServerPendingCount =
@@ -2241,7 +2227,14 @@ export default function ReviewQueueClient({
                   );
                 })}
 
-                {!activeTab.list.length && !isBackgroundLoading && (
+                {!activeTab.list.length && activeTab.id === "rereview" && isReviewedLoading && (
+                  <li role="presentation" className="rq-list-empty">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span>{t("feather-review-loading-more")}</span>
+                  </li>
+                )}
+
+                {!activeTab.list.length && !isBackgroundLoading && !(activeTab.id === "rereview" && isReviewedLoading) && (
                   <li role="presentation" className="rq-list-empty">
                     {activeTab.id === "queue" && !searchQuery && (
                       <CdxIcon icon={cdxIconArticleCheck} className="rq-empty-icon" />

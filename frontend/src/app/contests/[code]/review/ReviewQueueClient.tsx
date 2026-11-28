@@ -654,17 +654,15 @@ export default function ReviewQueueClient({
                 next_cursor: undefined,
               }));
 
-        const pendingDataPromise: Promise<KeysetResponse> = fetchArticles(
-          code,
-          undefined,
-          "pending",
-          500
-        ).catch(() => ({
-          items: [],
-          total: 0,
-          has_more: false,
-          next_cursor: undefined,
-        }));
+        const hasFullSSR = Boolean(initialArticles?.items && initialArticles.items.length > 0 && !initialArticles.has_more);
+        const pendingDataPromise: Promise<KeysetResponse> = hasFullSSR
+          ? Promise.resolve({ items: [], total: 0, has_more: false, next_cursor: undefined })
+          : fetchArticles(code, undefined, "pending", 500).catch(() => ({
+              items: [],
+              total: 0,
+              has_more: false,
+              next_cursor: undefined,
+            }));
 
         const [cData, uData, aData, pendingData] = await Promise.all([
           cDataPromise,
@@ -691,44 +689,12 @@ export default function ReviewQueueClient({
         if (cData?.juries && cData.juries.length > 0) {
           setSelectedJudge(uData?.wiki_username || cData.juries[0]);
         }
-
-        if (active) {
-          setUserLoaded(true);
-          setIsLoading(false);
-        }
-
-        // Background-hydrate remaining article pages so Re-review shows all judged articles (e.g. 6k+)
-        let bgHasMore = Boolean(aData?.has_more);
-        let bgCursor = aData?.next_cursor;
-        let pagesFetched = 0;
-        if (bgHasMore && bgCursor) {
-          setIsBackgroundLoading(true);
-          while (active && bgHasMore && bgCursor && pagesFetched < 60) {
-            pagesFetched += 1;
-            const page: KeysetResponse | null = await fetchArticles(code, bgCursor, undefined, 500).catch(() => null);
-            if (!active || !page) break;
-            if (page.items?.length) {
-              const normPage = page.items.map(normalizeArticle);
-              setArticles((prev) => {
-                const seen = new Set(prev.map((a) => a.article_id));
-                const additions = normPage.filter((a: any) => !seen.has(a.article_id));
-                return additions.length > 0 ? [...prev, ...additions] : prev;
-              });
-            }
-            bgHasMore = Boolean(page.has_more);
-            bgCursor = page.next_cursor;
-            setHasMore(bgHasMore);
-            setNextCursor(bgCursor);
-          }
-          if (active) setIsBackgroundLoading(false);
-        }
       } catch (err) {
         console.error("Failed to load review data", err);
       } finally {
         if (active) {
           setUserLoaded(true);
           setIsLoading(false);
-          setIsBackgroundLoading(false);
         }
       }
     }

@@ -244,6 +244,8 @@ export default function ReviewQueueClient({
   });
   const [hasMore, setHasMore] = useState<boolean>(() => Boolean(initialArticles?.has_more));
   const [nextCursor, setNextCursor] = useState<number | undefined>(() => initialArticles?.next_cursor);
+  const [pendingHasMore, setPendingHasMore] = useState<boolean>(false);
+  const [pendingNextCursor, setPendingNextCursor] = useState<number | undefined>(undefined);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentArticle, setCurrentArticle] = useState<any | null>(null);
   const [comment, setComment] = useState("");
@@ -652,18 +654,39 @@ export default function ReviewQueueClient({
                 next_cursor: undefined,
               }));
 
-        const [cData, uData, aData] = await Promise.all([
+        const pendingDataPromise: Promise<KeysetResponse> = fetchArticles(
+          code,
+          undefined,
+          "pending",
+          500
+        ).catch(() => ({
+          items: [],
+          total: 0,
+          has_more: false,
+          next_cursor: undefined,
+        }));
+
+        const [cData, uData, aData, pendingData] = await Promise.all([
           cDataPromise,
           uDataPromise,
           aDataPromise,
+          pendingDataPromise,
         ]);
         if (!active) return;
         if (cData) setContest(cData);
         if (uData) setUser(uData);
-        const norm = (aData?.items || []).map(normalizeArticle);
-        setArticles(norm);
+        const mergedMap = new Map<number, any>();
+        for (const item of [...(aData?.items || []), ...(pendingData?.items || [])]) {
+          const nItem = normalizeArticle(item);
+          if (!mergedMap.has(nItem.article_id)) {
+            mergedMap.set(nItem.article_id, nItem);
+          }
+        }
+        setArticles(Array.from(mergedMap.values()));
         setHasMore(Boolean(aData?.has_more));
         setNextCursor(aData?.next_cursor);
+        setPendingHasMore(Boolean(pendingData?.has_more));
+        setPendingNextCursor(pendingData?.next_cursor);
 
         if (cData?.juries && cData.juries.length > 0) {
           setSelectedJudge(uData?.wiki_username || cData.juries[0]);
@@ -801,11 +824,17 @@ export default function ReviewQueueClient({
     [forSidebar, otherReviewedArticles]
   );
 
-  const loadMoreArticles = useCallback(async () => {
-    if (isLoadingMore || !hasMore || !nextCursor) return;
+  const loadMoreArticles = useCallback(async (mode: "pending" | "all" = "all") => {
+    if (isLoadingMore) return;
+    if (mode === "pending" && (!pendingHasMore || !pendingNextCursor)) return;
+    if (mode === "all" && (!hasMore || !nextCursor)) return;
+
     setIsLoadingMore(true);
     try {
-      const res = await fetchArticles(code, nextCursor, undefined, 500);
+      const res =
+        mode === "pending"
+          ? await fetchArticles(code, pendingNextCursor, "pending", 500)
+          : await fetchArticles(code, nextCursor, undefined, 500);
       if (res?.items?.length) {
         const norm = res.items.map(normalizeArticle);
         setArticles((prev) => {
@@ -814,14 +843,19 @@ export default function ReviewQueueClient({
           return [...prev, ...uniqueNew];
         });
       }
-      setHasMore(Boolean(res?.has_more));
-      setNextCursor(res?.next_cursor);
+      if (mode === "pending") {
+        setPendingHasMore(Boolean(res?.has_more));
+        setPendingNextCursor(res?.next_cursor);
+      } else {
+        setHasMore(Boolean(res?.has_more));
+        setNextCursor(res?.next_cursor);
+      }
     } catch (err) {
       console.error("Failed to load more articles", err);
     } finally {
       setIsLoadingMore(false);
     }
-  }, [code, hasMore, isLoadingMore, nextCursor]);
+  }, [code, hasMore, isLoadingMore, nextCursor, pendingHasMore, pendingNextCursor]);
 
   const listTabs = useMemo(() => {
     const totalPendingCount =
@@ -830,11 +864,11 @@ export default function ReviewQueueClient({
         : filteredNewArticles.length;
 
     const tabs = [
-      { id: "queue", key: "pending", label: t("feather-review-tab-queue"), count: totalPendingCount, list: filteredNewArticles },
-      { id: "rereview", key: "judged", label: t("feather-review-tab-rereview"), count: filteredJudgedArticles.length, list: filteredJudgedArticles },
+      { id: "queue", key: "pending", label: t("feather-review-tab-queue"), count: totalPendingCount, hasMore: pendingHasMore, list: filteredNewArticles },
+      { id: "rereview", key: "judged", label: t("feather-review-tab-rereview"), count: filteredJudgedArticles.length, hasMore, list: filteredJudgedArticles },
     ];
     if (otherReviewedArticles.length > 0) {
-      tabs.push({ id: "others", key: "other", label: t("feather-review-tab-other-judges"), count: filteredOtherArticles.length, list: filteredOtherArticles });
+      tabs.push({ id: "others", key: "other", label: t("feather-review-tab-other-judges"), count: filteredOtherArticles.length, hasMore, list: filteredOtherArticles });
     }
     return tabs;
   }, [
@@ -842,7 +876,9 @@ export default function ReviewQueueClient({
     filteredJudgedArticles.length,
     filteredNewArticles.length,
     filteredOtherArticles.length,
+    hasMore,
     otherReviewedArticles.length,
+    pendingHasMore,
     searchQuery,
     t,
   ]);
@@ -899,8 +935,10 @@ export default function ReviewQueueClient({
       ...prev,
       [activeTab.key]: Math.min((prev[activeTab.key] || screenful(44)) + LIST_STEP, activeTab.list.length),
     }));
-    if (activeTab.id === "queue" && hasMore && !isLoadingMore) {
-      loadMoreArticles();
+    if (activeTab.id === "queue" && pendingHasMore && !isLoadingMore) {
+      loadMoreArticles("pending");
+    } else if (activeTab.id !== "queue" && hasMore && !isLoadingMore) {
+      loadMoreArticles("all");
     }
   };
 
@@ -1752,7 +1790,7 @@ export default function ReviewQueueClient({
                             : "bg-muted/80 text-muted-foreground"
                         }`}
                       >
-                        {n(tab.count)}
+                        {n(tab.count)}{tab.id !== "queue" && tab.hasMore ? "+" : ""}
                       </span>
                     </button>
                   );

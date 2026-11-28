@@ -250,7 +250,7 @@ func (d *DB) GetArticlesKeyset(contestID int64, beforeID int64, status string, a
 	return d.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, "", "", limit)
 }
 
-func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status string, assignedToID int64, assignedToUsername string, submitterUsername string, limit int) (*models.KeysetPaginationResult, error) {
+func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status string, assignedToID int64, assignedToUsername string, submitterUsername string, limit int, searchQuery ...string) (*models.KeysetPaginationResult, error) {
 	if limit <= 0 || limit > 500 {
 		limit = 50
 	}
@@ -292,6 +292,11 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 	if strings.TrimSpace(submitterUsername) != "" {
 		baseQuery += " AND u.wiki_username = ? COLLATE NOCASE"
 		args = append(args, strings.TrimSpace(submitterUsername))
+	}
+	if len(searchQuery) > 0 && strings.TrimSpace(searchQuery[0]) != "" {
+		qLike := "%" + strings.ToLower(strings.TrimSpace(searchQuery[0])) + "%"
+		baseQuery += " AND (LOWER(a.title) LIKE ? OR LOWER(u.wiki_username) LIKE ?)"
+		args = append(args, qLike, qLike)
 	}
 
 	baseQuery += " ORDER BY a.id DESC LIMIT ?"

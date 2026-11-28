@@ -1794,8 +1794,9 @@ func (h *Handler) GetContestArticles(w http.ResponseWriter, r *http.Request) {
 	}
 	assignedToUsername := strings.TrimSpace(r.URL.Query().Get("assigned_to"))
 	submitter := strings.TrimSpace(r.URL.Query().Get("submitter"))
+	searchQ := strings.TrimSpace(r.URL.Query().Get("q"))
 
-	res, err := h.db.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, assignedToUsername, submitter, limit)
+	res, err := h.db.GetArticlesKeysetWithJudge(contestID, beforeID, status, assignedToID, assignedToUsername, submitter, limit, searchQ)
 	if err != nil {
 		log.Printf("[GetContestArticles] Error querying articles for contest %d (%s): %v", contestID, code, err)
 		jsonError(w, http.StatusInternalServerError, "Failed to query articles")

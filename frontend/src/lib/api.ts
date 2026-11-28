@@ -312,13 +312,15 @@ export async function fetchArticles(
   status?: string,
   limit: number = 50,
   assignedTo?: string,
-  submitter?: string
+  submitter?: string,
+  search?: string
 ): Promise<KeysetResponse> {
   const params = new URLSearchParams();
   if (beforeId) params.set("before_id", beforeId.toString());
   if (status) params.set("status", status);
   if (assignedTo) params.set("assigned_to", assignedTo);
   if (submitter) params.set("submitter", submitter);
+  if (search && search.trim()) params.set("q", search.trim());
   params.set("limit", limit.toString());
 
   const res = await fetch(`${API_BASE}/contests/${code}/articles?${params.toString()}`, {

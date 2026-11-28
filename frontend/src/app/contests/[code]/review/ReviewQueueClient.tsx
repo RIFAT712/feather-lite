@@ -880,6 +880,31 @@ export default function ReviewQueueClient({
     return normalizeText(searchQuery).split(/\s+/).filter(Boolean);
   }, [searchQuery]);
 
+  // Server-side database search so results appear immediately even before all pages finish hydrating
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      const statusFilter = listTab === "queue" ? "pending" : undefined;
+      fetchArticles(code, undefined, statusFilter, 200, undefined, undefined, q)
+        .then((res) => {
+          if (cancelled || !res?.items?.length) return;
+          const norm = res.items.map(normalizeArticle);
+          setArticles((prev) => {
+            const seen = new Set(prev.map((a) => a.article_id));
+            const additions = norm.filter((a: any) => !seen.has(a.article_id));
+            return additions.length > 0 ? [...prev, ...additions] : prev;
+          });
+        })
+        .catch(() => {});
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [code, listTab, searchQuery]);
+
   const matchesSearch = useCallback(
     (article: any, withSubmitter: boolean) => {
       if (!searchTerms.length) return true;

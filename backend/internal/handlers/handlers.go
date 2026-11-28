@@ -1013,6 +1013,15 @@ func (h *Handler) GetContest(w http.ResponseWriter, r *http.Request) {
 			FROM articles WHERE contest_id = ? AND status != 'validation_failed'
 		`, c.ID).Scan(&c.TotalArticles, &c.AcceptedArticles, &c.PendingArticles)
 
+		if currentUser := auth.GetUser(r.Context()); currentUser != nil && currentUser.UserID > 0 {
+			_ = h.db.QueryRow(`
+				SELECT COUNT(DISTINCT r.article_id)
+				FROM reviews r
+				JOIN articles a ON a.id = r.article_id
+				WHERE r.reviewer_id = ? AND a.contest_id = ? AND a.status != 'validation_failed'
+			`, currentUser.UserID, c.ID).Scan(&c.MyReviewedCount)
+		}
+
 		if c.ParentContestID != nil {
 			// Fetch parent campaign details
 			_ = h.db.QueryRow("SELECT code, name FROM contests WHERE id = ?", *c.ParentContestID).Scan(&c.ParentContestCode, &c.ParentContestName)

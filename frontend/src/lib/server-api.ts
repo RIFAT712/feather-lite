@@ -186,7 +186,7 @@ export async function getServerContestArticles(
       `${INTERNAL_API_URL}/api/contests/${encodeURIComponent(code)}/articles?${params.toString()}`,
       {
         headers,
-        next: { revalidate: 15 },
+        cache: "no-store",
       }
     );
     if (!res.ok) return null;

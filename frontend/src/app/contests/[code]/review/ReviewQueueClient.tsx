@@ -242,10 +242,10 @@ export default function ReviewQueueClient({
     }
     return [];
   });
-  const [hasMore, setHasMore] = useState<boolean>(() => Boolean(initialArticles?.has_more));
-  const [nextCursor, setNextCursor] = useState<number | undefined>(() => initialArticles?.next_cursor);
-  const [pendingHasMore, setPendingHasMore] = useState<boolean>(false);
-  const [pendingNextCursor, setPendingNextCursor] = useState<number | undefined>(undefined);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [nextCursor, setNextCursor] = useState<number | undefined>(undefined);
+  const [pendingHasMore, setPendingHasMore] = useState<boolean>(() => Boolean(initialArticles?.has_more));
+  const [pendingNextCursor, setPendingNextCursor] = useState<number | undefined>(() => initialArticles?.next_cursor);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentArticle, setCurrentArticle] = useState<any | null>(null);
   const [comment, setComment] = useState("");
@@ -644,57 +644,105 @@ export default function ReviewQueueClient({
             : fetchMe().catch(
                 () => ({ is_authenticated: false, role: "anonymous" } as UserSession)
               );
-        const aDataPromise: Promise<KeysetResponse> =
-          initialArticles?.items && initialArticles.items.length > 0
-            ? Promise.resolve(initialArticles)
-            : fetchArticles(code, undefined, undefined, 500).catch(() => ({
-                items: [],
-                total: 0,
-                has_more: false,
-                next_cursor: undefined,
-              }));
 
-        const hasFullSSR = Boolean(initialArticles?.items && initialArticles.items.length > 0 && !initialArticles.has_more);
-        const pendingDataPromise: Promise<KeysetResponse> = hasFullSSR
-          ? Promise.resolve({ items: [], total: 0, has_more: false, next_cursor: undefined })
-          : fetchArticles(code, undefined, "pending", 500).catch(() => ({
+        const ssrPendingItems = initialArticles?.items || [];
+        const hasSSR = ssrPendingItems.length > 0;
+
+        // If SSR already gave us 200 pending articles, don't block initial render!
+        const pendingDataPromise: Promise<KeysetResponse> = hasSSR
+          ? Promise.resolve(initialArticles!)
+          : fetchArticles(code, undefined, "pending", 200).catch(() => ({
               items: [],
               total: 0,
               has_more: false,
               next_cursor: undefined,
             }));
 
-        const [cData, uData, aData, pendingData] = await Promise.all([
+        const [cData, uData, pendingData] = await Promise.all([
           cDataPromise,
           uDataPromise,
-          aDataPromise,
           pendingDataPromise,
         ]);
         if (!active) return;
         if (cData) setContest(cData);
         if (uData) setUser(uData);
-        const mergedMap = new Map<number, any>();
-        for (const item of [...(aData?.items || []), ...(pendingData?.items || [])]) {
-          const nItem = normalizeArticle(item);
-          if (!mergedMap.has(nItem.article_id)) {
-            mergedMap.set(nItem.article_id, nItem);
-          }
+
+        if (!hasSSR && pendingData?.items?.length) {
+          setArticles(pendingData.items.map(normalizeArticle));
         }
-        setArticles(Array.from(mergedMap.values()));
-        setHasMore(Boolean(aData?.has_more));
-        setNextCursor(aData?.next_cursor);
         setPendingHasMore(Boolean(pendingData?.has_more));
         setPendingNextCursor(pendingData?.next_cursor);
 
         if (cData?.juries && cData.juries.length > 0) {
           setSelectedJudge(uData?.wiki_username || cData.juries[0]);
         }
+
+        if (active) {
+          setUserLoaded(true);
+          setIsLoading(false);
+        }
+
+        // Background-load remaining pending articles first, then reviewed articles,
+        // yielding 80ms between chunks so the UI stays 60 FPS with zero stutter.
+        const yieldToMain = () => new Promise((resolve) => setTimeout(resolve, 80));
+
+        if (active) setIsBackgroundLoading(true);
+
+        let pMore = Boolean(pendingData?.has_more);
+        let pCursor = pendingData?.next_cursor;
+        let pPages = 0;
+        while (active && pMore && pCursor && pPages < 30) {
+          await yieldToMain();
+          if (!active) break;
+          pPages += 1;
+          const pRes: KeysetResponse | null = await fetchArticles(code, pCursor, "pending", 500).catch(() => null);
+          if (!active || !pRes) break;
+          if (pRes.items?.length) {
+            const norm = pRes.items.map(normalizeArticle);
+            setArticles((prev) => {
+              const seen = new Set(prev.map((a) => a.article_id));
+              const add = norm.filter((a: any) => !seen.has(a.article_id));
+              return add.length > 0 ? [...prev, ...add] : prev;
+            });
+          }
+          pMore = Boolean(pRes.has_more);
+          pCursor = pRes.next_cursor;
+          setPendingHasMore(pMore);
+          setPendingNextCursor(pCursor);
+        }
+
+        let aMore = true;
+        let aCursor: number | undefined = undefined;
+        let aPages = 0;
+        while (active && aMore && aPages < 60) {
+          await yieldToMain();
+          if (!active) break;
+          aPages += 1;
+          const aRes: KeysetResponse | null = await fetchArticles(code, aCursor, undefined, 500).catch(() => null);
+          if (!active || !aRes) break;
+          if (aRes.items?.length) {
+            const norm = aRes.items.map(normalizeArticle);
+            setArticles((prev) => {
+              const seen = new Set(prev.map((a) => a.article_id));
+              const add = norm.filter((a: any) => !seen.has(a.article_id));
+              return add.length > 0 ? [...prev, ...add] : prev;
+            });
+          }
+          aMore = Boolean(aRes.has_more && aRes.next_cursor);
+          aCursor = aRes.next_cursor;
+          setHasMore(aMore);
+          setNextCursor(aCursor);
+          if (!aRes.items?.length) break;
+        }
+
+        if (active) setIsBackgroundLoading(false);
       } catch (err) {
         console.error("Failed to load review data", err);
       } finally {
         if (active) {
           setUserLoaded(true);
           setIsLoading(false);
+          setIsBackgroundLoading(false);
         }
       }
     }
@@ -861,15 +909,26 @@ export default function ReviewQueueClient({
         ? contest.pending_articles
         : filteredNewArticles.length;
 
+    const hasExactReviewedCount = Boolean(
+      !searchQuery &&
+      !onlyPendingReReview &&
+      contest?.my_reviewed_count !== undefined &&
+      contest.my_reviewed_count >= filteredJudgedArticles.length
+    );
+    const totalReviewedCount = hasExactReviewedCount
+      ? contest!.my_reviewed_count!
+      : filteredJudgedArticles.length;
+
     return [
       { id: "queue", key: "pending", label: t("feather-review-tab-queue"), count: totalPendingCount, hasMore: pendingHasMore, list: filteredNewArticles },
-      { id: "rereview", key: "judged", label: t("feather-review-tab-rereview"), count: filteredJudgedArticles.length, hasMore, list: filteredJudgedArticles },
+      { id: "rereview", key: "judged", label: t("feather-review-tab-rereview"), count: totalReviewedCount, hasMore: !hasExactReviewedCount && hasMore, list: filteredJudgedArticles },
     ];
   }, [
-    contest?.pending_articles,
+    contest,
     filteredJudgedArticles.length,
     filteredNewArticles.length,
     hasMore,
+    onlyPendingReReview,
     pendingHasMore,
     searchQuery,
     t,

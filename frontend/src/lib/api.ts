@@ -70,6 +70,7 @@ export interface Contest {
   total_articles?: number;
   accepted_articles?: number;
   pending_articles?: number;
+  my_reviewed_count?: number;
   total_juries?: number;
   juries?: string[];
   organizers?: string[];

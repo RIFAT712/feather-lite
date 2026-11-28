@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
-import { getServerContest, getServerMe, getServerAllContestArticles } from "@/lib/server-api";
+import { getServerContest, getServerMe, getServerContestArticles } from "@/lib/server-api";
 import ReviewQueueClient from "./ReviewQueueClient";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +46,7 @@ export default async function ReviewPage({ params }: PageProps) {
 
   const [user, articles] = await Promise.all([
     getServerMe(),
-    getServerAllContestArticles(code),
+    getServerContestArticles(code, 200, undefined, "pending"),
   ]);
 
   return (

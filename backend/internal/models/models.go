@@ -55,6 +55,7 @@ type Contest struct {
 	TotalArticles    int      `json:"total_articles,omitempty"`
 	AcceptedArticles int      `json:"accepted_articles,omitempty"`
 	PendingArticles  int      `json:"pending_articles,omitempty"`
+	MyReviewedCount  int      `json:"my_reviewed_count,omitempty"`
 	TotalJuries      int      `json:"total_juries,omitempty"`
 	Juries           []string `json:"juries,omitempty"`
 	Organizers       []string `json:"organizers,omitempty"`

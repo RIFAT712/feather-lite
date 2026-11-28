@@ -251,7 +251,7 @@ func (d *DB) GetArticlesKeyset(contestID int64, beforeID int64, status string, a
 }
 
 func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status string, assignedToID int64, assignedToUsername string, submitterUsername string, limit int, searchQuery ...string) (*models.KeysetPaginationResult, error) {
-	if limit <= 0 || limit > 500 {
+	if limit <= 0 || limit > 2000 {
 		limit = 50
 	}
 
@@ -276,7 +276,9 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 		baseQuery += " AND a.id < ?"
 		args = append(args, beforeID)
 	}
-	if status != "" {
+	if status == "reviewed" {
+		baseQuery += " AND a.status NOT IN ('pending', 'validation_failed')"
+	} else if status != "" {
 		baseQuery += " AND a.status = ?"
 		args = append(args, status)
 	} else {
@@ -363,34 +365,44 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 		nextCursor = articles[len(articles)-1].ID
 	}
 
-	// Batch-fetch associated reviews for the returned page of articles
+	// Batch-fetch associated reviews for the returned page of articles (chunked at 500 for SQLite variable limits)
 	if len(articles) > 0 {
-		articleIDs := make([]any, len(articles))
-		placeholders := make([]string, len(articles))
 		articleMap := make(map[int64]*models.Article, len(articles))
 		for i := range articles {
-			articleIDs[i] = articles[i].ID
-			placeholders[i] = "?"
 			articleMap[articles[i].ID] = &articles[i]
 		}
-		reviewQuery := fmt.Sprintf(`
-			SELECT r.id, r.article_id, r.reviewer_id, u.wiki_username, r.status, r.comment, r.timestamp
-			FROM reviews r
-			JOIN users u ON r.reviewer_id = u.id
-			WHERE r.article_id IN (%s)
-			ORDER BY r.timestamp ASC
-		`, strings.Join(placeholders, ","))
+		const chunkSize = 500
+		for start := 0; start < len(articles); start += chunkSize {
+			end := start + chunkSize
+			if end > len(articles) {
+				end = len(articles)
+			}
+			chunk := articles[start:end]
+			articleIDs := make([]any, len(chunk))
+			placeholders := make([]string, len(chunk))
+			for i := range chunk {
+				articleIDs[i] = chunk[i].ID
+				placeholders[i] = "?"
+			}
+			reviewQuery := fmt.Sprintf(`
+				SELECT r.id, r.article_id, r.reviewer_id, u.wiki_username, r.status, r.comment, r.timestamp
+				FROM reviews r
+				JOIN users u ON r.reviewer_id = u.id
+				WHERE r.article_id IN (%s)
+				ORDER BY r.timestamp ASC
+			`, strings.Join(placeholders, ","))
 
-		if rRows, err := d.Query(reviewQuery, articleIDs...); err == nil {
-			defer rRows.Close()
-			for rRows.Next() {
-				var rev models.Review
-				if err := rRows.Scan(&rev.ID, &rev.ArticleID, &rev.ReviewerID, &rev.ReviewerUsername, &rev.Status, &rev.Comment, &rev.Timestamp); err == nil {
-					if art, ok := articleMap[rev.ArticleID]; ok {
-						art.Reviews = append(art.Reviews, rev)
-						art.ReviewCount++
+			if rRows, err := d.Query(reviewQuery, articleIDs...); err == nil {
+				for rRows.Next() {
+					var rev models.Review
+					if err := rRows.Scan(&rev.ID, &rev.ArticleID, &rev.ReviewerID, &rev.ReviewerUsername, &rev.Status, &rev.Comment, &rev.Timestamp); err == nil {
+						if art, ok := articleMap[rev.ArticleID]; ok {
+							art.Reviews = append(art.Reviews, rev)
+							art.ReviewCount++
+						}
 					}
 				}
+				rRows.Close()
 			}
 		}
 	}
@@ -405,7 +417,7 @@ func (d *DB) GetArticlesKeysetWithJudge(contestID int64, beforeID int64, status 
 
 // GetArticleCursors returns keyset boundary IDs (every pageSize-th row) for parallel page fetching.
 func (d *DB) GetArticleCursors(contestID int64, beforeID int64, status string, pageSize int) ([]int64, error) {
-	if pageSize <= 0 || pageSize > 500 {
+	if pageSize <= 0 || pageSize > 2000 {
 		pageSize = 500
 	}
 
@@ -421,7 +433,9 @@ func (d *DB) GetArticleCursors(contestID int64, beforeID int64, status string, p
 		query += " AND a.id < ?"
 		args = append(args, beforeID)
 	}
-	if status != "" {
+	if status == "reviewed" {
+		query += " AND a.status NOT IN ('pending', 'validation_failed')"
+	} else if status != "" {
 		query += " AND a.status = ?"
 		args = append(args, status)
 	} else {

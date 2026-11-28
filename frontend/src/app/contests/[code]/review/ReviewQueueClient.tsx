@@ -1038,89 +1038,77 @@ export default function ReviewQueueClient({
   useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
   useEffect(() => { nextCursorRef.current = nextCursor; }, [nextCursor]);
 
-  // On-demand background hydration for Re-review tab — parallel fan-out (4 concurrent pages at a time)
-  useEffect(() => {
-    if (listTab !== "rereview") return;
-    if (!hasMoreRef.current && !nextCursorRef.current) return;
-    let active = true;
+  // On-demand + background hydration for Re-review tab — single atomic commit so counts/rows never tick up or shift
+  const reviewedLoadedRef = useRef(false);
+  const reviewedLoadingPromiseRef = useRef<Promise<void> | null>(null);
 
-    async function hydrateReReview() {
+  const loadAllReviewedArticles = useCallback(async () => {
+    if (reviewedLoadedRef.current) return;
+    if (reviewedLoadingPromiseRef.current) return reviewedLoadingPromiseRef.current;
+
+    const promise = (async () => {
       setIsBackgroundLoading(true);
       try {
+        const PAGE_SIZE = 2000;
         const PARALLEL = 4;
-        const PAGE_SIZE = 500;
-        const startCursor = nextCursorRef.current;
-        const extraCursors = await fetchArticleCursors(code, undefined, PAGE_SIZE, startCursor);
-        if (!active) return;
+        const collected: any[] = [];
 
-        const allCursors: (number | undefined)[] = [startCursor, ...extraCursors];
-        if (extraCursors.length > 0) {
-          for (let i = 0; i < allCursors.length && active; i += PARALLEL) {
+        const first = await fetchArticles(code, undefined, "reviewed", PAGE_SIZE).catch(() => null);
+        if (first?.items?.length) {
+          collected.push(...first.items.map(normalizeArticle));
+        }
+
+        if (first?.has_more && first.next_cursor) {
+          const extraCursors = await fetchArticleCursors(code, "reviewed", PAGE_SIZE, first.next_cursor);
+          const allCursors = [first.next_cursor, ...extraCursors];
+          for (let i = 0; i < allCursors.length; i += PARALLEL) {
             const batch = allCursors.slice(i, i + PARALLEL);
             const results = await Promise.allSettled(
-              batch.map((c) => fetchArticles(code, c, undefined, PAGE_SIZE))
+              batch.map((c) => fetchArticles(code, c, "reviewed", PAGE_SIZE))
             );
-            if (!active) break;
-
-            const allItems: any[] = [];
-            let lastPage: KeysetResponse | null = null;
             for (const r of results) {
-              if (r.status === "fulfilled" && r.value) {
-                lastPage = r.value;
-                if (r.value.items?.length) {
-                  allItems.push(...r.value.items.map(normalizeArticle));
-                }
+              if (r.status === "fulfilled" && r.value?.items?.length) {
+                collected.push(...r.value.items.map(normalizeArticle));
               }
             }
-
-            if (allItems.length > 0) {
-              setArticles((prev) => {
-                const seen = new Set(prev.map((a) => a.article_id));
-                const add = allItems.filter((a: any) => !seen.has(a.article_id));
-                return add.length > 0 ? [...prev, ...add] : prev;
-              });
-            }
-
-            const isLastBatch = i + PARALLEL >= allCursors.length;
-            const nextMore = isLastBatch ? Boolean(lastPage?.has_more && lastPage?.next_cursor) : true;
-            const nextCursorVal = lastPage?.next_cursor;
-            hasMoreRef.current = nextMore;
-            nextCursorRef.current = nextCursorVal;
-            setHasMore(nextMore);
-            setNextCursor(nextCursorVal);
-          }
-        } else {
-          // Fallback if cursors endpoint returned empty (<= 1 page remaining or older backend)
-          while (active && hasMoreRef.current) {
-            const page = await fetchArticles(code, nextCursorRef.current, undefined, PAGE_SIZE).catch(() => null);
-            if (!active || !page) break;
-            if (page.items?.length) {
-              const norm = page.items.map(normalizeArticle);
-              setArticles((prev) => {
-                const seen = new Set(prev.map((a) => a.article_id));
-                const add = norm.filter((a: any) => !seen.has(a.article_id));
-                return add.length > 0 ? [...prev, ...add] : prev;
-              });
-            }
-            const nextMore = Boolean(page.has_more && page.next_cursor);
-            hasMoreRef.current = nextMore;
-            nextCursorRef.current = page.next_cursor;
-            setHasMore(nextMore);
-            setNextCursor(page.next_cursor);
-            if (!nextMore || !page.items?.length) break;
           }
         }
-      } finally {
-        if (active) setIsBackgroundLoading(false);
-      }
-    }
 
-    hydrateReReview();
-    return () => {
-      active = false;
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, listTab]);
+        if (collected.length > 0) {
+          setArticles((prev) => {
+            const seen = new Set(prev.map((a) => a.article_id));
+            const add = collected.filter((a) => !seen.has(a.article_id));
+            return add.length > 0 ? [...prev, ...add] : prev;
+          });
+        }
+
+        reviewedLoadedRef.current = true;
+        hasMoreRef.current = false;
+        setHasMore(false);
+        setNextCursor(undefined);
+      } finally {
+        setIsBackgroundLoading(false);
+        reviewedLoadingPromiseRef.current = null;
+      }
+    })();
+
+    reviewedLoadingPromiseRef.current = promise;
+    return promise;
+  }, [code]);
+
+  // Prefetch reviewed articles in the background right after mount so Re-review tab opens instantaneously
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadAllReviewedArticles();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [loadAllReviewedArticles]);
+
+  useEffect(() => {
+    if (listTab === "rereview" && !reviewedLoadedRef.current) {
+      loadAllReviewedArticles();
+    }
+  }, [listTab, loadAllReviewedArticles]);
 
   const listTabs = useMemo(() => {
     const useServerPendingCount =
@@ -1133,16 +1121,12 @@ export default function ReviewQueueClient({
       ? contest!.pending_articles!
       : filteredNewArticles.length;
 
-    // Only use server my_reviewed_count if fully hydrated (hasMore=false) and no filters active
-    const fullyHydrated = !hasMore && !isBackgroundLoading;
     const hasExactReviewedCount = Boolean(
-      fullyHydrated &&
       !searchQuery &&
       !onlyPendingReReview &&
       !isImpersonatingJudge &&
       !isOwnerMode &&
-      contest?.my_reviewed_count !== undefined &&
-      contest.my_reviewed_count >= filteredJudgedArticles.length
+      contest?.my_reviewed_count !== undefined
     );
     const totalReviewedCount = hasExactReviewedCount
       ? contest!.my_reviewed_count!
@@ -1150,7 +1134,7 @@ export default function ReviewQueueClient({
 
     return [
       { id: "queue", key: "pending", label: t("feather-review-tab-queue"), count: totalPendingCount, hasMore: !useServerPendingCount && pendingHasMore, list: filteredNewArticles },
-      { id: "rereview", key: "judged", label: t("feather-review-tab-rereview"), count: totalReviewedCount, hasMore: !hasExactReviewedCount && hasMore, list: filteredJudgedArticles },
+      { id: "rereview", key: "judged", label: t("feather-review-tab-rereview"), count: totalReviewedCount, hasMore: false, list: filteredJudgedArticles },
     ];
   }, [
     contest,
@@ -2073,7 +2057,7 @@ export default function ReviewQueueClient({
                             : "bg-muted/80 text-muted-foreground"
                         }`}
                       >
-                        {n(tab.count)}{tab.id !== "queue" && tab.hasMore ? "+" : ""}
+                        {n(tab.count)}
                       </span>
                     </button>
                   );
@@ -2257,7 +2241,7 @@ export default function ReviewQueueClient({
                   );
                 })}
 
-                {!activeTab.list.length && (
+                {!activeTab.list.length && !isBackgroundLoading && (
                   <li role="presentation" className="rq-list-empty">
                     {activeTab.id === "queue" && !searchQuery && (
                       <CdxIcon icon={cdxIconArticleCheck} className="rq-empty-icon" />

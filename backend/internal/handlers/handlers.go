@@ -1782,7 +1782,7 @@ func (h *Handler) GetContestArticles(w http.ResponseWriter, r *http.Request) {
 
 	limit := 50
 	if l := r.URL.Query().Get("limit"); l != "" {
-		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 && parsedLimit <= 500 {
+		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 && parsedLimit <= 2000 {
 			limit = parsedLimit
 		}
 	}
@@ -1826,7 +1826,7 @@ func (h *Handler) GetContestArticleCursors(w http.ResponseWriter, r *http.Reques
 
 	limit := 500
 	if l := r.URL.Query().Get("limit"); l != "" {
-		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 && parsedLimit <= 500 {
+		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 && parsedLimit <= 2000 {
 			limit = parsedLimit
 		}
 	}
